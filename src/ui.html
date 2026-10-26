@@ -146,13 +146,15 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
 (()=>{
 const E=Engine,S=SCENARIOS,$=id=>document.getElementById(id);
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ORDER=['elena','marcus','jordan'];
-const LOCKED=[{tab:'Daniel',kind:'Adapt'}];
+const ORDER=['elena','marcus','jordan','daniel'];
+const LOCKED=[];
 const st={};
-function fresh(id){const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:{},groupOverrides:{}},prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,open:{}};}
+function fresh(id){const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:E.clone(sc.doorStatus||{}),groupOverrides:{}},route:sc.routes?sc.routes[0].id:null,prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,open:{}};}
 ORDER.forEach(id=>st[id]=fresh(id));
 let cur='elena',level=1,lens=false,pane='badge',lensP=[143,88],timer=null;
 const T=()=>st[cur],SC=()=>S[cur];
+const routeOf=t=>{const r=SC().routes;return r?(r.find(x=>x.id===t.route)||r[0]):null;};
+const actorOf=t=>{const r=routeOf(t);return r&&r.as==='escort'?SC().escort:t.person;};
 const center=id=>{const s=E.SPACES[id];if(s.ellipse)return[s.ellipse[0],s.ellipse[1]];const r=s.r[0];return[r[0]+r[2]/2,r[1]+r[3]/2];};
 const outP=id=>E.OUTSIDE[id].p;
 
@@ -239,6 +241,7 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
     if(sc.groupScheduleEdit){const e=sc.groupScheduleEdit,G=E.GROUPS[e.group],on=!!t.world.groupOverrides[e.group];
       h+=`<button class="grp" data-gs="${e.group}" aria-pressed="${on}"><span class="box">${on?'✓':''}</span><span><b>Change ${G.n} group hours to ${E.fmt(e.to[0])}–${E.fmt(e.to[1])}</b><small>Group setting · every day · ${G.members} badges</small></span></button>`;}
     h+='</div>';}
+  if(sc.routes){h+=`<div class="sub"><span class="eyebrow">Response</span>`+sc.routes.map(r=>`<button class="grp" data-rt="${r.id}" aria-pressed="${t.route===r.id}"><span class="box">${t.route===r.id?'●':''}</span><span><b>${r.label}</b><small>${r.note}</small></span></button>`).join('')+`</div>`;}
   if(sc.disposition){h+=`<div class="sub"><span class="eyebrow">Reason for decision</span>`+sc.disposition.options.map(o=>`<button class="grp" data-dp="${o.id}" aria-pressed="${t.disp===o.id}"><span class="box">${t.disp===o.id?'✓':''}</span><span><b>${o.text}</b></span></button>`).join('')+`<small class="note">Action recorded: ${c.active?(c.groups.length?'Access retained':'Groups removed'):'Credential deactivated'}</small></div>`;}
   if(sc.revoke)h+=`<div class="sub"><span class="eyebrow">Credential</span><button class="grp" data-rv="1" aria-pressed="${!c.active}"><span class="box">${!c.active?'✓':''}</span><span><b>Deactivate badge</b><small>${c.active?'Badge is active':'Badge is inactive'} · reversible</small></span></button></div>`;
   h+=`<div class="row2" style="margin-top:12px"><button class="btn primary" id="closeBtn">Close ticket</button><button class="btn" id="resetBtn">Reset</button></div>`;
@@ -250,6 +253,7 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
     t.tscope=og?`all ${E.GROUPS[og].members} ${E.GROUPS[og].n} badges`:'this badge only';t.showDelta=true;t.walk=null;t.result=null;render();};
   document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>change(()=>{const g=b.dataset.g,i=c.groups.indexOf(g);i<0?c.groups.push(g):c.groups.splice(i,1);}));
   document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>change(()=>{const a=t.person.authorizations.find(a=>a.id===b.dataset.x),i=c.exceptions.findIndex(x=>x.source===a.id);i<0?c.exceptions.push(E.clone(a.exception)):c.exceptions.splice(i,1);}));
+  document.querySelectorAll('[data-rt]').forEach(b=>b.onclick=()=>{if(timer)return;t.route=b.dataset.rt;t.walk=null;t.result=null;render();});
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{if(timer)return;t.disp=t.disp===b.dataset.dp?null:b.dataset.dp;t.result=null;render();});
   document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>change(()=>{c.active=!c.active;}));
   document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>change(()=>{const e=sc.groupScheduleEdit;t.world.groupOverrides[e.group]?delete t.world.groupOverrides[e.group]:t.world.groupOverrides[e.group]=e.to;}));
@@ -271,25 +275,26 @@ function renderReview(){const t=T(),d=t.delta;
     if(hasT){const nm=a=>a.map(x=>E.DOORS[x].n).join(', ');h+=`<span>Same places, different hours</span><div class="note">At ${SC().day} ${E.fmt(SC().time)}: ${td.opened.length?`newly opens ${nm(td.opened)}`:''}${td.opened.length&&td.closed.length?'; ':''}${td.closed.length?`no longer opens ${nm(td.closed)}`:''}. Applies to ${t.tscope}.</div>`;}
     h+=`</div>${none||!(d.addedSpaces.length||d.removedSpaces.length||d.addedDoors.length||d.removedDoors.length)?'':`<div class="row2" style="margin-top:8px"><button class="btn" id="dToggle" aria-pressed="${t.showDelta}">Show on map</button></div>`}`;}
   if(t.walk&&!t.walk.running){h+=`<div style="margin-top:12px"><span class="eyebrow">Walk log · ${E.fmt(SC().time)}</span><ol class="walklog" style="margin-top:8px">`;
-    for(const p of t.walk.pts.filter(p=>p.door))h+=`<li class="${p.ok?'':'no'}">${E.DOORS[p.door].n}: ${p.ok?'opened':'didn\'t open'}</li>`;
+    for(const p of t.walk.pts.filter(p=>p.door||p.transfer))h+=p.transfer?`<li>${p.label}</li>`:`<li class="${p.ok?'':'no'}">${E.DOORS[p.door].n}${p.who?` · ${p.who}'s badge`:''}: ${p.ok?'opened':'didn\'t open'}</li>`;
     h+=`</ol>${t.walk.res.stop?'':`<p class="note ok" style="margin:6px 0 0">Reached every stop on the request.</p>`}</div>`;}
   $('review').innerHTML=h;
   if($('dToggle'))$('dToggle').onclick=()=>{t.showDelta=!t.showDelta;render();};}
 function renderInspect(){const t=T(),sel=t.sel;let h=`<span class="eyebrow">Inspection</span>`;
   if(!sel){h+=`<p class="note" style="margin:8px 0 0">Turn on Inspect, then drag the lens or tap a door or room. Evidence for that spot appears here.</p>`;$('inspect').innerHTML=h;return;}
-  if(sel.door){const d=E.DOORS[sel.door],r=E.canEnter(t.world,t.person,sel.door,SC().time),g=r.grants||E.grants(t.world,t.person)[sel.door]||[];
+  if(sel.door){const actor=actorOf(t),escorted=actor!==t.person,d=E.DOORS[sel.door],r=E.canEnter(t.world,actor,sel.door,SC().time),g=r.grants||E.grants(t.world,actor)[sel.door]||[];
     const from=E.SPACES[d.from]?E.SPACES[d.from].n:E.OUTSIDE[d.from].n.replace('Outside · ','Outside, ');
     const covering=t.person.authorizations.filter(a=>a.doors.includes(sel.door)),covered=covering.filter(a=>E.authActive(t.world,a)),ended=covering.filter(a=>a.status==='approved'&&!E.authActive(t.world,a));
     const req=Object.entries(E.GROUPS).filter(([k,G])=>G.doors.includes(sel.door)).map(([k,G])=>{const hr=E.groupHours(t.world,k);return `${G.n} ${E.fmt(hr[0])}–${E.fmt(hr[1])}`;});
     const why={OK:'<span class="ok">Opens</span>',NO_GRANT:'<span class="bad">Denied · badge has no group for this door</span>',OUTSIDE_SCHEDULE:'<span class="bad">Denied · outside every schedule on this badge</span>',HARDWARE_FAULT:'<span class="bad">Denied · reader fault</span>',CREDENTIAL_INACTIVE:'<span class="bad">Denied · credential inactive</span>'}[r.code];
     h+=`<div class="ev" style="margin-top:8px"><h3>${d.n}</h3><dl class="kv">
+      ${escorted?`<dt>Badge</dt><dd>${actor.name} (escort)</dd>`:''}
       <dt>Reader</dt><dd>${(t.world.doorStatus[sel.door]||'online')==='online'?'Online':'<span class="bad">Fault</span>'} · ${sel.door}</dd>
       <dt>Entry</dt><dd>${from} → ${E.SPACES[d.into].n}</dd>
       <dt>Groups</dt><dd>${req.join('<br>')||'None'}</dd>
       <dt>This badge</dt><dd>${g.length?g.map(x=>`${x.via} · ${x.day?x.day+' ':''}${E.fmt(x.window[0])}–${E.fmt(x.window[1])}${x.inherited?`<br><span class="warn">Inherited: ${x.inherited}</span>`:''}`).join('<br>'):'<span class="note">Not granted</span>'}</dd>
       <dt>${SC().day} ${E.fmt(SC().time)}</dt><dd>${why}</dd>
-      <dt>Records</dt><dd>${SC().hideVerdict?(covering.length?covering.map(a=>`${a.id} · ${E.authActive(t.world,a)?'active':'ended '+a.ends}`).join('<br>'):'<span class="note">None</span>'):''}${SC().hideVerdict?'':covered.length?covered.map(a=>a.id).join(', '):g.length?'<span class="warn">No active record covers this door</span>':'<span class="note">None</span>'}${SC().hideVerdict?'':ended.map(a=>`<br><span class="note">${a.id} ended ${a.ends}</span>`).join('')}</dd></dl>`;
-    if(g.some(x=>x.inherited))h+=`<div class="row2"><button class="btn" id="flagBtn" aria-pressed="${t.flagged}">${t.flagged?'Template flagged for review':'Flag template for review'}</button></div>`;
+      <dt>Records</dt><dd>${escorted?'Escorted visit, per the reader fault procedure':`${SC().hideVerdict?(covering.length?covering.map(a=>`${a.id} · ${E.authActive(t.world,a)?'active':'ended '+a.ends}`).join('<br>'):'<span class="note">None</span>'):''}${SC().hideVerdict?'':covered.length?covered.map(a=>a.id).join(', '):g.length?'<span class="warn">No active record covers this door</span>':'<span class="note">None</span>'}${SC().hideVerdict?'':ended.map(a=>`<br><span class="note">${a.id} ended ${a.ends}</span>`).join('')}`}</dd></dl>`;
+    if(!escorted&&g.some(x=>x.inherited))h+=`<div class="row2"><button class="btn" id="flagBtn" aria-pressed="${t.flagged}">${t.flagged?'Template flagged for review':'Flag template for review'}</button></div>`;
     h+=`</div>`;}
   else{const s=E.SPACES[sel.space],fp=E.footprint(t.world,t.person),[x,y]=sel.pt;
     const other=Object.entries(E.SPACES).filter(([k,o])=>o.l!==s.l&&o.r.some(r=>x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3])).map(([k,o])=>o.n);
@@ -301,13 +306,14 @@ function renderInspect(){const t=T(),sel=t.sel;let h=`<span class="eyebrow">Insp
   if($('flagBtn'))$('flagBtn').onclick=()=>{t.flagged=!t.flagged;renderInspect();};}
 
 /* ---------- walk ---------- */
-function buildWalk(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.targets,sc.time);
+function buildWalk(){const sc=SC(),t=T(),r=routeOf(t),actor=actorOf(t),from=(r&&r.start)||sc.start,who=r&&r.as==='escort'?sc.escort.name.split(' ')[0]:null,res=E.walk(t.world,actor,from,sc.targets,sc.time);
   const pts=[{x:outP(sc.start)[0],y:outP(sc.start)[1],l:1}];
+  if(from!==sc.start){const a=outP(sc.start),b=outP(from);pts.push({x:a[0],y:298,l:1},{x:b[0],y:298,l:1,transfer:true,label:`${E.OUTSIDE[sc.start].n.replace('Outside · ','')} to ${E.OUTSIDE[from].n.replace('Outside · ','')}, outside the building`});}
   for(const s of res.steps){const l=s.door?E.doorLevel(s.door):s.p?E.levelOf(s.to):E.levelOf(s.to);
-    if(s.door&&!s.exit){const [x,y]=E.DOORS[s.door].p;pts.push({x,y,l:E.doorLevel(s.door),door:s.door,ok:s.result.ok});if(!s.result.ok)break;}
+    if(s.door&&!s.exit){const [x,y]=E.DOORS[s.door].p;pts.push({x,y,l:E.doorLevel(s.door),door:s.door,ok:s.result.ok,who});if(!s.result.ok)break;}
     else if(s.p){pts.push({x:s.p[0],y:s.p[1],l:E.levelOf(s.from)});}
     const [cx,cy]=center(s.to);pts.push({x:cx,y:cy,l:E.levelOf(s.to)});}
-  return{res,pts,i:0,running:true};}
+  return{res,pts,i:0,running:true,routeId:r?r.id:null};}
 function startWalk(){if(timer)return;const t=T();lens=false;pane='badge';t.walk=buildWalk();level=1;render();
   const tick=()=>{const w=t.walk;if(w.i>=w.pts.length-1){w.running=false;timer=null;render();return;}
     w.i++;level=w.pts[w.i].l;drawMap();timer=setTimeout(tick,RM?60:340);};timer=setTimeout(tick,RM?60:300);}
@@ -315,6 +321,13 @@ function startWalk(){if(timer)return;const t=T();lens=false;pane='badge';t.walk=
 /* ---------- grading (uses the same evaluator; no case branches in access logic) ---------- */
 function grade(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.targets,sc.time),extra=E.outOfScope(t.world,t.person).map(d=>E.DOORS[d].n);
   const who=sc.person.name.split(' ')[0];
+  if(sc.goal==='adapt'){const r=routeOf(t);
+    if(r.wait)return{cls:'warnr',title:'Closed, with a cost',text:r.tradeoff};
+    if(!(t.walk&&!t.walk.running&&t.walk.routeId===r.id))return{cls:'badr',title:'Not ready to close',text:`Walk ${who} in by this route to confirm it works before closing the ticket.`};
+    const wr=t.walk.res;
+    if(wr.stop)return{cls:'badr',title:'Not ready to close',text:`At ${sc.day} ${E.fmt(sc.time)}, ${r.as==='escort'?sc.escort.name.split(' ')[0]+' and '+who:who} would be stopped at ${E.DOORS[wr.stop.door]?E.DOORS[wr.stop.door].n:'a door'}. Walk the route and inspect where it fails.`};
+    if(extra.length)return{cls:'warnr',title:'Works, but outside the approved scope',text:`${who} gets in on his own badge, but the badge now also opens ${extra.join(', ')}. The delivery record covers the dock only, and vendors are not given unescorted staff-side access.`};
+    return{cls:'good',title:'Ticket closed',text:r.tradeoff||`${who} reaches every stop.`};}
   if(sc.goal==='audit'){
     if(extra.length)return{cls:'badr',title:'Review incomplete',text:`Confirm that ${who}'s assigned access is supported by current authorization before closing this ticket.`};
     if(!t.disp)return{cls:'badr',title:'Record a reason',text:'Choose the reason for this decision before closing.'};
@@ -350,7 +363,7 @@ $('lv1').onclick=()=>{if(timer)return;level=1;drawMap();};$('lv2').onclick=()=>{
 $('lensBtn').onclick=()=>{if(timer)return;lens=!lens;pane=lens?'inspect':'badge';drawMap();};
 $('paneBadge').onclick=()=>{pane='badge';drawMap();};$('paneInspect').onclick=()=>{pane='inspect';drawMap();};
 $('walkBtn').onclick=startWalk;
-function render(){renderQueue();renderTicket();renderBadge();renderReview();renderInspect();drawMap();$('walkBtn').innerHTML=`Walk<span class="wn"> ${SC().person.name.split(' ')[0]} in</span>`;}
+function render(){const rt=routeOf(T());$('walkBtn').disabled=!!(rt&&rt.wait);renderQueue();renderTicket();renderBadge();renderReview();renderInspect();drawMap();$('walkBtn').innerHTML=`Walk<span class="wn"> ${SC().person.name.split(' ')[0]} in</span>`;}
 render();
 })();
 </script>

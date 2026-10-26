@@ -72,6 +72,32 @@ const tests = {
     const r = await m.evaluate(() => ({ scale: document.getElementById('map').getBoundingClientRect().width / 400, ta: document.getElementById('map').style.touchAction }));
     await ctx.close(); assert(r.scale * 18 * 2 >= 24, 'hit radius too small ' + r.scale); assert(r.ta === 'pan-y', r.ta);
   },
+  async 'Daniel: the walk fails at the dock without saying why; inspection shows the reader fault'(pg) {
+    await pg.click('[data-q="daniel"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /didn't open/.test(document.getElementById('review').textContent), null, { timeout: 15000 });
+    const log = await text(pg, '.walklog'); assert(/Loading dock: didn't open/.test(log) && !/fault/i.test(log), log);
+    await pg.click('#lensBtn'); await clickMap(pg, 388, 250);
+    const i = await text(pg, '#inspect'); assert(/Fault/.test(i) && /reader fault/.test(i), i);
+  },
+  async 'Daniel: closing without walking the chosen route is refused'(pg) {
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="escortWest"]'); await pg.click('#closeBtn');
+    assert(/Walk Daniel in by this route/.test(await text(pg, '.result')));
+  },
+  async 'Daniel: escort route (transfer shown, escort badge evaluated) closes with the tradeoff'(pg) {
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="escortWest"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    const log = await text(pg, '.walklog'); assert(/Loading dock to West staff entrance/.test(log) && /Priya's badge: opened/.test(log), log);
+    await pg.click('#closeBtn'); const r = await text(pg, '.result'); assert(/Ticket closed/.test(r) && /hand cart/.test(r), r);
+  },
+  async 'Daniel: unescorted shortcut works but is flagged as outside scope'(pg) {
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-g="allStaff"]'); await pg.click('[data-rt="selfWest"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    await pg.click('#closeBtn'); assert(/outside the approved scope/.test(await text(pg, '.result')));
+  },
+  async 'Daniel: holding for repair is accepted as a costed choice, with no walk'(pg) {
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="wait"]');
+    assert(await pg.isDisabled('#walkBtn')); await pg.click('#closeBtn'); assert(/Closed, with a cost/.test(await text(pg, '.result')));
+  },
   async 'Elena still closes with the right groups'(pg) {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
     assert(/Ticket closed/.test(await text(pg, '.result')));

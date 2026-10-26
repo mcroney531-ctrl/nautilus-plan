@@ -1,6 +1,6 @@
 # Nautilus Access Desk: session handoff
 
-**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** Elena, Marcus and Jordan built; 17 engine tests green; Jordan checked in headless Chromium at 400px and 1280px. Next: independent review, then Daniel (adapt), then polish. Jordan has NOT had a real-device check or SME review.
+**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Marcus, Jordan, Daniel). 25 engine tests + 18 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
 
 ---
 
@@ -73,8 +73,8 @@ Evaluation order for an attempt: physical connection → credential active → d
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 Issue | **Built** | Elena Park, marine educator | West Staff Entrance, Tue 07:15 | Least privilege | **Exhibit Operations** ("Standard onboarding template") covers her rooms but inherits Quarantine + topside from a 2021 Husbandry Support merge | All Staff + Education. Optional: flag the template |
 | 2 Diagnose | **Built** | Marcus Reyes, dive crew lead | Loading dock, Tue 05:30 | Where vs. when access applies | Change **Dive Crew** group hours to 05:00 (every day, 12 badges) | Time exception from **WO-2291** (Marcus only, Tue 05:00–08:00, WO doors only) |
-| 3 Audit | Next | Jordan Kim, exhibit AV vendor | West staff entry, routine review | Access that works but shouldn't exist | "Keep vendor profile active for potential follow-up work" | Revoke/expire, and document it. **Evidence = original authorization (ended ~3 months ago) laid over current access**, not a door failure. Expiry was missing or misconfigured, not a routine failure |
-| 4 Adapt | Next | Daniel Brooks, frozen-feed driver | Loading dock | Permission problem vs. equipment problem | Issue temporary **unescorted** West Staff Entrance access | Staffed escort route. Dock reader has a **hardware fault** (not "offline": many systems run cached permissions offline, per GPT citing Genetec/Verkada). The escort is a person with their own credential, so the walk should evaluate the escort's badge. Needs a written fictional Nautilus escort policy |
+| 3 Audit | **Built** | Jordan Kim, exhibit AV vendor | Quarterly review, Tue 10:00 | Access that works but shouldn't exist | Keep it "for follow-up work" (account note, found via the Account history chip) | Deactivate (or remove the group) AND record the reason "work authorization ended; no new approval exists". Lens shows `WO-1873 · ended`, neutrally, no verdict |
+| 4 Adapt | **Built** | Daniel Brooks, frozen-feed driver | Loading dock, Tue 08:15 | Permission problem vs. equipment problem | Unescorted West Staff Entrance access (add All Staff, route `selfWest`) | Escort via West Staff Entrance on Priya Nair's own badge, or hold for repair (about 90 min). Both are valid; feedback compares tradeoffs. Dock reader is in a **hardware fault**; Daniel's badge is otherwise valid for the dock |
 
 Engine test already includes a Jordan fixture (active credential, expired WO-1873 → out-of-scope doors) and a hardware-fault test.
 
@@ -88,55 +88,54 @@ Frame: an **operations-desk shift**, with a ticket queue, recurring characters, 
 
 ```
 src/engine.js     data model + evaluator (Engine global; module.exports for node)
-src/scenarios.js  tickets: people, messages, records, editable groups (SCENARIOS global)
+src/scenarios.js  tickets: people, messages, records, notes, routes, editable groups (SCENARIOS global)
 src/ui.html       page shell + UI script with /*__ENGINE__*/ and /*__SCENARIOS__*/ placeholders
-build.py          inlines engine + scenarios → dist/nautilus_access.html
-test/test.js      13 node tests (run from repo root: node test/test.js)
-reference/        v1 prototype from GPT/Codex + its notes (superseded; keep for history)
+build.py          inlines engine + scenarios -> dist/nautilus_access.html AND index.html (GitHub Pages serves index.html from main)
+test/test.js      engine tests: npm test
+test/ui.test.js   Playwright browser tests incl. Pixel 7 portrait/landscape: npm run test:ui (Playwright not a dependency; skips if missing, so CI must install it)
+docs/             competency map (instructional-design reference), Masking Mock Lab (process evidence only)
+reference/        superseded v1 prototype
 ```
 
-**Engine API:** `grants(world, person)`, `canEnter(world, person, door, t)` → `{ok, code, grants, via, status}` with codes `OK | NO_GRANT | OUTSIDE_SCHEDULE | HARDWARE_FAULT | CREDENTIAL_INACTIVE`. `path(from, to)` (physical BFS, ignores access), `walk(world, person, start, targets, t)` → `{steps, reached, stop}`, `footprint(world, person)` → `{spaces, doors}` (granted doors' secured sides flooded through open links), `delta(before, after)`, `outOfScope(world, person)` (granted doors no active authorization covers).
+Live: https://mcroney531-ctrl.github.io/nautilus-plan/ (push straight to main; Rone approved).
 
-**World:** `{day, date, doorStatus:{doorId:'fault'}, groupOverrides:{group:[start,end]}}`. **Person:** `{credential:{active, groups[], exceptions[{doors, window, day, source}]}, authorizations[{id, status, ends?, doors[], exception?}]}`.
+**Engine API:** `grants`, `canEnter` (codes `OK | NO_GRANT | OUTSIDE_SCHEDULE | HARDWARE_FAULT | CREDENTIAL_INACTIVE`; exceptions may be scoped by `day` and exact `date`), `path`, `walk`, `footprint`, `delta` (spatial), `timeDelta` (same places, different hours), `authActive` (approved and not past `ends`), `outOfScope` (granted doors no active authorization covers).
 
-**UI:** single-file HTML, vanilla JS, SVG map (viewBox 400×300 per level). Footprint = mask with granted-space rects subtracted, plus a feMorphology ring outline (union edge). Lens = clipPath circle rendering the other level. Grading via `grade()` reuses the engine: walk result, then group override check, then `outOfScope`.
+**Scenario data drives behavior, no scenario branches in the evaluator:**
+- `goal`: default = the walk must reach every target; `'audit'` = nothing open without an active record, plus a required `disposition` reason; `'adapt'` = pick a `routes` entry.
+- `routes` (Daniel): `{start, as:'self'|'escort', wait, tradeoff}`. An escort route evaluates the escort's own credential (`scenario.escort`); a route whose `start` differs from the scenario `start` draws an explicit outside transfer leg. No access-aware pathfinding, by decision.
+- `verify: true` (Daniel only): closing requires a completed walk of the chosen route.
+- `hideVerdict` (Jordan): no gold rings, neutral records row in the lens.
+- `notes`: extra chips on the ticket (Jordan's account history, Daniel's reader-fault procedure).
 
-**Note:** test require paths already point at `../src/`.
+**UI:** single-file HTML, vanilla JS, SVG map. On phones (<=860px) and short landscape the map card is sticky, Badge/Review and Inspect share one pane (switch under the map; Inspect on = Inspect pane), and short landscape puts the map in a full-height left column. Desktop layout unchanged. Taps and the lens only select while Inspect is on.
 
-**Published:** the v2 artifact is "Nautilus Access Desk" in Rone's claude.ai artifacts. The earlier exploration ("Masking Mock Lab," 19 tabs) and the "Badge Planner Competency Map" doc are there too.
+## 6. Acceptance status
 
----
-
-## 6. Acceptance status (GPT's v2 list)
-
-- [x] Same evaluator for Elena and Marcus, no case branches
-- [x] Broad group genuinely grants extra doors (Elena can walk into Quarantine)
-- [x] Credential/schedule changes alter access without scenario code
-- [x] Footprint and route disagree explainably (Education-only: galleries lit, denied at staff entrance. Marcus: footprint right, denied at 05:30)
-- [x] Inspection possible before a walk
-- [x] Denial reasons discoverable only through inspection (the walk log says "didn't open")
-- [~] Phone usability: no horizontal overflow at 400px, but labels are ~9–10px and core labels tiny. **Needs Rone's real-device check.**
-
----
+- [x] Same evaluator for all four tickets, no case branches
+- [x] Broad group genuinely grants extra doors (Elena into Quarantine)
+- [x] Footprint and route disagree explainably (Elena Education-only; Marcus at 05:30; Daniel at the dock)
+- [x] Denial reasons only through inspection (walk log says "didn't open")
+- [x] Change review reports schedule-only changes ("Same places, different hours") with scope (all N group badges vs this badge only)
+- [x] One-time exceptions are date-scoped (Marcus's WO-2291 does not recur on later Tuesdays)
+- [x] Daniel's denial is the hardware fault, not a missing grant (tested)
+- [x] Phone layout verified under Pixel 7 emulation
+- [ ] Real-device phone check (lens feel under a thumb, label legibility)
+- [ ] SME review (security admin + aquarium facilities)
 
 ## 7. Backlog (prioritized)
 
-1. **Repo hygiene:** git init, add `npm test` or a simple Makefile, commit the baseline.
-2. **Jordan (Audit): BUILT (v2.1).** Open items: guided/unprompted tuning, document-the-decision step, set-expiry action (only Deactivate exists), 'Not ready to close' text names the expired WO (consider less revealing). Original note:  add as a ticket with no code branches. Needs the "authorization vs. current access" comparison surfaced in inspection (the lens on a door shows "No active record covers this door," and an overlay of authorized scope vs. granted footprint could be the reveal). Add revoke/disable and set-expiry actions to the credential. Make sure the walk *succeeding* is the expected, unalarming result.
-3. **Daniel (Adapt):** door status `fault` on D-DOCK. Escort model: a staffed escort is a second person whose credential gets evaluated for the route from the West Staff Entrance to Receiving. Write the fictional escort policy into the ticket records. Tradeoff feedback rather than right/wrong.
-4. **Phone legibility:** larger labels or abbreviations, tap targets ≥ 24px for doors, and keep the lens usable. Consider a bottom sheet for badge controls (GPT's suggestion) if scrolling feels long.
-5. **Change review noise:** the first change from an empty badge outlines everything in gold. Consider highlighting only restricted or outside-scope additions loudly and the rest quietly.
-6. **Desktop map** gets very large: cap the map width/height.
-7. **L2 "W CORE"** label overlaps a door dot.
-8. **Scaffolding:** guided prompts for Elena, a post-failure inspect prompt for Marcus, none for Jordan.
-9. **Shift framing:** supervisor intro and end-of-shift summary, with characters recurring across tickets.
-10. **Later:** real map art (aligned levels), avatars, ambient Kelp Hall/Reef visuals per brand, case-study write-up using the Mock Lab as curated process evidence (Spotlight → Configuration → Two perspectives → Consequence-driven investigation).
-
----
+1. **Real-device phone check**, then a first-time-learner walkthrough of all four scenarios (does the learner know what they're doing, discover problems naturally, understand consequences).
+2. **Verification before closing for Issue and Diagnose:** Elena and Marcus can still close without pressing Walk because `grade()` runs the walk itself. Recommended: set `verify: true` on both so closing needs a completed walk of the current badge (a badge change already clears the walk). Not done pending Rone/GPT sign-off.
+3. **Scaffolding:** guided prompts for Elena, a post-failure inspect prompt for Marcus (none for Jordan/Daniel). Shift framing: supervisor intro and end-of-shift summary.
+4. **Map polish:** "W CORE" / "STAFF ENTRANCE" labels collide with door dots; lens caption can overlap labels; first change from an empty badge outlines everything in gold; desktop map is very large (cap it).
+5. **Tests:** touch-target test uses SVG width, not the rendered scale under the 32vh cap; make browser tests mandatory in CI once CI exists.
+6. **Jordan:** no credential expiry date, only Deactivate / remove group.
+7. **Later:** real map art, avatars, ambient visuals per brand, case-study write-up using the Mock Lab as process evidence.
 
 ## 8. Open questions
 
-- Pre-open: is the public entrance locked before opening? Currently out of scope (Elena uses the staff entrance).
+- Pre-open: is the public entrance locked before opening? Out of scope (Elena uses the staff entrance).
 - Grading tone for Adapt: compare tradeoffs, or a single correct answer under a written policy?
 - One persistent shift (state carries between tickets) vs. independent tickets from a menu?
 - What needs real SME validation before this goes in the portfolio (security admin + aquarium facilities)?

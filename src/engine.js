@@ -74,6 +74,7 @@ const Engine = (() => {
     exhibitOps:{ n: 'Exhibit Operations', note: 'Standard onboarding template',
                  doors: ['D-WSE', 'D-WGC', 'D-LSG', 'D-CLS', 'D-WC1', 'D-WM', 'D-TOPW', 'D-FOOD', 'D-QUAR'], hours: [5, 22], members: 31,
                  inherited: { 'D-QUAR': 'Husbandry Support (merged into this template, 2021)', 'D-FOOD': 'Husbandry Support (merged into this template, 2021)' } },
+    vendorDelivery: { n: 'Vendor Delivery', note: 'Dock only', doors: ['D-DOCK'], hours: [6, 16], members: 8 },
     tempExhibitAV: { n: 'Temporary Exhibit AV', note: 'Vendor project profile', doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], hours: [7, 18], members: 3 },
     diveCrew:  { n: 'Dive Crew', doors: ['D-DOCK', 'D-EC1', 'D-EM', 'D-DIVE', 'D-TOPE'], hours: [7, 19], members: 12 },
   };
@@ -88,7 +89,7 @@ const Engine = (() => {
     for (const g of person.credential.groups) for (const d of GROUPS[g].doors)
       (out[d] = out[d] || []).push({ via: GROUPS[g].n, group: g, kind: 'group', window: groupHours(world, g), inherited: GROUPS[g].inherited && GROUPS[g].inherited[d] });
     for (const x of person.credential.exceptions || []) for (const d of x.doors)
-      (out[d] = out[d] || []).push({ via: `Exception · ${x.source}`, kind: 'exception', window: x.window, day: x.day });
+      (out[d] = out[d] || []).push({ via: `Exception · ${x.source}`, kind: 'exception', window: x.window, day: x.day, date: x.date });
     return out;
   }
   // Can this person enter through this door at time t? Returns full evidence; the UI decides what to show.
@@ -99,7 +100,7 @@ const Engine = (() => {
     if (!person.credential.active) return { ok: false, code: 'CREDENTIAL_INACTIVE', status };
     const g = grants(world, person)[doorId] || [];
     if (!g.length) return { ok: false, code: 'NO_GRANT', status, grants: g };
-    const inTime = g.filter(x => (!x.day || x.day === world.day) && t >= x.window[0] && t < x.window[1]);
+    const inTime = g.filter(x => (!x.day || x.day === world.day) && (!x.date || x.date === world.date) && t >= x.window[0] && t < x.window[1]);
     if (!inTime.length) return { ok: false, code: 'OUTSIDE_SCHEDULE', status, grants: g };
     if (status === 'fault') return { ok: false, code: 'HARDWARE_FAULT', status, grants: g };
     return { ok: true, code: 'OK', status, grants: g, via: inTime };

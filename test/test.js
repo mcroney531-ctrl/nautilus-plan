@@ -1,10 +1,10 @@
 const E = require('../src/engine.js'), S = require('../src/scenarios.js'), assert = require('assert');
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('ok', name); };
-const world = sc => ({ day: sc.day, date: sc.date, doorStatus: {}, groupOverrides: {} });
+const world = sc => ({ day: sc.day, date: sc.date, doorStatus: E.clone(sc.doorStatus || {}), groupOverrides: {} });
 const P = id => E.clone(S[id].person);
 
 t('physical paths exist for every target', () => {
-  for (const id of ['elena', 'marcus', 'jordan']) { let at = S[id].start; for (const tg of S[id].targets) { assert(E.path(at, tg), `${id} ${at}->${tg}`); at = tg; } }
+  for (const id of ['elena', 'marcus', 'jordan', 'daniel']) { let at = S[id].start; for (const tg of S[id].targets) { assert(E.path(at, tg), `${id} ${at}->${tg}`); at = tg; } }
 });
 t('credential grant: Education alone is denied at staff entrance (granted ≠ reachable)', () => {
   const p = P('elena'); p.credential.groups = ['education']; const w = world(S.elena);
@@ -110,5 +110,34 @@ t('timeDelta: Marcus exception opens the same doors at 05:30 without changing th
 t('timeDelta ignores newly granted doors (those are spatial changes)', () => {
   const pb = P('elena'), pa = P('elena'), w = world(S.elena); pa.credential.groups = ['allStaff'];
   assert.deepEqual(E.timeDelta(w, pb, w, pa, 7.25), { opened: [], closed: [] });
+});
+t('one-time exception is date-scoped: Oct 27 works, the next Tuesday does not', () => {
+  const p = P('marcus'), w = world(S.marcus); p.credential.exceptions.push(p.authorizations[1].exception);
+  assert.equal(E.canEnter(w, p, 'D-DOCK', 5.5).ok, true);
+  const next = { ...w, date: '2026-11-03' }; assert.equal(next.day, 'Tue');
+  assert.equal(E.canEnter(next, p, 'D-DOCK', 5.5).code, 'OUTSIDE_SCHEDULE');
+});
+t('Daniel: his badge is valid for the dock, so the hardware fault is the only denial reason', () => {
+  const p = P('daniel'), w = world(S.daniel), healthy = { ...w, doorStatus: {} };
+  assert.equal(E.canEnter(healthy, p, 'D-DOCK', S.daniel.time).ok, true, 'works when the reader is healthy');
+  const r = E.canEnter(w, p, 'D-DOCK', S.daniel.time);
+  assert.equal(r.code, 'HARDWARE_FAULT'); assert(r.grants.length > 0, 'grant exists and is in schedule');
+  assert.equal(E.walk(w, p, 'outD', S.daniel.targets, S.daniel.time).stop.code, 'HARDWARE_FAULT');
+});
+t('Daniel: escort route is evaluated on the escort badge; his own badge never opens the staff entrance', () => {
+  const w = world(S.daniel), d = P('daniel'), esc = E.clone(S.daniel.escort);
+  assert.equal(E.walk(w, esc, 'outW', S.daniel.targets, S.daniel.time).stop, null);
+  const own = E.walk(w, d, 'outW', S.daniel.targets, S.daniel.time);
+  assert.equal(own.stop.door, 'D-WSE'); assert.equal(own.stop.code, 'NO_GRANT');
+  assert.deepEqual(E.outOfScope(w, d), [], 'his badge stays within the delivery record');
+});
+t('Daniel: unescorted shortcut works technically but is out of scope', () => {
+  const w = world(S.daniel), d = P('daniel'); d.credential.groups.push('allStaff');
+  assert.equal(E.walk(w, d, 'outW', S.daniel.targets, S.daniel.time).stop, null);
+  assert(E.outOfScope(w, d).includes('D-WSE'));
+});
+t('Daniel: every route is physically possible and the wait route needs no walk', () => {
+  for (const r of S.daniel.routes) if (!r.wait) assert(E.path(r.start, 'receiving'), r.id);
+  assert(S.daniel.routes.some(r => r.wait) && S.daniel.routes.filter(r => r.tradeoff).length === 2);
 });
 console.log(`\n${n} tests passed`);
