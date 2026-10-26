@@ -77,7 +77,8 @@ t('Jordan scenario: badge works, walk succeeds, yet doors are out of scope (expi
   assert.equal(E.walk(w, p, 'outW', S.jordan.targets, S.jordan.time).stop, null);
   assert.equal(E.authActive(w, p.authorizations[0]), false);
   const oos = E.outOfScope(w, p);
-  for (const d of ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW', 'D-QUAR']) assert(oos.includes(d), d);
+  assert.deepEqual([...oos].sort(), ['D-TOPW', 'D-WC1', 'D-WM', 'D-WSE']);
+  assert(!oos.includes('D-QUAR'), 'vendor profile is scoped, not the broad template');
 });
 t('Jordan: deactivating the badge resolves the audit and the walk then fails at the entrance', () => {
   const p = P('jordan'), w = world(S.jordan); p.credential.active = false;
@@ -92,5 +93,22 @@ t('Jordan: removing the group also resolves the audit (effective access, not whi
 t('authActive leaves other tickets unchanged (no end date means active)', () => {
   assert(S.marcus.person.authorizations.every(a => E.authActive(world(S.marcus), a)));
   assert(S.elena.person.authorizations.every(a => E.authActive(world(S.elena), a)));
+});
+t('timeDelta: group hours edit changes access with an identical footprint (Marcus)', () => {
+  const p = P('marcus'), wb = world(S.marcus), wa = world(S.marcus); wa.groupOverrides.diveCrew = [5, 19];
+  const d = E.delta(E.footprint(wb, p), E.footprint(wa, p));
+  assert.deepEqual([d.addedSpaces, d.removedSpaces, d.addedDoors, d.removedDoors], [[], [], [], []]);
+  const td = E.timeDelta(wb, p, wa, p, 5.5);
+  assert(td.opened.includes('D-DOCK') && td.closed.length === 0);
+});
+t('timeDelta: Marcus exception opens the same doors at 05:30 without changing the footprint', () => {
+  const pb = P('marcus'), pa = P('marcus'), w = world(S.marcus); pa.credential.exceptions.push(pa.authorizations[1].exception);
+  const td = E.timeDelta(w, pb, w, pa, 5.5);
+  assert(td.opened.includes('D-DOCK'));
+  assert.deepEqual(E.timeDelta(w, pb, w, pa, 12), { opened: [], closed: [] }, 'no change when already open');
+});
+t('timeDelta ignores newly granted doors (those are spatial changes)', () => {
+  const pb = P('elena'), pa = P('elena'), w = world(S.elena); pa.credential.groups = ['allStaff'];
+  assert.deepEqual(E.timeDelta(w, pb, w, pa, 7.25), { opened: [], closed: [] });
 });
 console.log(`\n${n} tests passed`);

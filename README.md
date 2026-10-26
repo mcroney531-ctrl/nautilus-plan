@@ -6,6 +6,7 @@ Fictional facility and policies. Not security or life-safety guidance; needs SME
 
 ## Commands
 - `npm test` runs the engine tests (Node, no dependencies).
+- `npm run test:ui` runs browser tests (needs Playwright installed separately: `npm i --no-save playwright && npx playwright install chromium`).
 - `npm run build` inlines the engine and scenarios into `dist/nautilus_access.html` and a root `index.html` (served by GitHub Pages from `main`). Needs Python 3.
 
 ## Layout

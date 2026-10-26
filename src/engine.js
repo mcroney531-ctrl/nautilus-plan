@@ -74,6 +74,7 @@ const Engine = (() => {
     exhibitOps:{ n: 'Exhibit Operations', note: 'Standard onboarding template',
                  doors: ['D-WSE', 'D-WGC', 'D-LSG', 'D-CLS', 'D-WC1', 'D-WM', 'D-TOPW', 'D-FOOD', 'D-QUAR'], hours: [5, 22], members: 31,
                  inherited: { 'D-QUAR': 'Husbandry Support (merged into this template, 2021)', 'D-FOOD': 'Husbandry Support (merged into this template, 2021)' } },
+    tempExhibitAV: { n: 'Temporary Exhibit AV', note: 'Vendor project profile', doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], hours: [7, 18], members: 3 },
     diveCrew:  { n: 'Dive Crew', doors: ['D-DOCK', 'D-EC1', 'D-EM', 'D-DIVE', 'D-TOPE'], hours: [7, 19], members: 12 },
   };
 
@@ -151,6 +152,12 @@ const Engine = (() => {
     return { addedSpaces: minus(after.spaces, before.spaces), removedSpaces: minus(before.spaces, after.spaces),
              addedDoors: minus(after.doors, before.doors), removedDoors: minus(before.doors, after.doors) };
   }
+  // Same places, different hours: doors granted before AND after whose openability at time t changed (reader hardware ignored)
+  function timeDelta(wb, pb, wa, pa, t) {
+    const open = (w, p) => new Set(Object.keys(grants(w, p)).filter(d => { const r = canEnter(w, p, d, t); return r.ok || r.code === 'HARDWARE_FAULT'; }));
+    const gb = grants(wb, pb), ga = grants(wa, pa), ob = open(wb, pb), oa = open(wa, pa);
+    return { opened: [...oa].filter(d => !ob.has(d) && gb[d] && ga[d]), closed: [...ob].filter(d => !oa.has(d) && gb[d] && ga[d]) };
+  }
   // AUTHORIZED vs GRANTED: doors the badge opens that no active authorization covers
   // An authorization counts only while approved and not past its end date (expired records are history, not authority)
   const authActive = (world, a) => a.status === 'approved' && (!a.ends || a.ends >= world.date);
@@ -160,6 +167,6 @@ const Engine = (() => {
     return Object.keys(grants(world, person)).filter(d => !ok.has(d));
   }
   const clone = o => JSON.parse(JSON.stringify(o));
-  return { SPACES, VOIDS, OUTSIDE, LINKS, DOORS, GROUPS, levelOf, doorLevel, fmt, grants, canEnter, path, walk, footprint, delta, outOfScope, authActive, clone, groupHours };
+  return { SPACES, VOIDS, OUTSIDE, LINKS, DOORS, GROUPS, levelOf, doorLevel, fmt, grants, canEnter, path, walk, footprint, delta, timeDelta, outOfScope, authActive, clone, groupHours };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;

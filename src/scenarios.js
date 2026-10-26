@@ -24,13 +24,18 @@ const SCENARIOS = {
     groupScheduleEdit: { group: 'diveCrew', to: [5, 19] },
   },
   jordan: {
-    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
+    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, hideVerdict: true, time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
     person: { id: 'jordan', name: 'Jordan Kim', initials: 'JK', role: 'Exhibit AV vendor',
-      credential: { active: true, groups: ['exhibitOps'], exceptions: [] },
+      credential: { active: true, groups: ['tempExhibitAV'], exceptions: [] },
       authorizations: [{ id: 'WO-1873', status: 'approved', purpose: 'Reef Tunnel AV install (project work)', approver: 'M. Alvarez, Exhibits Manager',
-        doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], ends: '2026-07-20', places: 'West Staff Entrance, west core, west mezzanine, tank-top west', window: 'Jul 6 to Jul 20, 2026 · Jordan Kim only' }] },
-    message: 'Routine access review: vendor badges. Note on this account: "Keep vendor profile active for potential follow-up work."',
-    editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
+        doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], ends: '2026-07-20', places: 'West Staff Entrance, west core, west mezzanine, tank-top west', window: 'Jul 6 to Jul 20, 2026 Â· Jordan Kim only' }] },
+    message: "We're completing the quarterly contractor access review. Start with Jordan Kim's vendor account and confirm whether the current access is still justified.",
+    notes: [{ id: 'Account history', text: 'Account note, Aug 2026: "Keep vendor profile active for potential follow-up work."' }],
+    disposition: { options: [
+      { id: 'ended', text: 'Work authorization ended; no new approval exists', correct: true },
+      { id: 'followup', text: 'Future follow-up work may require access', why: 'Possible future work is not an approval. Access follows a current authorization, and a new request can be raised if the work is approved.' },
+      { id: 'works', text: 'The credential still works', why: 'A badge that opens doors shows what is granted, not what is authorized.' }] },
+    editable: ['tempExhibitAV', 'allStaff', 'education', 'exhibitOps'],
   },
 };
 if (typeof module !== 'undefined') module.exports = SCENARIOS;

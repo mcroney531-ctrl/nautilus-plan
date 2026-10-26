@@ -186,6 +186,7 @@ const Engine = (() => {
     exhibitOps:{ n: 'Exhibit Operations', note: 'Standard onboarding template',
                  doors: ['D-WSE', 'D-WGC', 'D-LSG', 'D-CLS', 'D-WC1', 'D-WM', 'D-TOPW', 'D-FOOD', 'D-QUAR'], hours: [5, 22], members: 31,
                  inherited: { 'D-QUAR': 'Husbandry Support (merged into this template, 2021)', 'D-FOOD': 'Husbandry Support (merged into this template, 2021)' } },
+    tempExhibitAV: { n: 'Temporary Exhibit AV', note: 'Vendor project profile', doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], hours: [7, 18], members: 3 },
     diveCrew:  { n: 'Dive Crew', doors: ['D-DOCK', 'D-EC1', 'D-EM', 'D-DIVE', 'D-TOPE'], hours: [7, 19], members: 12 },
   };
 
@@ -263,6 +264,12 @@ const Engine = (() => {
     return { addedSpaces: minus(after.spaces, before.spaces), removedSpaces: minus(before.spaces, after.spaces),
              addedDoors: minus(after.doors, before.doors), removedDoors: minus(before.doors, after.doors) };
   }
+  // Same places, different hours: doors granted before AND after whose openability at time t changed (reader hardware ignored)
+  function timeDelta(wb, pb, wa, pa, t) {
+    const open = (w, p) => new Set(Object.keys(grants(w, p)).filter(d => { const r = canEnter(w, p, d, t); return r.ok || r.code === 'HARDWARE_FAULT'; }));
+    const gb = grants(wb, pb), ga = grants(wa, pa), ob = open(wb, pb), oa = open(wa, pa);
+    return { opened: [...oa].filter(d => !ob.has(d) && gb[d] && ga[d]), closed: [...ob].filter(d => !oa.has(d) && gb[d] && ga[d]) };
+  }
   // AUTHORIZED vs GRANTED: doors the badge opens that no active authorization covers
   // An authorization counts only while approved and not past its end date (expired records are history, not authority)
   const authActive = (world, a) => a.status === 'approved' && (!a.ends || a.ends >= world.date);
@@ -272,7 +279,7 @@ const Engine = (() => {
     return Object.keys(grants(world, person)).filter(d => !ok.has(d));
   }
   const clone = o => JSON.parse(JSON.stringify(o));
-  return { SPACES, VOIDS, OUTSIDE, LINKS, DOORS, GROUPS, levelOf, doorLevel, fmt, grants, canEnter, path, walk, footprint, delta, outOfScope, authActive, clone, groupHours };
+  return { SPACES, VOIDS, OUTSIDE, LINKS, DOORS, GROUPS, levelOf, doorLevel, fmt, grants, canEnter, path, walk, footprint, delta, timeDelta, outOfScope, authActive, clone, groupHours };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;
 
@@ -302,13 +309,18 @@ const SCENARIOS = {
     groupScheduleEdit: { group: 'diveCrew', to: [5, 19] },
   },
   jordan: {
-    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
+    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, hideVerdict: true, time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
     person: { id: 'jordan', name: 'Jordan Kim', initials: 'JK', role: 'Exhibit AV vendor',
-      credential: { active: true, groups: ['exhibitOps'], exceptions: [] },
+      credential: { active: true, groups: ['tempExhibitAV'], exceptions: [] },
       authorizations: [{ id: 'WO-1873', status: 'approved', purpose: 'Reef Tunnel AV install (project work)', approver: 'M. Alvarez, Exhibits Manager',
-        doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], ends: '2026-07-20', places: 'West Staff Entrance, west core, west mezzanine, tank-top west', window: 'Jul 6 to Jul 20, 2026 � Jordan Kim only' }] },
-    message: 'Routine access review: vendor badges. Note on this account: "Keep vendor profile active for potential follow-up work."',
-    editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
+        doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], ends: '2026-07-20', places: 'West Staff Entrance, west core, west mezzanine, tank-top west', window: 'Jul 6 to Jul 20, 2026 · Jordan Kim only' }] },
+    message: "We're completing the quarterly contractor access review. Start with Jordan Kim's vendor account and confirm whether the current access is still justified.",
+    notes: [{ id: 'Account history', text: 'Account note, Aug 2026: "Keep vendor profile active for potential follow-up work."' }],
+    disposition: { options: [
+      { id: 'ended', text: 'Work authorization ended; no new approval exists', correct: true },
+      { id: 'followup', text: 'Future follow-up work may require access', why: 'Possible future work is not an approval. Access follows a current authorization, and a new request can be raised if the work is approved.' },
+      { id: 'works', text: 'The credential still works', why: 'A badge that opens doors shows what is granted, not what is authorized.' }] },
+    editable: ['tempExhibitAV', 'allStaff', 'education', 'exhibitOps'],
   },
 };
 if (typeof module !== 'undefined') module.exports = SCENARIOS;
@@ -319,7 +331,7 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ORDER=['elena','marcus','jordan'];
 const LOCKED=[{tab:'Daniel',kind:'Adapt'}];
 const st={};
-function fresh(id){const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:{},groupOverrides:{}},prev:null,delta:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,open:{}};}
+function fresh(id){const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:{},groupOverrides:{}},prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,open:{}};}
 ORDER.forEach(id=>st[id]=fresh(id));
 let cur='elena',level=1,lens=false,lensP=[143,88],timer=null;
 const T=()=>st[cur],SC=()=>S[cur];
@@ -375,13 +387,13 @@ function drawMap(){
   s+=`<style>.lbl{fill:#e3f5f6;font:700 10.5px ${getComputedStyle(document.body).fontFamily};text-anchor:middle;letter-spacing:.04em;pointer-events:none}.lbl.sm{font-size:8.5px;fill:#bfe0e5}.lbl.nr{font-size:9px}.lbl.void{font-size:8px;fill:#7fa9b3;font-weight:600}.lbl.out{font-size:8px;fill:#a4ead0}</style>`;
   s+=levelSVG(level,'A');
   if(lens){const t=T(),oos=new Set(E.outOfScope(t.world,t.person));
-    const rings=Object.entries(E.DOORS).filter(([d])=>oos.has(d)).map(([d,o])=>`<circle cx="${o.p[0]}" cy="${o.p[1]}" r="9" fill="none" stroke="#f5d192" stroke-width="2" stroke-dasharray="3 2"/>`).join('');
+    const rings=SC().hideVerdict?'':Object.entries(E.DOORS).filter(([d])=>oos.has(d)&&E.doorLevel(d)===other).map(([d,o])=>`<circle cx="${o.p[0]}" cy="${o.p[1]}" r="9" fill="none" stroke="#f5d192" stroke-width="2" stroke-dasharray="3 2"/>`).join('');
     s+=`<g clip-path="url(#lensClip)"><rect width="400" height="300" fill="#061b29"/>${levelSVG(other,'B',{route:false})}${rings}</g>`;
     s+=`<circle cx="${lensP[0]}" cy="${lensP[1]}" r="56" fill="none" stroke="#e2ffff" stroke-width="3"/><text x="${lensP[0]}" y="${lensP[1]+68}" class="lbl sm" style="fill:#e2ffff">${other===2?'ABOVE · L2':'BELOW · L1'}</text>`;}
   $('map').innerHTML=s;
   $('lv1').setAttribute('aria-pressed',level===1);$('lv2').setAttribute('aria-pressed',level===2);$('lensBtn').setAttribute('aria-pressed',lens);
   const w=T().walk;$('clock').textContent=`${SC().day} ${E.fmt(SC().time)}`;
-  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it. Dashed gold ring: opens, but no active record covers it.':w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted.':'Topside sits above the galleries. Cores connect the levels.';}
+  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.'+(SC().hideVerdict?'':' Dashed gold ring: opens, but no active record covers it.'):w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted.':'Topside sits above the galleries. Cores connect the levels.';}
 
 /* ---------- panels ---------- */
 function renderQueue(){
@@ -392,7 +404,8 @@ function renderTicket(){const sc=SC(),t=T(),p=sc.person;
   $('ticket').innerHTML=`<span class="eyebrow">Ticket · ${sc.kind}</span>
   <div class="who"><div class="av">${p.initials}</div><div><b>${p.name}</b><span>${p.role}</span></div></div>
   <div class="msg">${sc.message}</div>
-  <div class="recs">${p.authorizations.map(a=>`<button class="chip" data-rec="${a.id}" aria-expanded="${!!t.open[a.id]}">${a.id}</button>`).join('')}</div>
+  <div class="recs">${p.authorizations.map(a=>`<button class="chip" data-rec="${a.id}" aria-expanded="${!!t.open[a.id]}">${a.id}</button>`).join('')}${(sc.notes||[]).map(n=>`<button class="chip" data-rec="${n.id}" aria-expanded="${!!t.open[n.id]}">${n.id}</button>`).join('')}</div>
+  ${(sc.notes||[]).filter(n=>t.open[n.id]).map(n=>`<div class="rec"><b>${n.id}</b><span>${n.text}</span></div>`).join('')}
   ${p.authorizations.filter(a=>t.open[a.id]).map(a=>`<div class="rec"><b>${a.id} · ${a.purpose}</b><span>Covers: ${a.places}</span><span>When: ${a.window}</span><span>Approved by ${a.approver}</span>${E.authActive(t.world,a)?'':`<span class="warn">Ended ${a.ends}</span>`}</div>`).join('')}`;
   document.querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>{t.open[b.dataset.rec]=!t.open[b.dataset.rec];renderTicket();});}
 function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
@@ -407,13 +420,18 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
     if(sc.groupScheduleEdit){const e=sc.groupScheduleEdit,G=E.GROUPS[e.group],on=!!t.world.groupOverrides[e.group];
       h+=`<button class="grp" data-gs="${e.group}" aria-pressed="${on}"><span class="box">${on?'✓':''}</span><span><b>Change ${G.n} group hours to ${E.fmt(e.to[0])}–${E.fmt(e.to[1])}</b><small>Group setting · every day · ${G.members} badges</small></span></button>`;}
     h+='</div>';}
+  if(sc.disposition){h+=`<div class="sub"><span class="eyebrow">Reason for decision</span>`+sc.disposition.options.map(o=>`<button class="grp" data-dp="${o.id}" aria-pressed="${t.disp===o.id}"><span class="box">${t.disp===o.id?'✓':''}</span><span><b>${o.text}</b></span></button>`).join('')+`<small class="note">Action recorded: ${c.active?(c.groups.length?'Access retained':'Groups removed'):'Credential deactivated'}</small></div>`;}
   if(sc.revoke)h+=`<div class="sub"><span class="eyebrow">Credential</span><button class="grp" data-rv="1" aria-pressed="${!c.active}"><span class="box">${!c.active?'✓':''}</span><span><b>Deactivate badge</b><small>${c.active?'Badge is active':'Badge is inactive'} · reversible</small></span></button></div>`;
   h+=`<div class="row2" style="margin-top:12px"><button class="btn primary" id="closeBtn">Close ticket</button><button class="btn" id="resetBtn">Reset</button></div>`;
   if(t.result)h+=`<div class="result ${t.result.cls}" style="margin-top:10px"><b>${t.result.title}</b>${t.result.text}</div>`;
   $('badge').innerHTML=h;
-  const change=fn=>{if(timer)return;const before=E.footprint(t.world,t.person);fn();t.delta=E.delta(before,E.footprint(t.world,t.person));t.showDelta=true;t.walk=null;t.result=null;render();};
+  const change=fn=>{if(timer)return;const wb=E.clone(t.world),pb=E.clone(t.person),before=E.footprint(t.world,t.person);fn();t.delta=E.delta(before,E.footprint(t.world,t.person));
+    t.tdelta=E.timeDelta(wb,pb,t.world,t.person,SC().time);
+    const og=Object.keys({...wb.groupOverrides,...t.world.groupOverrides}).find(k=>JSON.stringify(wb.groupOverrides[k])!==JSON.stringify(t.world.groupOverrides[k]));
+    t.tscope=og?`all ${E.GROUPS[og].members} ${E.GROUPS[og].n} badges`:'this badge only';t.showDelta=true;t.walk=null;t.result=null;render();};
   document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>change(()=>{const g=b.dataset.g,i=c.groups.indexOf(g);i<0?c.groups.push(g):c.groups.splice(i,1);}));
   document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>change(()=>{const a=t.person.authorizations.find(a=>a.id===b.dataset.x),i=c.exceptions.findIndex(x=>x.source===a.id);i<0?c.exceptions.push(E.clone(a.exception)):c.exceptions.splice(i,1);}));
+  document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{if(timer)return;t.disp=t.disp===b.dataset.dp?null:b.dataset.dp;t.result=null;render();});
   document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>change(()=>{c.active=!c.active;}));
   document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>change(()=>{const e=sc.groupScheduleEdit;t.world.groupOverrides[e.group]?delete t.world.groupOverrides[e.group]:t.world.groupOverrides[e.group]=e.to;}));
   $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();render();};
@@ -421,8 +439,9 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
 const names=ids=>ids.map(k=>E.SPACES[k].n);
 function renderReview(){const t=T(),d=t.delta;
   let h=`<span class="eyebrow">Change review</span>`;
+  const td=t.tdelta,hasT=td&&(td.opened.length||td.closed.length);
   if(!d){h+=`<p class="note" style="margin:8px 0 0">Each change to the badge shows here: what it opened and what it closed, computed from effective access.</p>`;}
-  else{const none=!d.addedSpaces.length&&!d.removedSpaces.length&&!d.addedDoors.length&&!d.removedDoors.length;
+  else{const none=!d.addedSpaces.length&&!d.removedSpaces.length&&!d.addedDoors.length&&!d.removedDoors.length&&!hasT;
     h+=`<div class="delta" style="margin-top:8px">`;
     if(none)h+=`<span class="note">Last change didn't alter effective access. Another group already covers the same doors.</span>`;
     if(d.addedSpaces.length)h+=`<span>Opened</span><div class="row">${d.addedSpaces.map(k=>`<span class="tag add ${E.SPACES[k].kind==='restricted'?'restricted':''}">+ ${E.SPACES[k].n}</span>`).join('')}</div>`;
@@ -430,7 +449,8 @@ function renderReview(){const t=T(),d=t.delta;
     const extraDoors=d.addedDoors.filter(x=>!d.addedSpaces.includes(E.DOORS[x].into)),lostDoors=d.removedDoors.filter(x=>!d.removedSpaces.includes(E.DOORS[x].into));
     if(extraDoors.length)h+=`<span class="note">Also opens: ${extraDoors.map(x=>E.DOORS[x].n).join(', ')}</span>`;
     if(lostDoors.length)h+=`<span class="note">No longer opens: ${lostDoors.map(x=>E.DOORS[x].n).join(', ')}</span>`;
-    h+=`</div>${none?'':`<div class="row2" style="margin-top:8px"><button class="btn" id="dToggle" aria-pressed="${t.showDelta}">Show on map</button></div>`}`;}
+    if(hasT){const nm=a=>a.map(x=>E.DOORS[x].n).join(', ');h+=`<span>Same places, different hours</span><div class="note">At ${SC().day} ${E.fmt(SC().time)}: ${td.opened.length?`newly opens ${nm(td.opened)}`:''}${td.opened.length&&td.closed.length?'; ':''}${td.closed.length?`no longer opens ${nm(td.closed)}`:''}. Applies to ${t.tscope}.</div>`;}
+    h+=`</div>${none||!(d.addedSpaces.length||d.removedSpaces.length||d.addedDoors.length||d.removedDoors.length)?'':`<div class="row2" style="margin-top:8px"><button class="btn" id="dToggle" aria-pressed="${t.showDelta}">Show on map</button></div>`}`;}
   if(t.walk&&!t.walk.running){h+=`<div style="margin-top:12px"><span class="eyebrow">Walk log · ${E.fmt(SC().time)}</span><ol class="walklog" style="margin-top:8px">`;
     for(const p of t.walk.pts.filter(p=>p.door))h+=`<li class="${p.ok?'':'no'}">${E.DOORS[p.door].n}: ${p.ok?'opened':'didn\'t open'}</li>`;
     h+=`</ol>${t.walk.res.stop?'':`<p class="note ok" style="margin:6px 0 0">Reached every stop on the request.</p>`}</div>`;}
@@ -449,7 +469,7 @@ function renderInspect(){const t=T(),sel=t.sel;let h=`<span class="eyebrow">Insp
       <dt>Groups</dt><dd>${req.join('<br>')||'None'}</dd>
       <dt>This badge</dt><dd>${g.length?g.map(x=>`${x.via} · ${x.day?x.day+' ':''}${E.fmt(x.window[0])}–${E.fmt(x.window[1])}${x.inherited?`<br><span class="warn">Inherited: ${x.inherited}</span>`:''}`).join('<br>'):'<span class="note">Not granted</span>'}</dd>
       <dt>${SC().day} ${E.fmt(SC().time)}</dt><dd>${why}</dd>
-      <dt>Records</dt><dd>${covered.length?covered.map(a=>a.id).join(', '):g.length?'<span class="warn">No active record covers this door</span>':'<span class="note">None</span>'}${ended.map(a=>`<br><span class="note">${a.id} ended ${a.ends}</span>`).join('')}</dd></dl>`;
+      <dt>Records</dt><dd>${SC().hideVerdict?(covering.length?covering.map(a=>`${a.id} · ${E.authActive(t.world,a)?'active':'ended '+a.ends}`).join('<br>'):'<span class="note">None</span>'):''}${SC().hideVerdict?'':covered.length?covered.map(a=>a.id).join(', '):g.length?'<span class="warn">No active record covers this door</span>':'<span class="note">None</span>'}${SC().hideVerdict?'':ended.map(a=>`<br><span class="note">${a.id} ended ${a.ends}</span>`).join('')}</dd></dl>`;
     if(g.some(x=>x.inherited))h+=`<div class="row2"><button class="btn" id="flagBtn" aria-pressed="${t.flagged}">${t.flagged?'Template flagged for review':'Flag template for review'}</button></div>`;
     h+=`</div>`;}
   else{const s=E.SPACES[sel.space],fp=E.footprint(t.world,t.person),[x,y]=sel.pt;
@@ -476,9 +496,12 @@ function startWalk(){if(timer)return;const t=T();lens=false;t.walk=buildWalk();l
 /* ---------- grading (uses the same evaluator; no case branches in access logic) ---------- */
 function grade(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.targets,sc.time),extra=E.outOfScope(t.world,t.person).map(d=>E.DOORS[d].n);
   const who=sc.person.name.split(' ')[0];
-  if(sc.goal==='audit'){const gone=sc.person.authorizations.filter(a=>!E.authActive(t.world,a)).map(a=>a.id).join(', ');
-    if(extra.length)return{cls:'badr',title:'Not ready to close',text:`${who}'s badge still opens ${extra.length} door${extra.length>1?'s':''} that no active record covers${gone?` (${gone} has ended)`:''}. Working access is not the same as authorized access.`};
-    return{cls:'good',title:'Ticket closed',text:`${who}'s badge no longer opens anything outside an active record.${t.flagged?' You also flagged the legacy template for review.':''}`};}
+  if(sc.goal==='audit'){
+    if(extra.length)return{cls:'badr',title:'Review incomplete',text:`Confirm that ${who}'s assigned access is supported by current authorization before closing this ticket.`};
+    if(!t.disp)return{cls:'badr',title:'Record a reason',text:'Choose the reason for this decision before closing.'};
+    const o=sc.disposition.options.find(o=>o.id===t.disp);
+    if(!o.correct)return{cls:'warnr',title:'Reason does not match the records',text:o.why};
+    return{cls:'good',title:'Ticket closed',text:`${who}'s access now matches current authorization. Recorded: ${o.text}.`};}
   if(res.stop)return{cls:'badr',title:'Not ready to close',text:`At ${sc.day} ${E.fmt(sc.time)}, ${who} would be stopped at ${E.DOORS[res.stop.door]?E.DOORS[res.stop.door].n:'a door'}. Walk the route and inspect where it fails.`};
   const ov=Object.keys(t.world.groupOverrides);
   if(ov.length){const G=E.GROUPS[ov[0]];return{cls:'warnr',title:'Works, but too broad',text:`${who} gets in, but ${G.n} now opens at ${E.fmt(t.world.groupOverrides[ov[0]][0])} every day for all ${G.members} badges. The approved record covers one person on one morning.`};}
@@ -493,7 +516,7 @@ function pick(x,y,l){let best=null,bd=1e9;for(const [d,o] of Object.entries(E.DO
   const sp=Object.entries(E.SPACES).find(([k,o])=>o.l===l&&o.r.some(r=>x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3]));
   return sp?{space:sp[0],pt:[x,y]}:null;}
 let dragging=false;
-map.addEventListener('pointerdown',e=>{if(timer)return;const p=svgPt(e);
+map.addEventListener('pointerdown',e=>{if(timer||!lens)return;const p=svgPt(e);
   if(lens){dragging=true;try{map.setPointerCapture(e.pointerId)}catch(_){};lensP=[Math.max(20,Math.min(380,p.x)),Math.max(20,Math.min(280,p.y))];
     const other=level===1?2:1,s=pick(p.x,p.y,level)||null,s2=pick(p.x,p.y,other);T().sel=(s&&s.door)?s:(s2&&s2.door)?s2:s||s2;}
   else{T().sel=pick(p.x,p.y,level);}
