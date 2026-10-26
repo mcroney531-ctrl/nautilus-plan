@@ -45,6 +45,33 @@ const tests = {
     const r = await m.evaluate(() => ({ w: innerWidth, sw: document.documentElement.scrollWidth, map: document.getElementById('map').getBoundingClientRect().width }));
     await ctx.close(); assert(r.w < 500 && r.sw <= r.w && r.map > r.w * 0.8, JSON.stringify(r));
   },
+  async 'phone portrait: map stays in view while scrolling to a control, and the consequence is visible'(pg, b) {
+    const ctx = await b.newContext(devices['Pixel 7']), m = await ctx.newPage(); await m.goto(url); await m.click('[data-q="marcus"]');
+    await m.locator('[data-gs]').scrollIntoViewIfNeeded(); await m.click('[data-gs]');
+    const r = await m.evaluate(() => { const v = el => { const b = document.querySelector(el).getBoundingClientRect(); return { top: b.top, bottom: b.bottom }; }; return { map: v('#map'), vh: innerHeight, review: document.getElementById('review').textContent }; });
+    await ctx.close(); assert(r.map.top >= 0 && r.map.bottom <= r.vh, 'map not fully in view: ' + JSON.stringify(r.map));
+    assert(/different hours/.test(r.review));
+  },
+  async 'phone portrait: Inspect switches to the inspection pane; badge pane returns'(pg, b) {
+    const ctx = await b.newContext(devices['Pixel 7']), m = await ctx.newPage(); await m.goto(url); await m.click('[data-q="jordan"]');
+    assert(await m.isVisible('#badge') && !(await m.isVisible('#inspect')));
+    await m.click('#lensBtn'); await m.click('#lv2'); const bx = await m.locator('#map').boundingBox();
+    await m.touchscreen.tap(bx.x + bx.width * 97 / 400, bx.y + bx.height * 122 / 300);
+    assert(await m.isVisible('#inspect') && !(await m.isVisible('#badge')));
+    assert(/Tank-top/.test(await text(m, '#inspect')), 'tap selected the door');
+    await m.click('#lensBtn'); assert(await m.isVisible('#badge'));
+    await ctx.close();
+  },
+  async 'phone landscape: whole map is visible on load, beside the ticket'(pg, b) {
+    const ctx = await b.newContext(devices['Pixel 7 landscape']), m = await ctx.newPage(); await m.goto(url);
+    const r = await m.evaluate(() => { const mb = document.getElementById('map').getBoundingClientRect(), tb = document.getElementById('ticket').getBoundingClientRect(); return { top: mb.top, bottom: mb.bottom, right: mb.right, vh: innerHeight, ticketLeft: tb.left, sw: document.documentElement.scrollWidth, w: innerWidth }; });
+    await ctx.close(); assert(r.top >= 0 && r.bottom <= r.vh && r.right <= r.ticketLeft && r.sw <= r.w, JSON.stringify(r));
+  },
+  async 'phone: door tap targets are at least 24px and the map does not block page scroll when Inspect is off'(pg, b) {
+    const ctx = await b.newContext(devices['Pixel 7']), m = await ctx.newPage(); await m.goto(url);
+    const r = await m.evaluate(() => ({ scale: document.getElementById('map').getBoundingClientRect().width / 400, ta: document.getElementById('map').style.touchAction }));
+    await ctx.close(); assert(r.scale * 18 * 2 >= 24, 'hit radius too small ' + r.scale); assert(r.ta === 'pan-y', r.ta);
+  },
   async 'Elena still closes with the right groups'(pg) {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
     assert(/Ticket closed/.test(await text(pg, '.result')));
