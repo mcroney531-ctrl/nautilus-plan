@@ -152,12 +152,14 @@ const Engine = (() => {
              addedDoors: minus(after.doors, before.doors), removedDoors: minus(before.doors, after.doors) };
   }
   // AUTHORIZED vs GRANTED: doors the badge opens that no active authorization covers
+  // An authorization counts only while approved and not past its end date (expired records are history, not authority)
+  const authActive = (world, a) => a.status === 'approved' && (!a.ends || a.ends >= world.date);
   function outOfScope(world, person) {
-    const auth = (person.authorizations || []).filter(a => a.status === 'approved' && (!a.ends || a.ends >= world.date));
+    const auth = (person.authorizations || []).filter(a => authActive(world, a));
     const ok = new Set(auth.flatMap(a => a.doors));
     return Object.keys(grants(world, person)).filter(d => !ok.has(d));
   }
   const clone = o => JSON.parse(JSON.stringify(o));
-  return { SPACES, VOIDS, OUTSIDE, LINKS, DOORS, GROUPS, levelOf, doorLevel, fmt, grants, canEnter, path, walk, footprint, delta, outOfScope, clone, groupHours };
+  return { SPACES, VOIDS, OUTSIDE, LINKS, DOORS, GROUPS, levelOf, doorLevel, fmt, grants, canEnter, path, walk, footprint, delta, outOfScope, authActive, clone, groupHours };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;

@@ -1,6 +1,6 @@
 # Nautilus Access Desk: session handoff
 
-**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** v2 vertical slice built and verified (Elena + Marcus). Next: Jordan (audit), Daniel (adapt), then polish.
+**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** Elena, Marcus and Jordan built; 17 engine tests green; Jordan checked in headless Chromium at 400px and 1280px. Next: independent review, then Daniel (adapt), then polish. Jordan has NOT had a real-device check or SME review.
 
 ---
 
@@ -122,7 +122,7 @@ reference/        v1 prototype from GPT/Codex + its notes (superseded; keep for 
 ## 7. Backlog (prioritized)
 
 1. **Repo hygiene:** git init, add `npm test` or a simple Makefile, commit the baseline.
-2. **Jordan (Audit):** add as a ticket with no code branches. Needs the "authorization vs. current access" comparison surfaced in inspection (the lens on a door shows "No active record covers this door," and an overlay of authorized scope vs. granted footprint could be the reveal). Add revoke/disable and set-expiry actions to the credential. Make sure the walk *succeeding* is the expected, unalarming result.
+2. **Jordan (Audit): BUILT (v2.1).** Open items: guided/unprompted tuning, document-the-decision step, set-expiry action (only Deactivate exists), 'Not ready to close' text names the expired WO (consider less revealing). Original note:  add as a ticket with no code branches. Needs the "authorization vs. current access" comparison surfaced in inspection (the lens on a door shows "No active record covers this door," and an overlay of authorized scope vs. granted footprint could be the reveal). Add revoke/disable and set-expiry actions to the credential. Make sure the walk *succeeding* is the expected, unalarming result.
 3. **Daniel (Adapt):** door status `fault` on D-DOCK. Escort model: a staffed escort is a second person whose credential gets evaluated for the route from the West Staff Entrance to Receiving. Write the fictional escort policy into the ticket records. Tradeoff feedback rather than right/wrong.
 4. **Phone legibility:** larger labels or abbreviations, tap targets ≥ 24px for doors, and keep the lens usable. Consider a bottom sheet for badge controls (GPT's suggestion) if scrolling feels long.
 5. **Change review noise:** the first change from an empty badge outlines everything in gold. Consider highlighting only restricted or outside-scope additions loudly and the rest quietly.
@@ -150,3 +150,13 @@ reference/        v1 prototype from GPT/Codex + its notes (superseded; keep for 
 - Never present access restrictions as preventing egress or as life-safety guidance.
 - Don't make Nautilus look recklessly insecure to manufacture a problem. Overgrants should have a plausible origin (legacy template merge, missing expiry).
 - Animal welfare and life support are reasons for restriction only, never something the learner improvises around.
+
+---
+
+## 10. Architecture notes (added with Jordan)
+
+- Ticket success is data-driven: `scenario.goal` (`'audit'` = no door open without an active record; default = walk must reach every target). No scenario-ID branches in the evaluator.
+- `Engine.authActive(world, a)` is the single definition of a current authorization (approved and not past `ends`). `outOfScope`, the ticket record display and the door inspection all use it.
+- The lens draws dashed gold rings on doors the badge opens but no active record covers, in both levels, only inside the lens.
+- **Daniel risk:** `Engine.path()` is a shortest physical path that ignores access, so a walk can stop at a denied door even when another route is permitted. An escort scenario needs explicit route choice (or access-aware pathing) and evaluation of a second person's credential.
+- Other limits: no credential expiry date; walk start is a fixed outside node per scenario; `grade()` lives in the UI and is not unit-tested (Playwright was used for Jordan's flow, script not committed).

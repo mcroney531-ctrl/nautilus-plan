@@ -264,13 +264,15 @@ const Engine = (() => {
              addedDoors: minus(after.doors, before.doors), removedDoors: minus(before.doors, after.doors) };
   }
   // AUTHORIZED vs GRANTED: doors the badge opens that no active authorization covers
+  // An authorization counts only while approved and not past its end date (expired records are history, not authority)
+  const authActive = (world, a) => a.status === 'approved' && (!a.ends || a.ends >= world.date);
   function outOfScope(world, person) {
-    const auth = (person.authorizations || []).filter(a => a.status === 'approved' && (!a.ends || a.ends >= world.date));
+    const auth = (person.authorizations || []).filter(a => authActive(world, a));
     const ok = new Set(auth.flatMap(a => a.doors));
     return Object.keys(grants(world, person)).filter(d => !ok.has(d));
   }
   const clone = o => JSON.parse(JSON.stringify(o));
-  return { SPACES, VOIDS, OUTSIDE, LINKS, DOORS, GROUPS, levelOf, doorLevel, fmt, grants, canEnter, path, walk, footprint, delta, outOfScope, clone, groupHours };
+  return { SPACES, VOIDS, OUTSIDE, LINKS, DOORS, GROUPS, levelOf, doorLevel, fmt, grants, canEnter, path, walk, footprint, delta, outOfScope, authActive, clone, groupHours };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;
 
@@ -299,14 +301,23 @@ const SCENARIOS = {
     editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
     groupScheduleEdit: { group: 'diveCrew', to: [5, 19] },
   },
+  jordan: {
+    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
+    person: { id: 'jordan', name: 'Jordan Kim', initials: 'JK', role: 'Exhibit AV vendor',
+      credential: { active: true, groups: ['exhibitOps'], exceptions: [] },
+      authorizations: [{ id: 'WO-1873', status: 'approved', purpose: 'Reef Tunnel AV install (project work)', approver: 'M. Alvarez, Exhibits Manager',
+        doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], ends: '2026-07-20', places: 'West Staff Entrance, west core, west mezzanine, tank-top west', window: 'Jul 6 to Jul 20, 2026 � Jordan Kim only' }] },
+    message: 'Routine access review: vendor badges. Note on this account: "Keep vendor profile active for potential follow-up work."',
+    editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
+  },
 };
 if (typeof module !== 'undefined') module.exports = SCENARIOS;
 
 (()=>{
 const E=Engine,S=SCENARIOS,$=id=>document.getElementById(id);
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ORDER=['elena','marcus'];
-const LOCKED=[{tab:'Jordan',kind:'Audit'},{tab:'Daniel',kind:'Adapt'}];
+const ORDER=['elena','marcus','jordan'];
+const LOCKED=[{tab:'Daniel',kind:'Adapt'}];
 const st={};
 function fresh(id){const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:{},groupOverrides:{}},prev:null,delta:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,open:{}};}
 ORDER.forEach(id=>st[id]=fresh(id));
@@ -363,12 +374,14 @@ function drawMap(){
   let s=`<defs>${DEFS('A')}${DEFS('B')}<clipPath id="lensClip"><circle cx="${lensP[0]}" cy="${lensP[1]}" r="56"/></clipPath></defs>`;
   s+=`<style>.lbl{fill:#e3f5f6;font:700 10.5px ${getComputedStyle(document.body).fontFamily};text-anchor:middle;letter-spacing:.04em;pointer-events:none}.lbl.sm{font-size:8.5px;fill:#bfe0e5}.lbl.nr{font-size:9px}.lbl.void{font-size:8px;fill:#7fa9b3;font-weight:600}.lbl.out{font-size:8px;fill:#a4ead0}</style>`;
   s+=levelSVG(level,'A');
-  if(lens){s+=`<g clip-path="url(#lensClip)"><rect width="400" height="300" fill="#061b29"/>${levelSVG(other,'B',{route:false})}</g>`;
+  if(lens){const t=T(),oos=new Set(E.outOfScope(t.world,t.person));
+    const rings=Object.entries(E.DOORS).filter(([d])=>oos.has(d)).map(([d,o])=>`<circle cx="${o.p[0]}" cy="${o.p[1]}" r="9" fill="none" stroke="#f5d192" stroke-width="2" stroke-dasharray="3 2"/>`).join('');
+    s+=`<g clip-path="url(#lensClip)"><rect width="400" height="300" fill="#061b29"/>${levelSVG(other,'B',{route:false})}${rings}</g>`;
     s+=`<circle cx="${lensP[0]}" cy="${lensP[1]}" r="56" fill="none" stroke="#e2ffff" stroke-width="3"/><text x="${lensP[0]}" y="${lensP[1]+68}" class="lbl sm" style="fill:#e2ffff">${other===2?'ABOVE · L2':'BELOW · L1'}</text>`;}
   $('map').innerHTML=s;
   $('lv1').setAttribute('aria-pressed',level===1);$('lv2').setAttribute('aria-pressed',level===2);$('lensBtn').setAttribute('aria-pressed',lens);
   const w=T().walk;$('clock').textContent=`${SC().day} ${E.fmt(SC().time)}`;
-  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.':w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted.':'Topside sits above the galleries. Cores connect the levels.';}
+  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it. Dashed gold ring: opens, but no active record covers it.':w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted.':'Topside sits above the galleries. Cores connect the levels.';}
 
 /* ---------- panels ---------- */
 function renderQueue(){
@@ -380,7 +393,7 @@ function renderTicket(){const sc=SC(),t=T(),p=sc.person;
   <div class="who"><div class="av">${p.initials}</div><div><b>${p.name}</b><span>${p.role}</span></div></div>
   <div class="msg">${sc.message}</div>
   <div class="recs">${p.authorizations.map(a=>`<button class="chip" data-rec="${a.id}" aria-expanded="${!!t.open[a.id]}">${a.id}</button>`).join('')}</div>
-  ${p.authorizations.filter(a=>t.open[a.id]).map(a=>`<div class="rec"><b>${a.id} · ${a.purpose}</b><span>Covers: ${a.places}</span><span>When: ${a.window}</span><span>Approved by ${a.approver}</span></div>`).join('')}`;
+  ${p.authorizations.filter(a=>t.open[a.id]).map(a=>`<div class="rec"><b>${a.id} · ${a.purpose}</b><span>Covers: ${a.places}</span><span>When: ${a.window}</span><span>Approved by ${a.approver}</span>${E.authActive(t.world,a)?'':`<span class="warn">Ended ${a.ends}</span>`}</div>`).join('')}`;
   document.querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>{t.open[b.dataset.rec]=!t.open[b.dataset.rec];renderTicket();});}
 function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
   let h=`<span class="eyebrow">Badge · ${sc.person.name}</span><div class="groups" style="margin-top:10px">`;
@@ -394,12 +407,14 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
     if(sc.groupScheduleEdit){const e=sc.groupScheduleEdit,G=E.GROUPS[e.group],on=!!t.world.groupOverrides[e.group];
       h+=`<button class="grp" data-gs="${e.group}" aria-pressed="${on}"><span class="box">${on?'✓':''}</span><span><b>Change ${G.n} group hours to ${E.fmt(e.to[0])}–${E.fmt(e.to[1])}</b><small>Group setting · every day · ${G.members} badges</small></span></button>`;}
     h+='</div>';}
+  if(sc.revoke)h+=`<div class="sub"><span class="eyebrow">Credential</span><button class="grp" data-rv="1" aria-pressed="${!c.active}"><span class="box">${!c.active?'✓':''}</span><span><b>Deactivate badge</b><small>${c.active?'Badge is active':'Badge is inactive'} · reversible</small></span></button></div>`;
   h+=`<div class="row2" style="margin-top:12px"><button class="btn primary" id="closeBtn">Close ticket</button><button class="btn" id="resetBtn">Reset</button></div>`;
   if(t.result)h+=`<div class="result ${t.result.cls}" style="margin-top:10px"><b>${t.result.title}</b>${t.result.text}</div>`;
   $('badge').innerHTML=h;
   const change=fn=>{if(timer)return;const before=E.footprint(t.world,t.person);fn();t.delta=E.delta(before,E.footprint(t.world,t.person));t.showDelta=true;t.walk=null;t.result=null;render();};
   document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>change(()=>{const g=b.dataset.g,i=c.groups.indexOf(g);i<0?c.groups.push(g):c.groups.splice(i,1);}));
   document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>change(()=>{const a=t.person.authorizations.find(a=>a.id===b.dataset.x),i=c.exceptions.findIndex(x=>x.source===a.id);i<0?c.exceptions.push(E.clone(a.exception)):c.exceptions.splice(i,1);}));
+  document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>change(()=>{c.active=!c.active;}));
   document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>change(()=>{const e=sc.groupScheduleEdit;t.world.groupOverrides[e.group]?delete t.world.groupOverrides[e.group]:t.world.groupOverrides[e.group]=e.to;}));
   $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();render();};
   $('resetBtn').onclick=()=>{if(timer)return;st[cur]=fresh(cur);render();};}
@@ -425,7 +440,7 @@ function renderInspect(){const t=T(),sel=t.sel;let h=`<span class="eyebrow">Insp
   if(!sel){h+=`<p class="note" style="margin:8px 0 0">Turn on Inspect, then drag the lens or tap a door or room. Evidence for that spot appears here.</p>`;$('inspect').innerHTML=h;return;}
   if(sel.door){const d=E.DOORS[sel.door],r=E.canEnter(t.world,t.person,sel.door,SC().time),g=r.grants||E.grants(t.world,t.person)[sel.door]||[];
     const from=E.SPACES[d.from]?E.SPACES[d.from].n:E.OUTSIDE[d.from].n.replace('Outside · ','Outside, ');
-    const covered=t.person.authorizations.filter(a=>a.status==='approved'&&a.doors.includes(sel.door));
+    const covering=t.person.authorizations.filter(a=>a.doors.includes(sel.door)),covered=covering.filter(a=>E.authActive(t.world,a)),ended=covering.filter(a=>a.status==='approved'&&!E.authActive(t.world,a));
     const req=Object.entries(E.GROUPS).filter(([k,G])=>G.doors.includes(sel.door)).map(([k,G])=>{const hr=E.groupHours(t.world,k);return `${G.n} ${E.fmt(hr[0])}–${E.fmt(hr[1])}`;});
     const why={OK:'<span class="ok">Opens</span>',NO_GRANT:'<span class="bad">Denied · badge has no group for this door</span>',OUTSIDE_SCHEDULE:'<span class="bad">Denied · outside every schedule on this badge</span>',HARDWARE_FAULT:'<span class="bad">Denied · reader fault</span>',CREDENTIAL_INACTIVE:'<span class="bad">Denied · credential inactive</span>'}[r.code];
     h+=`<div class="ev" style="margin-top:8px"><h3>${d.n}</h3><dl class="kv">
@@ -434,7 +449,7 @@ function renderInspect(){const t=T(),sel=t.sel;let h=`<span class="eyebrow">Insp
       <dt>Groups</dt><dd>${req.join('<br>')||'None'}</dd>
       <dt>This badge</dt><dd>${g.length?g.map(x=>`${x.via} · ${x.day?x.day+' ':''}${E.fmt(x.window[0])}–${E.fmt(x.window[1])}${x.inherited?`<br><span class="warn">Inherited: ${x.inherited}</span>`:''}`).join('<br>'):'<span class="note">Not granted</span>'}</dd>
       <dt>${SC().day} ${E.fmt(SC().time)}</dt><dd>${why}</dd>
-      <dt>Records</dt><dd>${covered.length?covered.map(a=>a.id).join(', '):g.length?'<span class="warn">No active record covers this door</span>':'<span class="note">None</span>'}</dd></dl>`;
+      <dt>Records</dt><dd>${covered.length?covered.map(a=>a.id).join(', '):g.length?'<span class="warn">No active record covers this door</span>':'<span class="note">None</span>'}${ended.map(a=>`<br><span class="note">${a.id} ended ${a.ends}</span>`).join('')}</dd></dl>`;
     if(g.some(x=>x.inherited))h+=`<div class="row2"><button class="btn" id="flagBtn" aria-pressed="${t.flagged}">${t.flagged?'Template flagged for review':'Flag template for review'}</button></div>`;
     h+=`</div>`;}
   else{const s=E.SPACES[sel.space],fp=E.footprint(t.world,t.person),[x,y]=sel.pt;
@@ -461,6 +476,9 @@ function startWalk(){if(timer)return;const t=T();lens=false;t.walk=buildWalk();l
 /* ---------- grading (uses the same evaluator; no case branches in access logic) ---------- */
 function grade(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.targets,sc.time),extra=E.outOfScope(t.world,t.person).map(d=>E.DOORS[d].n);
   const who=sc.person.name.split(' ')[0];
+  if(sc.goal==='audit'){const gone=sc.person.authorizations.filter(a=>!E.authActive(t.world,a)).map(a=>a.id).join(', ');
+    if(extra.length)return{cls:'badr',title:'Not ready to close',text:`${who}'s badge still opens ${extra.length} door${extra.length>1?'s':''} that no active record covers${gone?` (${gone} has ended)`:''}. Working access is not the same as authorized access.`};
+    return{cls:'good',title:'Ticket closed',text:`${who}'s badge no longer opens anything outside an active record.${t.flagged?' You also flagged the legacy template for review.':''}`};}
   if(res.stop)return{cls:'badr',title:'Not ready to close',text:`At ${sc.day} ${E.fmt(sc.time)}, ${who} would be stopped at ${E.DOORS[res.stop.door]?E.DOORS[res.stop.door].n:'a door'}. Walk the route and inspect where it fails.`};
   const ov=Object.keys(t.world.groupOverrides);
   if(ov.length){const G=E.GROUPS[ov[0]];return{cls:'warnr',title:'Works, but too broad',text:`${who} gets in, but ${G.n} now opens at ${E.fmt(t.world.groupOverrides[ov[0]][0])} every day for all ${G.members} badges. The approved record covers one person on one morning.`};}

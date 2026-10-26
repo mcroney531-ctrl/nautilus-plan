@@ -23,5 +23,14 @@ const SCENARIOS = {
     editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
     groupScheduleEdit: { group: 'diveCrew', to: [5, 19] },
   },
+  jordan: {
+    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
+    person: { id: 'jordan', name: 'Jordan Kim', initials: 'JK', role: 'Exhibit AV vendor',
+      credential: { active: true, groups: ['exhibitOps'], exceptions: [] },
+      authorizations: [{ id: 'WO-1873', status: 'approved', purpose: 'Reef Tunnel AV install (project work)', approver: 'M. Alvarez, Exhibits Manager',
+        doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], ends: '2026-07-20', places: 'West Staff Entrance, west core, west mezzanine, tank-top west', window: 'Jul 6 to Jul 20, 2026 · Jordan Kim only' }] },
+    message: 'Routine access review: vendor badges. Note on this account: "Keep vendor profile active for potential follow-up work."',
+    editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
+  },
 };
 if (typeof module !== 'undefined') module.exports = SCENARIOS;

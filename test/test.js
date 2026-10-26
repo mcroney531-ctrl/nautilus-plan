@@ -4,7 +4,7 @@ const world = sc => ({ day: sc.day, date: sc.date, doorStatus: {}, groupOverride
 const P = id => E.clone(S[id].person);
 
 t('physical paths exist for every target', () => {
-  for (const id of ['elena', 'marcus']) { let at = S[id].start; for (const tg of S[id].targets) { assert(E.path(at, tg), `${id} ${at}->${tg}`); at = tg; } }
+  for (const id of ['elena', 'marcus', 'jordan']) { let at = S[id].start; for (const tg of S[id].targets) { assert(E.path(at, tg), `${id} ${at}->${tg}`); at = tg; } }
 });
 t('credential grant: Education alone is denied at staff entrance (granted ≠ reachable)', () => {
   const p = P('elena'); p.credential.groups = ['education']; const w = world(S.elena);
@@ -71,5 +71,26 @@ t('audit: active credential with expired authorization is out of scope (Jordan f
 t('inactive credential denies everything', () => {
   const p = P('marcus'), w = world(S.marcus); p.credential.active = false;
   assert.equal(E.canEnter(w, p, 'D-DOCK', 9).code, 'CREDENTIAL_INACTIVE');
+});
+t('Jordan scenario: badge works, walk succeeds, yet doors are out of scope (expired WO)', () => {
+  const p = P('jordan'), w = world(S.jordan);
+  assert.equal(E.walk(w, p, 'outW', S.jordan.targets, S.jordan.time).stop, null);
+  assert.equal(E.authActive(w, p.authorizations[0]), false);
+  const oos = E.outOfScope(w, p);
+  for (const d of ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW', 'D-QUAR']) assert(oos.includes(d), d);
+});
+t('Jordan: deactivating the badge resolves the audit and the walk then fails at the entrance', () => {
+  const p = P('jordan'), w = world(S.jordan); p.credential.active = false;
+  assert.deepEqual(E.outOfScope(w, p), []);
+  const r = E.walk(w, p, 'outW', S.jordan.targets, S.jordan.time);
+  assert.equal(r.stop.door, 'D-WSE'); assert.equal(r.stop.code, 'CREDENTIAL_INACTIVE');
+});
+t('Jordan: removing the group also resolves the audit (effective access, not which control was used)', () => {
+  const p = P('jordan'), w = world(S.jordan); p.credential.groups = [];
+  assert.deepEqual(E.outOfScope(w, p), []);
+});
+t('authActive leaves other tickets unchanged (no end date means active)', () => {
+  assert(S.marcus.person.authorizations.every(a => E.authActive(world(S.marcus), a)));
+  assert(S.elena.person.authorizations.every(a => E.authActive(world(S.elena), a)));
 });
 console.log(`\n${n} tests passed`);
