@@ -1,7 +1,7 @@
 /* Tickets: people, requests in their own voice, and the records that carry authority. */
 const SCENARIOS = {
   elena: {
-    tab: 'Elena', kind: 'Issue', time: 7.25, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['kelp', 'touch', 'classroom'],
+    tab: 'Elena', kind: 'Issue', verify: true, time: 7.25, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['kelp', 'touch', 'classroom'],
     person: { id: 'elena', name: 'Elena Park', initials: 'EP', role: 'Marine educator · starts Tuesday',
       credential: { active: true, groups: [], exceptions: [] },
       authorizations: [{ id: 'WA-1041', status: 'approved', purpose: 'Education program staff', approver: 'J. Okoye, Education Manager',
@@ -10,7 +10,7 @@ const SCENARIOS = {
     editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
   },
   marcus: {
-    tab: 'Marcus', kind: 'Diagnose', time: 5.5, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['dive', 'topside'],
+    tab: 'Marcus', kind: 'Diagnose', verify: true, time: 5.5, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['dive', 'topside'],
     person: { id: 'marcus', name: 'Marcus Reyes', initials: 'MR', role: 'Dive crew lead',
       credential: { active: true, groups: ['diveCrew'], exceptions: [] },
       authorizations: [
@@ -54,7 +54,7 @@ const SCENARIOS = {
       { id: 'escortWest', label: 'Escort Daniel in through the West Staff Entrance', note: 'Priya Nair, Receiving supervisor · her badge opens the door', start: 'outW', as: 'escort',
         tradeoff: "Daniel reaches Receiving on Priya's badge, and his own badge never opens a staff-side door. The cost is about half an hour of Priya's time away from Receiving, and the order moves in by hand cart. Waiting for the repair would have kept staff in place but put the feed past the supplier's 40-minute limit." },
       { id: 'wait', label: 'Hold at the dock until the reader is repaired', note: 'Facilities estimate: about 90 minutes', wait: true,
-        tradeoff: "No one gets access they were not given, and no staff are pulled off their posts. But the frozen feed sits on the dock for about 90 minutes, well past the supplier's 40-minute limit, so the order may be rejected. An escort through the West Staff Entrance was the response that kept both the policy and the delivery." },
+        tradeoff: "Policy-compliant, but not a completed delivery. No one gets access they were not given and no staff leave their posts, but the frozen feed sits on the dock for about 90 minutes against the supplier's 40-minute window, so the order may be rejected. Follow-up to record: tell Receiving and the supplier about the delay, and log the dock reader fault with Facilities. An escort through the West Staff Entrance would have kept both the policy and the delivery." },
     ],
     editable: ['vendorDelivery', 'allStaff', 'diveCrew'],
   },

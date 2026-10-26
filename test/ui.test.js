@@ -96,11 +96,39 @@ const tests = {
   },
   async 'Daniel: holding for repair is accepted as a costed choice, with no walk'(pg) {
     await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="wait"]');
-    assert(await pg.isDisabled('#walkBtn')); await pg.click('#closeBtn'); assert(/Closed, with a cost/.test(await text(pg, '.result')));
+    assert(await pg.isDisabled('#walkBtn')); await pg.click('#closeBtn'); const r = await text(pg, '.result'); assert(/Closed, delivery delayed/.test(r) && /missed|40-minute window/.test(r) && /Facilities/.test(r), r);
   },
-  async 'Elena still closes with the right groups'(pg) {
+  async 'Elena: closing needs a verifying walk; a later badge change invalidates it'(pg) {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
+    assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'refused before walking');
+    await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    await pg.click('#closeBtn'); assert(/Ticket closed/.test(await text(pg, '.result')), 'closes after a successful walk');
+    await pg.click('[data-g="exhibitOps"]'); await pg.click('[data-g="exhibitOps"]'); await pg.click('#closeBtn');
+    assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'a change after verification needs a new walk');
+  },
+  async 'Marcus: the fix closes only after he is walked in'(pg) {
+    await pg.click('[data-q="marcus"]'); await pg.click('[data-x]'); await pg.click('#closeBtn');
+    assert(/Walk Marcus in to confirm/.test(await text(pg, '.result')));
+    await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    await pg.click('#closeBtn'); assert(/Ticket closed/.test(await text(pg, '.result')));
+  },
+  async 'Jordan is not forced to walk (audit)'(pg) {
+    await pg.click('[data-q="jordan"]'); await pg.click('[data-rv]'); await pg.click('[data-dp="ended"]'); await pg.click('#closeBtn');
     assert(/Ticket closed/.test(await text(pg, '.result')));
+  },
+  async 'Daniel: waiting after an unnecessary badge expansion is still flagged'(pg) {
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-g="allStaff"]'); await pg.click('[data-rt="wait"]'); await pg.click('#closeBtn');
+    const r = await text(pg, '.result'); assert(/outside the approved scope/.test(r) && /Waiting does not need it/.test(r), r);
+  },
+  async 'Daniel: escort route after an expansion does not claim he used his own badge'(pg) {
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-g="allStaff"]'); await pg.click('[data-rt="escortWest"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    await pg.click('#closeBtn'); const r = await text(pg, '.result'); assert(/was also expanded/.test(r) && !/own badge/.test(r), r);
+  },
+  async 'Daniel: the dock denial stays inspectable on Daniel\'s own badge after choosing the escort route'(pg) {
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="escortWest"]'); await pg.click('#lensBtn'); await clickMap(pg, 388, 250);
+    const i = await text(pg, '#inspect'); assert(/Fault/.test(i) && /Denied · reader fault/.test(i) && /Priya \(escort\)/.test(i), i);
+    assert(!/no group for this door/.test(i.split('Priya')[0]), 'Daniel row is the reader fault, not a missing grant');
   },
 };
 (async () => {

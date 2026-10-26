@@ -281,20 +281,20 @@ function renderReview(){const t=T(),d=t.delta;
   if($('dToggle'))$('dToggle').onclick=()=>{t.showDelta=!t.showDelta;render();};}
 function renderInspect(){const t=T(),sel=t.sel;let h=`<span class="eyebrow">Inspection</span>`;
   if(!sel){h+=`<p class="note" style="margin:8px 0 0">Turn on Inspect, then drag the lens or tap a door or room. Evidence for that spot appears here.</p>`;$('inspect').innerHTML=h;return;}
-  if(sel.door){const actor=actorOf(t),escorted=actor!==t.person,d=E.DOORS[sel.door],r=E.canEnter(t.world,actor,sel.door,SC().time),g=r.grants||E.grants(t.world,actor)[sel.door]||[];
+  if(sel.door){const rt=routeOf(t),esc=rt&&rt.as==='escort'?SC().escort:null,d=E.DOORS[sel.door],r=E.canEnter(t.world,t.person,sel.door,SC().time),g=r.grants||E.grants(t.world,t.person)[sel.door]||[],re=esc?E.canEnter(t.world,esc,sel.door,SC().time):null;
     const from=E.SPACES[d.from]?E.SPACES[d.from].n:E.OUTSIDE[d.from].n.replace('Outside · ','Outside, ');
     const covering=t.person.authorizations.filter(a=>a.doors.includes(sel.door)),covered=covering.filter(a=>E.authActive(t.world,a)),ended=covering.filter(a=>a.status==='approved'&&!E.authActive(t.world,a));
     const req=Object.entries(E.GROUPS).filter(([k,G])=>G.doors.includes(sel.door)).map(([k,G])=>{const hr=E.groupHours(t.world,k);return `${G.n} ${E.fmt(hr[0])}–${E.fmt(hr[1])}`;});
-    const why={OK:'<span class="ok">Opens</span>',NO_GRANT:'<span class="bad">Denied · badge has no group for this door</span>',OUTSIDE_SCHEDULE:'<span class="bad">Denied · outside every schedule on this badge</span>',HARDWARE_FAULT:'<span class="bad">Denied · reader fault</span>',CREDENTIAL_INACTIVE:'<span class="bad">Denied · credential inactive</span>'}[r.code];
+    const WHY={OK:'<span class="ok">Opens</span>',NO_GRANT:'<span class="bad">Denied · badge has no group for this door</span>',OUTSIDE_SCHEDULE:'<span class="bad">Denied · outside every schedule on this badge</span>',HARDWARE_FAULT:'<span class="bad">Denied · reader fault</span>',CREDENTIAL_INACTIVE:'<span class="bad">Denied · credential inactive</span>'},why=WHY[r.code];
     h+=`<div class="ev" style="margin-top:8px"><h3>${d.n}</h3><dl class="kv">
-      ${escorted?`<dt>Badge</dt><dd>${actor.name} (escort)</dd>`:''}
       <dt>Reader</dt><dd>${(t.world.doorStatus[sel.door]||'online')==='online'?'Online':'<span class="bad">Fault</span>'} · ${sel.door}</dd>
       <dt>Entry</dt><dd>${from} → ${E.SPACES[d.into].n}</dd>
       <dt>Groups</dt><dd>${req.join('<br>')||'None'}</dd>
       <dt>This badge</dt><dd>${g.length?g.map(x=>`${x.via} · ${x.day?x.day+' ':''}${E.fmt(x.window[0])}–${E.fmt(x.window[1])}${x.inherited?`<br><span class="warn">Inherited: ${x.inherited}</span>`:''}`).join('<br>'):'<span class="note">Not granted</span>'}</dd>
       <dt>${SC().day} ${E.fmt(SC().time)}</dt><dd>${why}</dd>
-      <dt>Records</dt><dd>${escorted?'Escorted visit, per the reader fault procedure':`${SC().hideVerdict?(covering.length?covering.map(a=>`${a.id} · ${E.authActive(t.world,a)?'active':'ended '+a.ends}`).join('<br>'):'<span class="note">None</span>'):''}${SC().hideVerdict?'':covered.length?covered.map(a=>a.id).join(', '):g.length?'<span class="warn">No active record covers this door</span>':'<span class="note">None</span>'}${SC().hideVerdict?'':ended.map(a=>`<br><span class="note">${a.id} ended ${a.ends}</span>`).join('')}`}</dd></dl>`;
-    if(!escorted&&g.some(x=>x.inherited))h+=`<div class="row2"><button class="btn" id="flagBtn" aria-pressed="${t.flagged}">${t.flagged?'Template flagged for review':'Flag template for review'}</button></div>`;
+      ${esc?`<dt>${esc.name.split(' ')[0]} (escort)</dt><dd>${WHY[re.code]}</dd>`:''}
+      <dt>Records</dt><dd>${SC().hideVerdict?(covering.length?covering.map(a=>`${a.id} · ${E.authActive(t.world,a)?'active':'ended '+a.ends}`).join('<br>'):'<span class="note">None</span>'):''}${SC().hideVerdict?'':covered.length?covered.map(a=>a.id).join(', '):g.length?'<span class="warn">No active record covers this door</span>':'<span class="note">None</span>'}${SC().hideVerdict?'':ended.map(a=>`<br><span class="note">${a.id} ended ${a.ends}</span>`).join('')}</dd></dl>`;
+    if(g.some(x=>x.inherited))h+=`<div class="row2"><button class="btn" id="flagBtn" aria-pressed="${t.flagged}">${t.flagged?'Template flagged for review':'Flag template for review'}</button></div>`;
     h+=`</div>`;}
   else{const s=E.SPACES[sel.space],fp=E.footprint(t.world,t.person),[x,y]=sel.pt;
     const other=Object.entries(E.SPACES).filter(([k,o])=>o.l!==s.l&&o.r.some(r=>x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3])).map(([k,o])=>o.n);
@@ -321,13 +321,17 @@ function startWalk(){if(timer)return;const t=T();lens=false;pane='badge';t.walk=
 /* ---------- grading (uses the same evaluator; no case branches in access logic) ---------- */
 function grade(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.targets,sc.time),extra=E.outOfScope(t.world,t.person).map(d=>E.DOORS[d].n);
   const who=sc.person.name.split(' ')[0];
-  if(sc.goal==='adapt'){const r=routeOf(t);
-    if(r.wait)return{cls:'warnr',title:'Closed, with a cost',text:r.tradeoff};
-    if(!(t.walk&&!t.walk.running&&t.walk.routeId===r.id))return{cls:'badr',title:'Not ready to close',text:`Walk ${who} in by this route to confirm it works before closing the ticket.`};
-    const wr=t.walk.res;
-    if(wr.stop)return{cls:'badr',title:'Not ready to close',text:`At ${sc.day} ${E.fmt(sc.time)}, ${r.as==='escort'?sc.escort.name.split(' ')[0]+' and '+who:who} would be stopped at ${E.DOORS[wr.stop.door]?E.DOORS[wr.stop.door].n:'a door'}. Walk the route and inspect where it fails.`};
-    if(extra.length)return{cls:'warnr',title:'Works, but outside the approved scope',text:`${who} gets in on his own badge, but the badge now also opens ${extra.join(', ')}. The delivery record covers the dock only, and vendors are not given unescorted staff-side access.`};
-    return{cls:'good',title:'Ticket closed',text:r.tradeoff||`${who} reaches every stop.`};}
+  {const r=routeOf(t);
+    if(sc.verify&&sc.goal!=='audit'&&!(r&&r.wait)&&!(t.walk&&!t.walk.running&&t.walk.routeId===(r?r.id:null)))
+      return{cls:'badr',title:'Not ready to close',text:`Walk ${who} in${r?' by this route':''} to confirm it works from their side before closing the ticket.`};}
+  if(sc.goal==='adapt'){const r=routeOf(t),escort=r.as==='escort',own=r.as==='self'&&r.start!==sc.start,first=sc.escort?sc.escort.name.split(' ')[0]:'';
+    // 1. route outcome (a wait route has no walk)
+    if(!r.wait){const wr=t.walk.res;
+      if(wr.stop)return{cls:'badr',title:'Not ready to close',text:`At ${sc.day} ${E.fmt(sc.time)}, ${escort?first+' and '+who:who} would be stopped at ${E.DOORS[wr.stop.door]?E.DOORS[wr.stop.door].n:'a door'}. Walk the route and inspect where it fails.`};}
+    // 2. access compliance (applies to every route, including waiting)
+    if(extra.length)return{cls:'warnr',title:'Works, but outside the approved scope',text:own?`${who} gets in on his own badge, but it now also opens ${extra.join(', ')}. The delivery record covers the dock only, and vendors are not given unescorted staff-side access.`:`${who}'s badge was also expanded to open ${extra.join(', ')}, which the delivery record does not cover. ${r.wait?'Waiting':'This route'} does not need it, so remove it before closing.`};
+    // 3. operational consequence
+    return{cls:r.wait?'warnr':'good',title:r.wait?'Closed, delivery delayed':'Ticket closed',text:r.tradeoff||`${who} reaches every stop.`};}
   if(sc.goal==='audit'){
     if(extra.length)return{cls:'badr',title:'Review incomplete',text:`Confirm that ${who}'s assigned access is supported by current authorization before closing this ticket.`};
     if(!t.disp)return{cls:'badr',title:'Record a reason',text:'Choose the reason for this decision before closing.'};

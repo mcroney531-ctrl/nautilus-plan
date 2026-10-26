@@ -1,6 +1,6 @@
 # Nautilus Access Desk: session handoff
 
-**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Marcus, Jordan, Daniel). 25 engine tests + 18 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
+**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Marcus, Jordan, Daniel). 25 engine tests + 23 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
 
 ---
 
@@ -104,7 +104,9 @@ Live: https://mcroney531-ctrl.github.io/nautilus-plan/ (push straight to main; R
 **Scenario data drives behavior, no scenario branches in the evaluator:**
 - `goal`: default = the walk must reach every target; `'audit'` = nothing open without an active record, plus a required `disposition` reason; `'adapt'` = pick a `routes` entry.
 - `routes` (Daniel): `{start, as:'self'|'escort', wait, tradeoff}`. An escort route evaluates the escort's own credential (`scenario.escort`); a route whose `start` differs from the scenario `start` draws an explicit outside transfer leg. No access-aware pathfinding, by decision.
-- `verify: true` (Daniel only): closing requires a completed walk of the chosen route.
+- `verify: true` (Elena, Marcus, Daniel; generic rule at the top of `grade()`): closing requires a completed successful walk of the current badge and route. Any badge/route change clears the walk. Not applied to Audit or to Daniel's wait route.
+- Adapt grading evaluates three things separately: route outcome, access compliance (out-of-scope expansion is flagged on every route, including waiting), operational consequence (wait = "Closed, delivery delayed" with follow-up notes).
+- Inspection always evaluates the ticket person's own badge; on an escort route the escort's result is shown as an extra row. Reader status is independent of the route.
 - `hideVerdict` (Jordan): no gold rings, neutral records row in the lens.
 - `notes`: extra chips on the ticket (Jordan's account history, Daniel's reader-fault procedure).
 
@@ -126,12 +128,11 @@ Live: https://mcroney531-ctrl.github.io/nautilus-plan/ (push straight to main; R
 ## 7. Backlog (prioritized)
 
 1. **Real-device phone check**, then a first-time-learner walkthrough of all four scenarios (does the learner know what they're doing, discover problems naturally, understand consequences).
-2. **Verification before closing for Issue and Diagnose:** Elena and Marcus can still close without pressing Walk because `grade()` runs the walk itself. Recommended: set `verify: true` on both so closing needs a completed walk of the current badge (a badge change already clears the walk). Not done pending Rone/GPT sign-off.
-3. **Scaffolding:** guided prompts for Elena, a post-failure inspect prompt for Marcus (none for Jordan/Daniel). Shift framing: supervisor intro and end-of-shift summary.
-4. **Map polish:** "W CORE" / "STAFF ENTRANCE" labels collide with door dots; lens caption can overlap labels; first change from an empty badge outlines everything in gold; desktop map is very large (cap it).
-5. **Tests:** touch-target test uses SVG width, not the rendered scale under the 32vh cap; make browser tests mandatory in CI once CI exists.
-6. **Jordan:** no credential expiry date, only Deactivate / remove group.
-7. **Later:** real map art, avatars, ambient visuals per brand, case-study write-up using the Mock Lab as process evidence.
+2. **Scaffolding:** guided prompts for Elena, a post-failure inspect prompt for Marcus (none for Jordan/Daniel). Shift framing: supervisor intro and end-of-shift summary.
+3. **Map polish:** "W CORE" / "STAFF ENTRANCE" labels collide with door dots; lens caption can overlap labels; first change from an empty badge outlines everything in gold; desktop map is very large (cap it).
+4. **Tests:** touch-target test uses SVG width, not the rendered scale under the 32vh cap; make browser tests mandatory in CI once CI exists.
+5. **Jordan:** no credential expiry date, only Deactivate / remove group.
+6. **Later:** real map art, avatars, ambient visuals per brand, case-study write-up using the Mock Lab as process evidence.
 
 ## 8. Open questions
 
