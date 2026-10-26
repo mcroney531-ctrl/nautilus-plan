@@ -1,7 +1,7 @@
 // Browser regression tests. Needs Playwright (not a project dependency): `npm i --no-save playwright && npx playwright install chromium`.
 // Run: npm run test:ui  (builds first). Skips cleanly if Playwright is missing.
 const assert = require('assert'), path = require('path'), { pathToFileURL } = require('url');
-let chromium; try { ({ chromium } = require('playwright')); } catch (_) { console.log('skip: playwright not installed'); process.exit(0); }
+let chromium, devices; try { ({ chromium, devices } = require('playwright')); } catch (_) { console.log('skip: playwright not installed'); process.exit(0); }
 const url = pathToFileURL(path.join(__dirname, '../dist/nautilus_access.html')).href;
 const clickMap = async (pg, x, y) => { const b = await pg.locator('#map').boundingBox(); await pg.mouse.click(b.x + b.width * x / 400, b.y + b.height * y / 300); };
 const text = async (pg, sel) => (await pg.textContent(sel)).replace(/\s+/g, ' ').trim();
@@ -40,6 +40,11 @@ const tests = {
     await pg.click('[data-gs]'); await pg.click('[data-x]');
     assert(/this badge only/.test(await text(pg, '#review')));
   },
+  async 'mobile emulation honors the viewport tag (layout width is the device width, map fills it)'(pg, b) {
+    const ctx = await b.newContext(devices['Pixel 7']), m = await ctx.newPage(); await m.goto(url);
+    const r = await m.evaluate(() => ({ w: innerWidth, sw: document.documentElement.scrollWidth, map: document.getElementById('map').getBoundingClientRect().width }));
+    await ctx.close(); assert(r.w < 500 && r.sw <= r.w && r.map > r.w * 0.8, JSON.stringify(r));
+  },
   async 'Elena still closes with the right groups'(pg) {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
     assert(/Ticket closed/.test(await text(pg, '.result')));
@@ -49,7 +54,7 @@ const tests = {
   const b = await chromium.launch(); let fail = 0;
   for (const [name, fn] of Object.entries(tests)) {
     const pg = await b.newPage({ viewport: { width: 400, height: 900 } }), errs = []; pg.on('pageerror', e => errs.push(e.message));
-    try { await pg.goto(url); await fn(pg); assert.deepEqual(errs, []); console.log('ok', name); } catch (e) { fail++; console.log('FAIL', name, '\n  ', e.message.slice(0, 300)); }
+    try { await pg.goto(url); await fn(pg, b); assert.deepEqual(errs, []); console.log('ok', name); } catch (e) { fail++; console.log('FAIL', name, '\n  ', e.message.slice(0, 300)); }
     await pg.close();
   }
   await b.close(); process.exit(fail ? 1 : 0);
