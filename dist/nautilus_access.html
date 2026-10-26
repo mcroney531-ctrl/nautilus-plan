@@ -1,0 +1,495 @@
+<title>Nautilus Access Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: access-desk workstation — ticket on top, two-level map as the primary surface, badge controls + inspection beneath (side column on desktop) */
+:root{
+  --bg:#061b29;--panel:#0b2a39;--panel2:#0f3446;--ink:#eef8f8;--muted:#9fc2c9;--line:#234f5f;
+  --aqua:#5ccdda;--glass:#a4ead0;--gold:#f5d192;--coral:#f39091;--deep:#03121c;
+  --f-display:Georgia,"Times New Roman",serif;--f-body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;--f-mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body)}
+body{background:radial-gradient(ellipse at 60% -10%,#0e4660 0%,var(--bg) 46%,#041522 100%) fixed,var(--bg)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:14px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:14px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.id{display:flex;gap:11px;align-items:center}.id svg{width:40px;height:40px}
+.id h1{margin:0;font:500 26px/1 var(--f-display);letter-spacing:.12em}.id small{display:block;font-size:10px;letter-spacing:.32em;color:#8fd8e3;margin-top:4px}
+.desk{font:600 11px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:30px;padding:8px 11px}
+.queue{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.qt{flex:0 0 auto;display:flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:8px 12px;font:600 13px var(--f-body);cursor:pointer}
+.qt small{font:500 10px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.qt[aria-selected="true"]{border-color:var(--aqua);background:var(--panel2)}
+.qt[disabled]{opacity:.45;cursor:default}
+.qt .dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}.qt .dot.done{background:var(--glass)}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.col{display:grid;gap:14px;min-width:0}
+.card{background:linear-gradient(180deg,var(--panel),#092534);border:1px solid var(--line);border-radius:14px;min-width:0}
+.pad{padding:14px}
+.eyebrow{font:700 10.5px/1 var(--f-body);letter-spacing:.16em;text-transform:uppercase;color:#8acbd2}
+.ticket{display:grid;gap:10px}
+.who{display:flex;gap:11px;align-items:center}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:linear-gradient(155deg,#3d91a5,#0b435d);border:2px solid #7ed5dc;flex:0 0 auto}
+.who b{display:block}.who span{font-size:12.5px;color:var(--muted)}
+.msg{background:#0d3a4c;border:1px solid #2c6676;border-radius:4px 14px 14px 14px;padding:10px 12px;color:#d6ecef;max-width:62ch}
+.recs{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:600 11px/1 var(--f-mono);border:1px solid #3c7383;border-radius:6px;padding:7px 9px;background:transparent;color:var(--ink);cursor:pointer}
+.chip[aria-expanded="true"]{background:#173f4f}
+.rec{background:#071f2c;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:#c6dfe3;display:grid;gap:3px}
+.rec b{color:var(--ink)}
+.maphead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:12px 12px 10px}
+.seg{display:inline-flex;gap:3px;padding:3px;border-radius:9px;background:#051d29;border:1px solid #2b5462}
+.seg button{border:0;background:transparent;color:var(--ink);border-radius:7px;padding:8px 10px;font:600 12px var(--f-body);cursor:pointer}
+.seg button[aria-pressed="true"]{background:#2b7182}
+.btn{border:1px solid #3a7281;background:#173f4f;color:var(--ink);border-radius:9px;padding:9px 12px;font:650 13px var(--f-body);cursor:pointer}
+.btn:hover{background:#215366}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:#1b1406}
+.btn[aria-pressed="true"]{background:#bbefe7;color:#082e3b;border-color:#e4f9ea}
+.btn[disabled]{opacity:.45;cursor:default}
+button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:2px}
+.stage{position:relative;background:var(--deep);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stage svg{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.mapfoot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 12px;font-size:12px;color:var(--muted)}
+.clock{font:700 12px var(--f-mono);color:var(--gold)}
+.groups{display:grid;gap:8px}
+.grp{display:flex;gap:10px;align-items:flex-start;border:1px solid #2f6070;background:#0b3141;border-radius:10px;padding:10px 11px;cursor:pointer;text-align:left;color:var(--ink);font:inherit;width:100%}
+.grp[aria-pressed="true"]{border-color:var(--glass);background:#134555}
+.box{width:18px;height:18px;border-radius:5px;border:2px solid #7ab7c2;flex:0 0 auto;margin-top:1px;display:grid;place-items:center;font:800 12px/1 var(--f-body);color:#082e3b}
+.grp[aria-pressed="true"] .box{background:var(--glass);border-color:var(--glass)}
+.grp b{display:block;font-size:13.5px}.grp small{display:block;color:var(--muted);font-size:12px}
+.sub{display:grid;gap:8px;margin-top:12px}
+.delta{display:grid;gap:6px;font-size:13px}
+.delta .row{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font:600 11.5px/1 var(--f-body);border-radius:20px;padding:5px 9px;border:1px solid}
+.tag.add{border-color:var(--gold);color:var(--gold)}.tag.rem{border-color:var(--coral);color:var(--coral)}
+.tag.add.restricted{background:var(--gold);color:#241806}
+.walklog{display:grid;gap:4px;font-size:12.5px;color:#c6dfe3;margin:0;padding-left:18px}
+.walklog .no{color:var(--coral);font-weight:700}
+.ev{display:grid;gap:6px;font-size:13px;color:#c6dfe3}
+.ev h3{margin:0;font:500 18px/1.2 var(--f-display);color:var(--ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 10px}.kv dt{color:var(--muted);font-size:12px}.kv dd{margin:0}
+.ok{color:var(--glass)}.bad{color:var(--coral)}.warn{color:var(--gold)}
+.result{border-left:4px solid var(--line);padding:10px 12px;background:#092a37;border-radius:8px;font-size:13.5px}
+.result.good{border-color:var(--glass)}.result.badr{border-color:var(--coral)}.result.warnr{border-color:var(--gold)}
+.result b{display:block;margin-bottom:3px}
+.row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{font-size:12px;color:var(--muted)}
+.foot{font-size:11.5px;color:#88aeb7}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+@keyframes pulse{0%{opacity:.25}50%{opacity:.9}100%{opacity:.25}}
+.pulse{animation:pulse 1.4s ease-in-out 3}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="id"><svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="35" fill="none" stroke="#b1eeee" stroke-width="5"/><path d="M12 43c18-21 29-13 38-2s17 10 21 5M13 52c20-15 30-6 40 2s13 4 19 0" fill="none" stroke="#4fc8da" stroke-width="6" stroke-linecap="round"/><path d="M18 25c9-13 26-20 40-12" stroke="#c8ffff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+    <div><h1>NAUTILUS</h1><small>MARINE CENTER</small></div></div>
+  <span class="desk">Access desk · Tue Oct 27</span>
+</header>
+
+<nav class="queue" id="queue" aria-label="Ticket queue"></nav>
+
+<div class="grid">
+  <div class="col">
+    <section class="card pad ticket" id="ticket" aria-live="polite"></section>
+    <section class="card">
+      <div class="maphead">
+        <div class="seg" role="group" aria-label="Level"><button id="lv1" aria-pressed="true">Gallery · L1</button><button id="lv2" aria-pressed="false">Topside · L2</button></div>
+        <div class="row2"><button class="btn" id="lensBtn" aria-pressed="false">Inspect ◉</button><button class="btn" id="walkBtn">Walk</button></div>
+      </div>
+      <div class="stage"><svg id="map" viewBox="0 0 400 300" tabindex="0" role="img" aria-label="Nautilus floor plan"></svg></div>
+      <div class="mapfoot"><span id="mapnote"></span><span class="clock" id="clock"></span></div>
+    </section>
+  </div>
+  <div class="col">
+    <section class="card pad" id="badge"></section>
+    <section class="card pad" id="review"></section>
+    <section class="card pad" id="inspect"></section>
+  </div>
+</div>
+<p class="foot">Fictional facility and illustrative access policies. A spatial and instructional design prototype, not a security-system model, real floor plan, or emergency procedure. Procedures would need review by a security/facilities SME.</p>
+</div>
+
+<script>
+/* Nautilus access engine — fictional, simplified model for a training prototype.
+   Three separate concepts: GRANTED (what the badge permits), AUTHORIZED (what the work record allows),
+   REACHABLE (where the person can actually get from an entrance at a time). */
+const Engine = (() => {
+  // ---------- Building ----------
+  // Spaces: level + shape (array of rects; multi-rect spaces are literal unions)
+  const SPACES = {
+    // Level 1
+    westSvc:   { n: 'West service hall', l: 1, r: [[12, 44, 40, 244]], kind: 'staff' },
+    westCore1: { n: 'West core · L1', short:'W CORE', l: 1, r: [[12, 12, 40, 30]], kind: 'core' },
+    spine:     { n: 'Service spine', l: 1, r: [[54, 12, 292, 28]], kind: 'staff' },
+    eastCore1: { n: 'East core · L1', short:'E CORE', l: 1, r: [[348, 12, 40, 30]], kind: 'core' },
+    eastSvc:   { n: 'East service hall', l: 1, r: [[348, 44, 40, 150]], kind: 'staff' },
+    receiving: { n: 'Receiving', l: 1, r: [[316, 196, 72, 92]], kind: 'staff' },
+    westGal:   { n: 'West gallery', l: 1, r: [[56, 44, 40, 244], [96, 254, 100, 34]], kind: 'public' },
+    kelp:      { n: 'Kelp Hall', l: 1, r: [[98, 44, 90, 88]], kind: 'public' },
+    touch:     { n: 'Living Shore', l: 1, r: [[98, 134, 90, 66]], kind: 'public' },
+    classroom: { n: 'Classroom', l: 1, r: [[98, 202, 90, 50]], kind: 'program' },
+    reef:      { n: 'Reef Tunnel', l: 1, r: [[198, 44, 90, 158]], kind: 'public', ellipse: [243, 123, 44, 76] },
+    jelly:     { n: 'Jelly Room', l: 1, r: [[290, 44, 56, 74]], kind: 'public' },
+    seasonal:  { n: 'Seasonal', l: 1, r: [[290, 120, 56, 74]], kind: 'public' },
+    atrium:    { n: 'Atrium', l: 1, r: [[198, 204, 116, 84]], kind: 'public' },
+    // Level 2
+    westCore2: { n: 'West core · L2', short:'W CORE', l: 2, r: [[12, 12, 40, 30]], kind: 'core' },
+    westMezz:  { n: 'West mezzanine', l: 2, r: [[12, 44, 84, 96]], kind: 'staff' },
+    quarantine:{ n: 'Quarantine', l: 2, r: [[98, 44, 90, 66]], kind: 'restricted' },
+    topside:   { n: 'Tank-top catwalks', l: 2, r: [[98, 112, 100, 20], [198, 44, 98, 158]], kind: 'staff' },
+    food:      { n: 'Food prep', l: 2, r: [[98, 134, 90, 66]], kind: 'staff' },
+    admin:     { n: 'Ops offices', l: 2, r: [[12, 142, 84, 90]], kind: 'staff' },
+    eastCore2: { n: 'East core · L2', short:'E CORE', l: 2, r: [[348, 12, 40, 30]], kind: 'core' },
+    eastMezz:  { n: 'East mezzanine', l: 2, r: [[348, 44, 40, 150], [298, 120, 50, 74]], kind: 'staff' },
+    dive:      { n: 'Dive locker', l: 2, r: [[298, 44, 48, 74]], kind: 'staff' },
+    life:      { n: 'Life support', l: 2, r: [[316, 196, 72, 92]], kind: 'restricted' },
+  };
+  const VOIDS = [ // L2 areas open to the level below
+    { n: 'Open to classroom', r: [98, 202, 90, 50] }, { n: 'Open to atrium', r: [198, 204, 116, 84] },
+    { n: 'Open to west gallery', r: [96, 254, 100, 34] },
+  ];
+  const OUTSIDE = { outW: { n: 'Outside · West staff entrance', l: 1, p: [32, 298] }, outD: { n: 'Outside · Loading dock', l: 1, p: [398, 250] } };
+
+  // Open links (no reader). p = waypoint for route drawing.
+  const LINKS = [
+    ['westSvc', 'spine', [40, 40]], ['spine', 'eastSvc', [360, 40]], ['eastSvc', 'receiving', [368, 196]],
+    ['westGal', 'kelp', [97, 88]], ['westGal', 'atrium', [197, 271]], ['atrium', 'reef', [243, 203]],
+    ['reef', 'jelly', [289, 80]], ['reef', 'seasonal', [289, 157]],
+    ['westCore1', 'westCore2', null, 'stair'], ['eastCore1', 'eastCore2', null, 'stair'],
+    ['westMezz', 'admin', [54, 141]],
+  ];
+  // Doors with readers. `into` = secured side; exit back out is free (simulation rule).
+  const DOORS = {
+    'D-WSE':  { n: 'West Staff Entrance', from: 'outW', into: 'westSvc', p: [32, 288] },
+    'D-WGC':  { n: 'Staff–gallery connector', from: 'westSvc', into: 'westGal', p: [54, 170] },
+    'D-LSG':  { n: 'Living Shore staff gate', from: 'westGal', into: 'touch', p: [97, 167] },
+    'D-CLS':  { n: 'Classroom', from: 'westGal', into: 'classroom', p: [97, 227] },
+    'D-WC1':  { n: 'West core · L1', from: 'westSvc', into: 'westCore1', p: [32, 43] },
+    'D-WM':   { n: 'West mezzanine', from: 'westCore2', into: 'westMezz', p: [32, 43] },
+    'D-QUAR': { n: 'Quarantine', from: 'westMezz', into: 'quarantine', p: [97, 77] },
+    'D-TOPW': { n: 'Tank-top · west', from: 'westMezz', into: 'topside', p: [97, 122] },
+    'D-FOOD': { n: 'Food prep', from: 'topside', into: 'food', p: [143, 133] },
+    'D-DOCK': { n: 'Loading dock', from: 'outD', into: 'receiving', p: [388, 250] },
+    'D-EC1':  { n: 'East core · L1', from: 'eastSvc', into: 'eastCore1', p: [368, 43] },
+    'D-EM':   { n: 'East mezzanine', from: 'eastCore2', into: 'eastMezz', p: [368, 43] },
+    'D-DIVE': { n: 'Dive locker', from: 'eastMezz', into: 'dive', p: [322, 119] },
+    'D-TOPE': { n: 'Tank-top · east', from: 'eastMezz', into: 'topside', p: [297, 157] },
+    'D-LIFE': { n: 'Life support', from: 'eastMezz', into: 'life', p: [368, 195] },
+  };
+  const levelOf = id => (SPACES[id] || OUTSIDE[id]).l;
+  const doorLevel = d => levelOf(DOORS[d].into);
+
+  // ---------- Access groups (fictional Nautilus policy) ----------
+  const GROUPS = {
+    allStaff:  { n: 'All Staff', doors: ['D-WSE'], hours: [6, 20], members: 140 },
+    education: { n: 'Education', doors: ['D-WGC', 'D-LSG', 'D-CLS'], hours: [6.5, 18], members: 9 },
+    exhibitOps:{ n: 'Exhibit Operations', note: 'Standard onboarding template',
+                 doors: ['D-WSE', 'D-WGC', 'D-LSG', 'D-CLS', 'D-WC1', 'D-WM', 'D-TOPW', 'D-FOOD', 'D-QUAR'], hours: [5, 22], members: 31,
+                 inherited: { 'D-QUAR': 'Husbandry Support (merged into this template, 2021)', 'D-FOOD': 'Husbandry Support (merged into this template, 2021)' } },
+    diveCrew:  { n: 'Dive Crew', doors: ['D-DOCK', 'D-EC1', 'D-EM', 'D-DIVE', 'D-TOPE'], hours: [7, 19], members: 12 },
+  };
+
+  // ---------- Evaluation ----------
+  const fmt = h => `${String(Math.floor(h)).padStart(2, '0')}:${h % 1 ? String(Math.round((h % 1) * 60)).padStart(2, '0') : '00'}`;
+  function groupHours(world, g) { return (world.groupOverrides && world.groupOverrides[g]) || GROUPS[g].hours; }
+  // Effective grants ignoring time: door -> [{via, kind, window}]
+  function grants(world, person) {
+    const out = {};
+    if (!person.credential.active) return out;
+    for (const g of person.credential.groups) for (const d of GROUPS[g].doors)
+      (out[d] = out[d] || []).push({ via: GROUPS[g].n, group: g, kind: 'group', window: groupHours(world, g), inherited: GROUPS[g].inherited && GROUPS[g].inherited[d] });
+    for (const x of person.credential.exceptions || []) for (const d of x.doors)
+      (out[d] = out[d] || []).push({ via: `Exception · ${x.source}`, kind: 'exception', window: x.window, day: x.day });
+    return out;
+  }
+  // Can this person enter through this door at time t? Returns full evidence; the UI decides what to show.
+  function canEnter(world, person, doorId, t) {
+    const door = DOORS[doorId];
+    if (!door) return { ok: false, code: 'NO_DOOR' };
+    const status = (world.doorStatus && world.doorStatus[doorId]) || 'online';
+    if (!person.credential.active) return { ok: false, code: 'CREDENTIAL_INACTIVE', status };
+    const g = grants(world, person)[doorId] || [];
+    if (!g.length) return { ok: false, code: 'NO_GRANT', status, grants: g };
+    const inTime = g.filter(x => (!x.day || x.day === world.day) && t >= x.window[0] && t < x.window[1]);
+    if (!inTime.length) return { ok: false, code: 'OUTSIDE_SCHEDULE', status, grants: g };
+    if (status === 'fault') return { ok: false, code: 'HARDWARE_FAULT', status, grants: g };
+    return { ok: true, code: 'OK', status, grants: g, via: inTime };
+  }
+  // Adjacency for pathing: open links + doors (both directions; entry checked only toward `into`)
+  function edges(id) {
+    const e = [];
+    for (const [a, b, p, kind] of LINKS) { if (a === id) e.push({ to: b, p, kind }); if (b === id) e.push({ to: a, p, kind }); }
+    for (const [d, o] of Object.entries(DOORS)) {
+      if (o.from === id) e.push({ to: o.into, door: d, p: o.p });
+      if (o.into === id) e.push({ to: o.from, door: d, p: o.p, exit: true });
+    }
+    return e;
+  }
+  // Shortest physical path ignoring access (used to plan a walk)
+  function path(from, to) {
+    const prev = new Map([[from, null]]), q = [from];
+    while (q.length) { const a = q.shift(); if (a === to) break; for (const e of edges(a)) if (!prev.has(e.to) && !OUTSIDE[e.to]) { prev.set(e.to, { from: a, e }); q.push(e.to); } }
+    if (!prev.has(to)) return null;
+    const steps = []; let k = to; while (prev.get(k)) { const s = prev.get(k); steps.unshift({ from: s.from, to: k, ...s.e }); k = s.from; }
+    return steps;
+  }
+  // Walk to targets in order; stop at first denial
+  function walk(world, person, start, targets, t) {
+    let at = start; const steps = []; const reached = [];
+    for (const tg of targets) {
+      const p = path(at, tg); if (!p) return { steps, reached, stop: { code: 'NO_PATH', at } };
+      for (const s of p) {
+        if (s.door && !s.exit) {
+          const r = canEnter(world, person, s.door, t);
+          steps.push({ ...s, result: r });
+          if (!r.ok) return { steps, reached, stop: { door: s.door, code: r.code, at: s.from } };
+        } else steps.push({ ...s, result: { ok: true, code: s.door ? 'EXIT' : 'OPEN' } });
+        at = s.to;
+      }
+      reached.push(tg);
+    }
+    return { steps, reached, stop: null };
+  }
+  // GRANTED footprint: spaces behind granted doors, flooded through open links (time ignored)
+  function footprint(world, person) {
+    const g = grants(world, person), sp = new Set();
+    const flood = s => { if (sp.has(s) || OUTSIDE[s]) return; sp.add(s); for (const [a, b] of LINKS) { if (a === s) flood(b); if (b === s) flood(a); } };
+    for (const d of Object.keys(g)) flood(DOORS[d].into);
+    return { spaces: sp, doors: new Set(Object.keys(g)) };
+  }
+  // Effective-permission difference (computed from footprints, not from which checkbox changed)
+  function delta(before, after) {
+    const minus = (a, b) => [...a].filter(x => !b.has(x));
+    return { addedSpaces: minus(after.spaces, before.spaces), removedSpaces: minus(before.spaces, after.spaces),
+             addedDoors: minus(after.doors, before.doors), removedDoors: minus(before.doors, after.doors) };
+  }
+  // AUTHORIZED vs GRANTED: doors the badge opens that no active authorization covers
+  function outOfScope(world, person) {
+    const auth = (person.authorizations || []).filter(a => a.status === 'approved' && (!a.ends || a.ends >= world.date));
+    const ok = new Set(auth.flatMap(a => a.doors));
+    return Object.keys(grants(world, person)).filter(d => !ok.has(d));
+  }
+  const clone = o => JSON.parse(JSON.stringify(o));
+  return { SPACES, VOIDS, OUTSIDE, LINKS, DOORS, GROUPS, levelOf, doorLevel, fmt, grants, canEnter, path, walk, footprint, delta, outOfScope, clone, groupHours };
+})();
+if (typeof module !== 'undefined') module.exports = Engine;
+
+/* Tickets: people, requests in their own voice, and the records that carry authority. */
+const SCENARIOS = {
+  elena: {
+    tab: 'Elena', kind: 'Issue', time: 7.25, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['kelp', 'touch', 'classroom'],
+    person: { id: 'elena', name: 'Elena Park', initials: 'EP', role: 'Marine educator · starts Tuesday',
+      credential: { active: true, groups: [], exceptions: [] },
+      authorizations: [{ id: 'WA-1041', status: 'approved', purpose: 'Education program staff', approver: 'J. Okoye, Education Manager',
+        doors: ['D-WSE', 'D-WGC', 'D-LSG', 'D-CLS'], places: 'West Staff Entrance, galleries (pre-open), Living Shore, Classroom', window: 'Daily 06:30–18:00' }] },
+    message: 'Hi! I start Tuesday. I\'m running the 9:00 school program in Kelp Hall, the Living Shore touch pool, and the classroom, and I\'ll be in around 7:15 to set up. Can you get my badge ready?',
+    editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
+  },
+  marcus: {
+    tab: 'Marcus', kind: 'Diagnose', time: 5.5, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['dive', 'topside'],
+    person: { id: 'marcus', name: 'Marcus Reyes', initials: 'MR', role: 'Dive crew lead',
+      credential: { active: true, groups: ['diveCrew'], exceptions: [] },
+      authorizations: [
+        { id: 'Dive Crew role', status: 'approved', purpose: 'Standing role access', approver: 'Curator of Husbandry',
+          doors: ['D-DOCK', 'D-EC1', 'D-EM', 'D-DIVE', 'D-TOPE'], places: 'Dock, east core, east mezzanine, dive locker, tank-top', window: 'Daily 07:00–19:00' },
+        { id: 'WO-2291', status: 'approved', purpose: 'Pre-inspection Reef Tunnel cleaning (one-time)', approver: 'Curator of Husbandry',
+          doors: ['D-DOCK', 'D-EC1', 'D-EM', 'D-DIVE', 'D-TOPE'], places: 'Dock, east core, east mezzanine, dive locker, tank-top', window: 'Tue Oct 27 · 05:00–08:00 · Marcus Reyes only',
+          exception: { doors: ['D-DOCK', 'D-EC1', 'D-EM', 'D-DIVE', 'D-TOPE'], window: [5, 8], day: 'Tue', source: 'WO-2291' } }] },
+    message: 'Heads up: we\'ve got one early Reef Tunnel scrub before Tuesday\'s inspection. Crew normally starts at seven, but I\'m due at the dock at 5:30. Badge should be fine, right?',
+    editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
+    groupScheduleEdit: { group: 'diveCrew', to: [5, 19] },
+  },
+};
+if (typeof module !== 'undefined') module.exports = SCENARIOS;
+
+(()=>{
+const E=Engine,S=SCENARIOS,$=id=>document.getElementById(id);
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ORDER=['elena','marcus'];
+const LOCKED=[{tab:'Jordan',kind:'Audit'},{tab:'Daniel',kind:'Adapt'}];
+const st={};
+function fresh(id){const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:{},groupOverrides:{}},prev:null,delta:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,open:{}};}
+ORDER.forEach(id=>st[id]=fresh(id));
+let cur='elena',level=1,lens=false,lensP=[143,88],timer=null;
+const T=()=>st[cur],SC=()=>S[cur];
+const center=id=>{const s=E.SPACES[id];if(s.ellipse)return[s.ellipse[0],s.ellipse[1]];const r=s.r[0];return[r[0]+r[2]/2,r[1]+r[3]/2];};
+const outP=id=>E.OUTSIDE[id].p;
+
+/* ---------- map drawing ---------- */
+function shapes(id,attrs=''){return E.SPACES[id].r.map(r=>`<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" ${attrs}/>`).join('');}
+function label(id){const s=E.SPACES[id],[x,y]=center(id),r=s.r[0];
+  if(r[2]<46&&r[3]>r[2]*2)return `<text x="${x}" y="${y}" class="lbl sm" transform="rotate(-90 ${x} ${y})">${s.n.toUpperCase()}</text>`;
+  if(r[2]<46)return `<text x="${x}" y="${y+3}" class="lbl sm">${(s.short||s.n).toUpperCase()}</text>`;
+  const narrow=r[2]<70,cls=narrow?'lbl nr':'lbl';
+  const words=s.n.toUpperCase().split(' ');const lines=words.length>1&&(s.n.length>11||narrow)?[words.slice(0,Math.ceil(words.length/2)).join(' '),words.slice(Math.ceil(words.length/2)).join(' ')]:[s.n.toUpperCase()];
+  return lines.map((t,i)=>`<text x="${x}" y="${y+4+(i-(lines.length-1)/2)*12}" class="${cls}">${t}</text>`).join('');}
+function levelSVG(l,sfx,{route=true}={}){
+  const t=T(),fp=E.footprint(t.world,t.person),ids=Object.keys(E.SPACES).filter(k=>E.SPACES[k].l===l);
+  let s=`<rect x="4" y="4" width="392" height="292" rx="10" fill="#082536" stroke="#3a7487" stroke-width="1.5"/>`;
+  for(const id of ids){const k=E.SPACES[id].kind;
+    const fill=k==='public'?'#12445a':k==='program'?'#13495c':k==='core'?'#1f4b5c':k==='restricted'?'#2a3a4a':'#163a47';
+    s+=shapes(id,`fill="${fill}" stroke="#4d8696" stroke-width="1"`);
+    if(E.SPACES[id].ellipse){const [cx,cy,rx,ry]=E.SPACES[id].ellipse;s+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#water${sfx})" stroke="#61c8d6" stroke-width="1.5"/>`;}}
+  if(l===2){for(const v of E.VOIDS)s+=`<rect x="${v.r[0]}" y="${v.r[1]}" width="${v.r[2]}" height="${v.r[3]}" fill="url(#hatch${sfx})" stroke="#2c5a69" stroke-dasharray="3 3"/><text x="${v.r[0]+v.r[2]/2}" y="${v.r[1]+v.r[3]/2+3}" class="lbl void">${v.n.toUpperCase()}</text>`;
+    s+=`<g stroke="#d4bb8c" stroke-width="3" opacity=".55"><path d="M210 70H284M210 110H284M210 150H284M210 185H284M226 52V196M262 52V196"/></g>`;}
+  for(const id of ids)s+=label(id);
+  // dark-water veil with the granted footprint subtracted
+  s+=`<mask id="m${sfx}"><rect width="400" height="300" fill="#fff"/>${[...fp.spaces].filter(k=>E.SPACES[k].l===l).map(k=>shapes(k,'fill="#000"')).join('')}</mask>`;
+  s+=`<rect width="400" height="300" fill="#021019" opacity=".72" mask="url(#m${sfx})"/>`;
+  s+=`<g filter="url(#ring${sfx})">${[...fp.spaces].filter(k=>E.SPACES[k].l===l).map(k=>shapes(k,'fill="#a4ead0"')).join('')}</g>`;
+  // change review overlay (effective-permission difference)
+  if(t.delta&&t.showDelta){
+    for(const k of t.delta.addedSpaces.filter(k=>E.SPACES[k].l===l))s+=shapes(k,`fill="#f5d192" fill-opacity=".22" stroke="#f5d192" stroke-width="2" stroke-dasharray="5 3" class="${RM?'':'pulse'}"`);
+    for(const k of t.delta.removedSpaces.filter(k=>E.SPACES[k].l===l))s+=shapes(k,`fill="none" stroke="#f39091" stroke-width="2" stroke-dasharray="5 3"`);}
+  // doors
+  for(const [d,o] of Object.entries(E.DOORS)){if(E.doorLevel(d)!==l)continue;const g=fp.doors.has(d),sel=t.sel&&t.sel.door===d;
+    s+=`<g class="door" data-door="${d}"><circle cx="${o.p[0]}" cy="${o.p[1]}" r="${sel?6.5:4.5}" fill="${g?'#a4ead0':'#0b2a39'}" stroke="${sel?'#ffde9f':'#a9cfd6'}" stroke-width="${sel?2.5:1.3}"/></g>`;}
+  if(l===1){s+=`<path d="M24 296h16M390 242v16" stroke="#a4ead0" stroke-width="3"/>`;s+=`<text x="44" y="296" class="lbl out" text-anchor="start">STAFF ENTRANCE</text><text x="386" y="236" class="lbl out" text-anchor="end">DOCK</text>`;}
+  if(t.sel&&t.sel.space&&E.SPACES[t.sel.space].l===l)s+=shapes(t.sel.space,'fill="none" stroke="#ffde9f" stroke-width="2"');
+  if(route&&t.walk)s+=routeSVG(l);
+  return s;}
+function routeSVG(l){const w=T().walk,pts=w.pts.slice(0,w.i+1);let s='';
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];if(a.l===l&&b.l===l)s+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#f5d192" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 5"/>`;}
+  for(const p of pts)if(p.door&&p.l===l)s+=`<circle cx="${p.x}" cy="${p.y}" r="5" fill="${p.ok?'#a4ead0':'#f39091'}" stroke="#061b29" stroke-width="1.5"/>`;
+  const last=pts[pts.length-1];
+  if(last&&last.l===l){if(last.door&&!last.ok)s+=`<circle cx="${last.x}" cy="${last.y}" r="11" fill="none" stroke="#f39091" stroke-width="2.5"/>`;
+    s+=`<g transform="translate(${last.x} ${last.y-(last.door&&!last.ok?0:0)})"><circle r="8" fill="#f5d192" stroke="#fff" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="8" font-weight="800" fill="#1b1406">${SC().person.initials}</text></g>`;}
+  return s;}
+const DEFS=sfx=>`<linearGradient id="water${sfx}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#087b97"/><stop offset="1" stop-color="#0a4e6a"/></linearGradient>
+  <pattern id="hatch${sfx}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#0a2a38"/><rect width="1.5" height="6" fill="#1d4d5e"/></pattern>
+  <filter id="ring${sfx}" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceGraphic" operator="dilate" radius="1.8" result="d"/><feComposite in="d" in2="SourceAlpha" operator="out"/></filter>`;
+function drawMap(){
+  const other=level===1?2:1;
+  let s=`<defs>${DEFS('A')}${DEFS('B')}<clipPath id="lensClip"><circle cx="${lensP[0]}" cy="${lensP[1]}" r="56"/></clipPath></defs>`;
+  s+=`<style>.lbl{fill:#e3f5f6;font:700 10.5px ${getComputedStyle(document.body).fontFamily};text-anchor:middle;letter-spacing:.04em;pointer-events:none}.lbl.sm{font-size:8.5px;fill:#bfe0e5}.lbl.nr{font-size:9px}.lbl.void{font-size:8px;fill:#7fa9b3;font-weight:600}.lbl.out{font-size:8px;fill:#a4ead0}</style>`;
+  s+=levelSVG(level,'A');
+  if(lens){s+=`<g clip-path="url(#lensClip)"><rect width="400" height="300" fill="#061b29"/>${levelSVG(other,'B',{route:false})}</g>`;
+    s+=`<circle cx="${lensP[0]}" cy="${lensP[1]}" r="56" fill="none" stroke="#e2ffff" stroke-width="3"/><text x="${lensP[0]}" y="${lensP[1]+68}" class="lbl sm" style="fill:#e2ffff">${other===2?'ABOVE · L2':'BELOW · L1'}</text>`;}
+  $('map').innerHTML=s;
+  $('lv1').setAttribute('aria-pressed',level===1);$('lv2').setAttribute('aria-pressed',level===2);$('lensBtn').setAttribute('aria-pressed',lens);
+  const w=T().walk;$('clock').textContent=`${SC().day} ${E.fmt(SC().time)}`;
+  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.':w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted.':'Topside sits above the galleries. Cores connect the levels.';}
+
+/* ---------- panels ---------- */
+function renderQueue(){
+  $('queue').innerHTML=ORDER.map(id=>`<button class="qt" role="tab" aria-selected="${id===cur}" data-q="${id}"><span class="dot ${st[id].result&&st[id].result.cls==='good'?'done':''}"></span>${S[id].tab}<small>${S[id].kind}</small></button>`).join('')+
+    LOCKED.map(l=>`<button class="qt" disabled title="Next build">${l.tab}<small>${l.kind} · next</small></button>`).join('');
+  document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{if(timer)return;cur=b.dataset.q;level=1;lens=false;render();});}
+function renderTicket(){const sc=SC(),t=T(),p=sc.person;
+  $('ticket').innerHTML=`<span class="eyebrow">Ticket · ${sc.kind}</span>
+  <div class="who"><div class="av">${p.initials}</div><div><b>${p.name}</b><span>${p.role}</span></div></div>
+  <div class="msg">${sc.message}</div>
+  <div class="recs">${p.authorizations.map(a=>`<button class="chip" data-rec="${a.id}" aria-expanded="${!!t.open[a.id]}">${a.id}</button>`).join('')}</div>
+  ${p.authorizations.filter(a=>t.open[a.id]).map(a=>`<div class="rec"><b>${a.id} · ${a.purpose}</b><span>Covers: ${a.places}</span><span>When: ${a.window}</span><span>Approved by ${a.approver}</span></div>`).join('')}`;
+  document.querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>{t.open[b.dataset.rec]=!t.open[b.dataset.rec];renderTicket();});}
+function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
+  let h=`<span class="eyebrow">Badge · ${sc.person.name}</span><div class="groups" style="margin-top:10px">`;
+  for(const g of sc.editable){const G=E.GROUPS[g],hr=E.groupHours(t.world,g),on=c.groups.includes(g);
+    h+=`<button class="grp" data-g="${g}" aria-pressed="${on}"><span class="box">${on?'✓':''}</span><span><b>${G.n}</b><small>${G.note?G.note+' · ':''}${G.doors.length} doors · ${E.fmt(hr[0])}–${E.fmt(hr[1])} · ${G.members} badges</small></span></button>`;}
+  h+='</div>';
+  if(sc.groupScheduleEdit||t.person.authorizations.some(a=>a.exception)){
+    h+=`<div class="sub"><span class="eyebrow">Schedules</span>`;
+    for(const a of t.person.authorizations.filter(a=>a.exception)){const on=c.exceptions.some(x=>x.source===a.id);
+      h+=`<button class="grp" data-x="${a.id}" aria-pressed="${on}"><span class="box">${on?'✓':''}</span><span><b>Time exception from ${a.id}</b><small>This badge only · ${a.exception.day} ${E.fmt(a.exception.window[0])}–${E.fmt(a.exception.window[1])} · ${a.exception.doors.length} doors</small></span></button>`;}
+    if(sc.groupScheduleEdit){const e=sc.groupScheduleEdit,G=E.GROUPS[e.group],on=!!t.world.groupOverrides[e.group];
+      h+=`<button class="grp" data-gs="${e.group}" aria-pressed="${on}"><span class="box">${on?'✓':''}</span><span><b>Change ${G.n} group hours to ${E.fmt(e.to[0])}–${E.fmt(e.to[1])}</b><small>Group setting · every day · ${G.members} badges</small></span></button>`;}
+    h+='</div>';}
+  h+=`<div class="row2" style="margin-top:12px"><button class="btn primary" id="closeBtn">Close ticket</button><button class="btn" id="resetBtn">Reset</button></div>`;
+  if(t.result)h+=`<div class="result ${t.result.cls}" style="margin-top:10px"><b>${t.result.title}</b>${t.result.text}</div>`;
+  $('badge').innerHTML=h;
+  const change=fn=>{if(timer)return;const before=E.footprint(t.world,t.person);fn();t.delta=E.delta(before,E.footprint(t.world,t.person));t.showDelta=true;t.walk=null;t.result=null;render();};
+  document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>change(()=>{const g=b.dataset.g,i=c.groups.indexOf(g);i<0?c.groups.push(g):c.groups.splice(i,1);}));
+  document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>change(()=>{const a=t.person.authorizations.find(a=>a.id===b.dataset.x),i=c.exceptions.findIndex(x=>x.source===a.id);i<0?c.exceptions.push(E.clone(a.exception)):c.exceptions.splice(i,1);}));
+  document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>change(()=>{const e=sc.groupScheduleEdit;t.world.groupOverrides[e.group]?delete t.world.groupOverrides[e.group]:t.world.groupOverrides[e.group]=e.to;}));
+  $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();render();};
+  $('resetBtn').onclick=()=>{if(timer)return;st[cur]=fresh(cur);render();};}
+const names=ids=>ids.map(k=>E.SPACES[k].n);
+function renderReview(){const t=T(),d=t.delta;
+  let h=`<span class="eyebrow">Change review</span>`;
+  if(!d){h+=`<p class="note" style="margin:8px 0 0">Each change to the badge shows here: what it opened and what it closed, computed from effective access.</p>`;}
+  else{const none=!d.addedSpaces.length&&!d.removedSpaces.length&&!d.addedDoors.length&&!d.removedDoors.length;
+    h+=`<div class="delta" style="margin-top:8px">`;
+    if(none)h+=`<span class="note">Last change didn't alter effective access. Another group already covers the same doors.</span>`;
+    if(d.addedSpaces.length)h+=`<span>Opened</span><div class="row">${d.addedSpaces.map(k=>`<span class="tag add ${E.SPACES[k].kind==='restricted'?'restricted':''}">+ ${E.SPACES[k].n}</span>`).join('')}</div>`;
+    if(d.removedSpaces.length)h+=`<span>Closed</span><div class="row">${d.removedSpaces.map(k=>`<span class="tag rem">− ${E.SPACES[k].n}</span>`).join('')}</div>`;
+    const extraDoors=d.addedDoors.filter(x=>!d.addedSpaces.includes(E.DOORS[x].into)),lostDoors=d.removedDoors.filter(x=>!d.removedSpaces.includes(E.DOORS[x].into));
+    if(extraDoors.length)h+=`<span class="note">Also opens: ${extraDoors.map(x=>E.DOORS[x].n).join(', ')}</span>`;
+    if(lostDoors.length)h+=`<span class="note">No longer opens: ${lostDoors.map(x=>E.DOORS[x].n).join(', ')}</span>`;
+    h+=`</div>${none?'':`<div class="row2" style="margin-top:8px"><button class="btn" id="dToggle" aria-pressed="${t.showDelta}">Show on map</button></div>`}`;}
+  if(t.walk&&!t.walk.running){h+=`<div style="margin-top:12px"><span class="eyebrow">Walk log · ${E.fmt(SC().time)}</span><ol class="walklog" style="margin-top:8px">`;
+    for(const p of t.walk.pts.filter(p=>p.door))h+=`<li class="${p.ok?'':'no'}">${E.DOORS[p.door].n}: ${p.ok?'opened':'didn\'t open'}</li>`;
+    h+=`</ol>${t.walk.res.stop?'':`<p class="note ok" style="margin:6px 0 0">Reached every stop on the request.</p>`}</div>`;}
+  $('review').innerHTML=h;
+  if($('dToggle'))$('dToggle').onclick=()=>{t.showDelta=!t.showDelta;render();};}
+function renderInspect(){const t=T(),sel=t.sel;let h=`<span class="eyebrow">Inspection</span>`;
+  if(!sel){h+=`<p class="note" style="margin:8px 0 0">Turn on Inspect, then drag the lens or tap a door or room. Evidence for that spot appears here.</p>`;$('inspect').innerHTML=h;return;}
+  if(sel.door){const d=E.DOORS[sel.door],r=E.canEnter(t.world,t.person,sel.door,SC().time),g=r.grants||E.grants(t.world,t.person)[sel.door]||[];
+    const from=E.SPACES[d.from]?E.SPACES[d.from].n:E.OUTSIDE[d.from].n.replace('Outside · ','Outside, ');
+    const covered=t.person.authorizations.filter(a=>a.status==='approved'&&a.doors.includes(sel.door));
+    const req=Object.entries(E.GROUPS).filter(([k,G])=>G.doors.includes(sel.door)).map(([k,G])=>{const hr=E.groupHours(t.world,k);return `${G.n} ${E.fmt(hr[0])}–${E.fmt(hr[1])}`;});
+    const why={OK:'<span class="ok">Opens</span>',NO_GRANT:'<span class="bad">Denied · badge has no group for this door</span>',OUTSIDE_SCHEDULE:'<span class="bad">Denied · outside every schedule on this badge</span>',HARDWARE_FAULT:'<span class="bad">Denied · reader fault</span>',CREDENTIAL_INACTIVE:'<span class="bad">Denied · credential inactive</span>'}[r.code];
+    h+=`<div class="ev" style="margin-top:8px"><h3>${d.n}</h3><dl class="kv">
+      <dt>Reader</dt><dd>${(t.world.doorStatus[sel.door]||'online')==='online'?'Online':'<span class="bad">Fault</span>'} · ${sel.door}</dd>
+      <dt>Entry</dt><dd>${from} → ${E.SPACES[d.into].n}</dd>
+      <dt>Groups</dt><dd>${req.join('<br>')||'None'}</dd>
+      <dt>This badge</dt><dd>${g.length?g.map(x=>`${x.via} · ${x.day?x.day+' ':''}${E.fmt(x.window[0])}–${E.fmt(x.window[1])}${x.inherited?`<br><span class="warn">Inherited: ${x.inherited}</span>`:''}`).join('<br>'):'<span class="note">Not granted</span>'}</dd>
+      <dt>${SC().day} ${E.fmt(SC().time)}</dt><dd>${why}</dd>
+      <dt>Records</dt><dd>${covered.length?covered.map(a=>a.id).join(', '):g.length?'<span class="warn">No active record covers this door</span>':'<span class="note">None</span>'}</dd></dl>`;
+    if(g.some(x=>x.inherited))h+=`<div class="row2"><button class="btn" id="flagBtn" aria-pressed="${t.flagged}">${t.flagged?'Template flagged for review':'Flag template for review'}</button></div>`;
+    h+=`</div>`;}
+  else{const s=E.SPACES[sel.space],fp=E.footprint(t.world,t.person),[x,y]=sel.pt;
+    const other=Object.entries(E.SPACES).filter(([k,o])=>o.l!==s.l&&o.r.some(r=>x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3])).map(([k,o])=>o.n);
+    const v=s.l===1?E.VOIDS.find(v=>x>=v.r[0]&&x<=v.r[0]+v.r[2]&&y>=v.r[1]&&y<=v.r[1]+v.r[3]):null;
+    h+=`<div class="ev" style="margin-top:8px"><h3>${s.n}</h3><dl class="kv"><dt>Level</dt><dd>L${s.l} · ${s.kind}</dd>
+      <dt>${s.l===1?'Above':'Below'}</dt><dd>${other.join(', ')||(v?v.n.replace('Open to','Open volume over'):'Nothing')}</dd>
+      <dt>Badge</dt><dd>${fp.spaces.has(sel.space)?'<span class="ok">Inside footprint</span>':'<span class="note">Outside footprint</span>'}</dd></dl></div>`;}
+  $('inspect').innerHTML=h;
+  if($('flagBtn'))$('flagBtn').onclick=()=>{t.flagged=!t.flagged;renderInspect();};}
+
+/* ---------- walk ---------- */
+function buildWalk(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.targets,sc.time);
+  const pts=[{x:outP(sc.start)[0],y:outP(sc.start)[1],l:1}];
+  for(const s of res.steps){const l=s.door?E.doorLevel(s.door):s.p?E.levelOf(s.to):E.levelOf(s.to);
+    if(s.door&&!s.exit){const [x,y]=E.DOORS[s.door].p;pts.push({x,y,l:E.doorLevel(s.door),door:s.door,ok:s.result.ok});if(!s.result.ok)break;}
+    else if(s.p){pts.push({x:s.p[0],y:s.p[1],l:E.levelOf(s.from)});}
+    const [cx,cy]=center(s.to);pts.push({x:cx,y:cy,l:E.levelOf(s.to)});}
+  return{res,pts,i:0,running:true};}
+function startWalk(){if(timer)return;const t=T();lens=false;t.walk=buildWalk();level=1;render();
+  const tick=()=>{const w=t.walk;if(w.i>=w.pts.length-1){w.running=false;timer=null;render();return;}
+    w.i++;level=w.pts[w.i].l;drawMap();timer=setTimeout(tick,RM?60:340);};timer=setTimeout(tick,RM?60:300);}
+
+/* ---------- grading (uses the same evaluator; no case branches in access logic) ---------- */
+function grade(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.targets,sc.time),extra=E.outOfScope(t.world,t.person).map(d=>E.DOORS[d].n);
+  const who=sc.person.name.split(' ')[0];
+  if(res.stop)return{cls:'badr',title:'Not ready to close',text:`At ${sc.day} ${E.fmt(sc.time)}, ${who} would be stopped at ${E.DOORS[res.stop.door]?E.DOORS[res.stop.door].n:'a door'}. Walk the route and inspect where it fails.`};
+  const ov=Object.keys(t.world.groupOverrides);
+  if(ov.length){const G=E.GROUPS[ov[0]];return{cls:'warnr',title:'Works, but too broad',text:`${who} gets in, but ${G.n} now opens at ${E.fmt(t.world.groupOverrides[ov[0]][0])} every day for all ${G.members} badges. The approved record covers one person on one morning.`};}
+  if(extra.length)return{cls:'warnr',title:'Works, but outside the approved scope',text:`${who} reaches everything requested, but the badge also opens ${extra.join(', ')}. No active record covers ${extra.length>1?'those doors':'that door'}.`};
+  return{cls:'good',title:'Ticket closed',text:`${who} reaches every stop at ${E.fmt(sc.time)}, and the badge matches the approved records exactly.${t.flagged?' You also flagged the legacy template for review.':''}`};}
+
+/* ---------- lens / selection ---------- */
+const map=$('map');
+function svgPt(e){const p=map.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=map.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0};}
+function pick(x,y,l){let best=null,bd=1e9;for(const [d,o] of Object.entries(E.DOORS)){if(E.doorLevel(d)!==l)continue;const dd=Math.hypot(o.p[0]-x,o.p[1]-y);if(dd<bd){bd=dd;best=d;}}
+  if(bd<16)return{door:best};
+  const sp=Object.entries(E.SPACES).find(([k,o])=>o.l===l&&o.r.some(r=>x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3]));
+  return sp?{space:sp[0],pt:[x,y]}:null;}
+let dragging=false;
+map.addEventListener('pointerdown',e=>{if(timer)return;const p=svgPt(e);
+  if(lens){dragging=true;try{map.setPointerCapture(e.pointerId)}catch(_){};lensP=[Math.max(20,Math.min(380,p.x)),Math.max(20,Math.min(280,p.y))];
+    const other=level===1?2:1,s=pick(p.x,p.y,level)||null,s2=pick(p.x,p.y,other);T().sel=(s&&s.door)?s:(s2&&s2.door)?s2:s||s2;}
+  else{T().sel=pick(p.x,p.y,level);}
+  drawMap();renderInspect();});
+map.addEventListener('pointermove',e=>{if(!lens||!dragging)return;const p=svgPt(e);lensP=[Math.max(20,Math.min(380,p.x)),Math.max(20,Math.min(280,p.y))];
+  const other=level===1?2:1,s=pick(p.x,p.y,level),s2=pick(p.x,p.y,other);const n=(s&&s.door)?s:(s2&&s2.door)?s2:null;if(n&&(!T().sel||T().sel.door!==n.door)){T().sel=n;renderInspect();}drawMap();});
+map.addEventListener('pointerup',()=>dragging=false);map.addEventListener('pointercancel',()=>dragging=false);
+map.addEventListener('keydown',e=>{if(!lens)return;const k={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]}[e.key];if(!k)return;e.preventDefault();
+  lensP=[Math.max(20,Math.min(380,lensP[0]+k[0])),Math.max(20,Math.min(280,lensP[1]+k[1]))];const s=pick(lensP[0],lensP[1],level)||pick(lensP[0],lensP[1],level===1?2:1);if(s)T().sel=s;drawMap();renderInspect();});
+
+$('lv1').onclick=()=>{if(timer)return;level=1;drawMap();};$('lv2').onclick=()=>{if(timer)return;level=2;drawMap();};
+$('lensBtn').onclick=()=>{if(timer)return;lens=!lens;drawMap();};
+$('walkBtn').onclick=startWalk;
+function render(){renderQueue();renderTicket();renderBadge();renderReview();renderInspect();drawMap();$('walkBtn').textContent=`Walk ${SC().person.name.split(' ')[0]} in`;}
+render();
+})();
+</script>

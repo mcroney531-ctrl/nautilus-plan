@@ -1,0 +1,10 @@
+{
+  "name": "nautilus-access-desk",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Nautilus Access Desk: badge-access training prototype (fictional aquarium).",
+  "scripts": {
+    "test": "node test/test.js",
+    "build": "python build.py"
+  }
+}

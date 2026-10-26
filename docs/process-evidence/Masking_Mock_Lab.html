@@ -1,0 +1,1384 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Masking Mock Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a workbench — tab rail across the top, one mock per panel, stage first, controls directly under it */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --fg:#1b2330; --muted:#5b6676; --line:#d5dbe3;
+  --accent:#c9741f; --accent-ink:#ffffff; --good:#2f8f5b; --bad:#c2412d;
+  --f-display:"Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161c; --surface:#1a2028; --fg:#e6eaf0; --muted:#98a3b3; --line:#2c3440;
+  --accent:#f0a04b; --accent-ink:#1a1206; --good:#4cc283; --bad:#ef6a55; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161c; --surface:#1a2028; --fg:#e6eaf0; --muted:#98a3b3; --line:#2c3440;
+  --accent:#f0a04b; --accent-ink:#1a1206; --good:#4cc283; --bad:#ef6a55; color-scheme:dark}
+
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:grid;gap:18px}
+header h1{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,6vw,34px);letter-spacing:-.02em;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);max-width:60ch}
+
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.tab{flex:0 0 auto;font:600 13px/1 var(--f-body);color:var(--muted);background:transparent;border:1px solid var(--line);
+  border-radius:999px;padding:9px 13px;cursor:pointer;display:flex;gap:7px;align-items:center}
+.tab .n{font-family:var(--f-mono);font-size:11px;opacity:.7}
+.tab[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.panel{display:grid;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 11px/1 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;padding:6px 8px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.chip.tech{border-color:var(--accent);color:var(--accent)}
+.panel h2{font-family:var(--f-display);font-weight:600;font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.story{margin:0;color:var(--muted);max-width:62ch}
+
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;max-width:100%}
+.stage svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none}
+.stage svg.track{touch-action:none;cursor:crosshair}
+.stage text{font-family:var(--f-body)}
+.veil{fill:rgba(9,13,19,.74)}
+.ring{fill:none;stroke:#f0a04b;stroke-width:2}
+
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 14px/1 var(--f-body);border-radius:8px;padding:11px 14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ok{border-color:var(--good);color:var(--good)}
+.btn.no{border-color:var(--bad);color:var(--bad)}
+.btn[disabled]{opacity:.4;cursor:default}
+.count{font:500 13px/1 var(--f-mono);color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums}
+
+.prompt{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:6px;min-width:0}
+.prompt .lbl{font:500 11px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.prompt .big{font-weight:600}
+.say{font-style:italic}
+.fb{font-weight:600}
+.fb.good{color:var(--good)} .fb.bad{color:var(--bad)}
+.found{margin:0;padding-left:18px;color:var(--muted)}
+.found li{color:var(--fg)}
+
+.why{border-top:1px solid var(--line);padding-top:10px;display:grid;gap:4px;font-size:14px;color:var(--muted)}
+.why b{color:var(--fg);font-weight:600}
+.sep{flex:0 0 auto;align-self:center;font:500 11px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);padding:0 4px 0 10px;border-left:1px solid var(--line);margin-left:4px}
+.chip.r2{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.repro{background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--muted);display:grid;gap:4px}
+.repro b{color:var(--fg)}
+.repro .tag{font:500 11px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase}
+.repro .tag.yes{color:var(--good)} .repro .tag.part{color:var(--accent)}
+.spec{font-size:14px}
+.opts{display:grid;gap:8px}
+.opts .btn{text-align:left;line-height:1.35}
+#plate7{transition:opacity .35s ease}
+.chip.r3{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg .btn{border:0;border-radius:0;padding:9px 12px}
+.seg .btn+.btn{border-left:1px solid var(--line)}
+.store{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.store b{font-weight:600;min-width:9ch}
+.stores{display:grid;gap:8px}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.checks li{display:flex;gap:8px;align-items:baseline}
+.checks li::before{content:"✕";font:600 12px/1 var(--f-mono);color:var(--bad);width:12px}
+.checks li.pass::before{content:"✓";color:var(--good)}
+.previews{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.pv{display:grid;gap:4px;font:500 11px/1.2 var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.pv svg{display:block;border:1px solid var(--line);border-radius:6px;background:var(--surface);height:auto;max-width:100%}
+.pv.ok svg{border-color:var(--good)} .pv.bad svg{border-color:var(--bad)}
+.rng{display:grid;gap:4px;font-size:14px}
+.rng input{width:100%;accent-color:var(--accent)}
+.rng span{font-variant-numeric:tabular-nums}
+#s9 .pnl{transition:transform .45s ease, opacity .3s ease}
+.chip.r4{background:var(--good);border-color:var(--good);color:var(--surface)}
+.op{font:500 12px/1.4 var(--f-mono);color:var(--accent)}
+.app{display:grid;grid-template-columns:minmax(90px,30%) 1fr;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);min-width:0}
+.app nav{background:var(--bg);padding:8px;display:grid;gap:4px;align-content:start;font-size:13px}
+.app nav span{padding:4px 6px;border-radius:4px}
+.app nav .new{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.app main{padding:10px;font-size:13px;color:var(--muted);min-width:0}
+.app main b{color:var(--fg)}
+.pathlist{margin:0;padding-left:20px;display:grid;gap:2px}
+.cite{font:500 12px/1.4 var(--f-mono);color:var(--muted)}
+.cite.leak{color:var(--bad)}
+.chip.b{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.formula{font:500 13px/1.5 var(--f-mono);color:var(--fg);overflow-wrap:anywhere}
+.swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+#s18 .gp,#s18 .mh{transition:opacity .45s ease}
+@media (prefers-reduced-motion: reduce){#s18 .gp,#s18 .mh{transition:none}}
+#s19 .gp,#s19 .mh{transition:opacity .45s ease}
+#s19.lensing{touch-action:none;cursor:crosshair}
+.stagehead{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font:500 12px/1 var(--f-mono);color:var(--muted)}
+.clock{color:var(--accent);font-weight:600}
+.phase{display:flex;gap:6px;flex-wrap:wrap}
+.phase span{font:500 11px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;padding:6px 8px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.phase span.on{border-color:var(--accent);color:var(--accent)}
+.phase span.done{border-color:var(--good);color:var(--good)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Masking Mock Lab</h1>
+  <p>Six rough mocks for challenge #571. Each one uses a cutout to control where the learner looks. Placeholder art, real interactions.</p>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Mocks">
+  <button class="tab" role="tab" aria-selected="true" data-t="0"><span class="n">01</span>Hazard spotter</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="1"><span class="n">02</span>SaaS walkthrough</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="2"><span class="n">03</span>Rx label check</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="3"><span class="n">04</span>Planogram audit</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="4"><span class="n">05</span>Call screen</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="5"><span class="n">06</span>Bar inspection</button>
+  <span class="sep" aria-hidden="true">Round 2</span>
+  <button class="tab" role="tab" aria-selected="false" data-t="6"><span class="n">07</span>QC template</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="7"><span class="n">08</span>Wall investigation</button>
+  <span class="sep" aria-hidden="true">Round 3</span>
+  <button class="tab" role="tab" aria-selected="false" data-t="8"><span class="n">09</span>Permissions</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="9"><span class="n">10</span>Delivery zones</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="10"><span class="n">11</span>Campaign crops</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="11"><span class="n">12</span>Privacy film</button>
+  <span class="sep" aria-hidden="true">Round 4</span>
+  <button class="tab" role="tab" aria-selected="false" data-t="12"><span class="n">13</span>Feature release</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="13"><span class="n">14</span>Badge access</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="14"><span class="n">15</span>Client report</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="15"><span class="n">16</span>Learning path</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="16"><span class="n">17</span>AI boundary</button>
+  <span class="sep" aria-hidden="true">Build</span>
+  <button class="tab" role="tab" aria-selected="false" data-t="17"><span class="n">18</span>Badge planner v2</button>
+  <button class="tab" role="tab" aria-selected="false" data-t="18"><span class="n">19</span>Badge v3 · 6:30 AM</button>
+</nav>
+
+<!-- 01 HAZARD -->
+<section class="panel" role="tabpanel" data-p="0">
+  <div class="meta"><span class="chip">Warehouse onboarding</span><span class="chip tech">Overlay + mask, multiple holes</span></div>
+  <h2>Flashlight hazard walk</h2>
+  <p class="story">New floor associates sweep a dark loading dock with a flashlight and tap anything unsafe. Found hazards stay lit.</p>
+  <div class="stage"><svg id="s1" class="track" viewBox="0 0 360 240" aria-label="Dark warehouse scene with a movable flashlight">
+    <defs>
+      <filter id="soft"><feGaussianBlur stdDeviation="5"/></filter>
+      <mask id="m1"><rect width="360" height="240" fill="#fff"/><circle id="light" cx="120" cy="110" r="40" fill="#000" filter="url(#soft)"/><g id="holes1"></g></mask>
+    </defs>
+    <rect width="360" height="240" fill="#9aa5ad"/>
+    <rect y="138" width="360" height="102" fill="#7d7a72"/>
+    <rect y="180" width="360" height="4" fill="#e4b73a"/>
+    <rect x="16" y="30" width="6" height="110" fill="#2f5d8a"/><rect x="132" y="30" width="6" height="110" fill="#2f5d8a"/>
+    <rect x="16" y="30" width="122" height="5" fill="#e07a2e"/><rect x="16" y="70" width="122" height="5" fill="#e07a2e"/><rect x="16" y="106" width="122" height="5" fill="#e07a2e"/>
+    <g fill="#c9a26b" stroke="#8a6a3e" stroke-width=".8">
+      <rect x="26" y="52" width="30" height="18"/><rect x="60" y="48" width="34" height="22"/><rect x="98" y="54" width="30" height="16"/>
+      <rect x="26" y="88" width="40" height="18"/><rect x="72" y="90" width="26" height="16"/><rect x="102" y="86" width="28" height="20"/>
+      <g transform="rotate(-11 46 30)"><rect x="30" y="18" width="34" height="12"/><rect x="33" y="7" width="30" height="11"/><rect x="36" y="-3" width="26" height="10"/></g>
+    </g>
+    <rect x="150" y="126" width="50" height="30" rx="4" fill="#e3a21a"/><path d="M156 126 V104 H186 V126" fill="none" stroke="#333" stroke-width="3"/>
+    <circle cx="160" cy="160" r="7" fill="#222"/><circle cx="192" cy="160" r="7" fill="#222"/>
+    <rect x="200" y="66" width="6" height="94" fill="#555"/><rect x="206" y="88" width="28" height="4" fill="#3a3a3a"/>
+    <rect x="296" y="56" width="44" height="82" fill="#6f7c86"/><circle cx="332" cy="98" r="2" fill="#ddd"/>
+    <rect x="302" y="42" width="32" height="11" rx="1" fill="#2c9a4c"/><text x="318" y="50.5" font-size="8" font-weight="700" fill="#fff" text-anchor="middle">EXIT</text>
+    <rect x="286" y="126" width="62" height="10" fill="#9a6b3c"/>
+    <g fill="#c9a26b" stroke="#8a6a3e" stroke-width=".8"><rect x="290" y="104" width="26" height="22"/><rect x="318" y="98" width="28" height="28"/></g>
+    <ellipse cx="78" cy="208" rx="30" ry="9" fill="#4f93c0" opacity=".85"/><ellipse cx="104" cy="214" rx="8" ry="3" fill="#4f93c0" opacity=".8"/>
+    <path d="M226 238 q12 -14 24 -6 t24 -10 t24 -12 t26 -14" fill="none" stroke="#1d1d1d" stroke-width="2.5"/><rect x="320" y="190" width="8" height="6" fill="#1d1d1d"/>
+    <rect class="veil" width="360" height="240" mask="url(#m1)"/>
+    <g id="marks1"></g>
+  </svg></div>
+  <div class="bar"><button class="btn" id="r1">Reset</button><span class="count" id="c1">0 / 5 found</span></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Found so far</span><p class="fb" id="f1">Move the light (or drag on touch) and tap anything unsafe.</p><ol class="found" id="l1"></ol></div>
+  <div class="why"><b>Why masking does the work:</b> Without the dark, learners take in the whole photo at once and spot the obvious one. The flashlight forces a slow, section-by-section sweep, which is how a real walkthrough is supposed to go.<span><b>Storyline:</b> one big frame with a Subtract hole, dragged with a slider or drag-and-drop; found hazards swap to a lit state.</span></div>
+</section>
+
+<!-- 02 SAAS -->
+<section class="panel" role="tabpanel" data-p="1" hidden>
+  <div class="meta"><span class="chip">SaaS customer onboarding</span><span class="chip tech">Subtract-style cutout, moves per step</span></div>
+  <h2>Guided product tour</h2>
+  <p class="story">New customer success reps learn the billing workflow in Ledgerly, a fictional invoicing app. Everything dims except the control that matters right now.</p>
+  <div class="stage"><svg id="s2" viewBox="0 0 360 240" aria-label="Invoicing app screen with a highlighted area">
+    <rect width="360" height="240" fill="#f7f8fa"/>
+    <rect width="360" height="28" fill="#1f2a44"/><text x="10" y="18" font-size="11" font-weight="700" fill="#fff">Ledgerly</text>
+    <rect x="110" y="7" width="140" height="14" rx="7" fill="#2d3a58"/><text x="120" y="17" font-size="7.5" fill="#9aa8c4">Search clients, invoices…</text>
+    <circle cx="342" cy="14" r="8" fill="#6c8fd6"/><text x="342" y="17" font-size="7" fill="#fff" text-anchor="middle">CS</text>
+    <rect y="28" width="72" height="212" fill="#eef1f6"/>
+    <g font-size="8.5" fill="#4a5568"><text x="10" y="46">Dashboard</text><text x="10" y="86">Clients</text><text x="10" y="106">Reports</text><text x="10" y="126">Settings</text></g>
+    <rect x="4" y="55" width="64" height="18" rx="4" fill="#dce6fb"/><text x="10" y="67" font-size="8.5" font-weight="700" fill="#2a4fa8">Invoices</text>
+    <text x="84" y="52" font-size="13" font-weight="700" fill="#1b2330">Invoices</text>
+    <rect x="262" y="38" width="88" height="20" rx="4" fill="#3b6fd8"/><text x="306" y="51" font-size="8.5" font-weight="600" fill="#fff" text-anchor="middle">+ New invoice</text>
+    <g font-size="8" fill="#5b6676"><text x="86" y="77">All</text><text x="112" y="77">Draft</text><text x="144" y="77">Sent</text><text x="182" y="77">Overdue</text></g>
+    <circle cx="219" cy="74" r="5" fill="#c2412d"/><text x="219" y="76.5" font-size="6.5" fill="#fff" text-anchor="middle">1</text>
+    <rect x="80" y="84" width="272" height="0.8" fill="#d5dbe3"/>
+    <rect x="80" y="88" width="272" height="14" fill="#eef1f6"/>
+    <g font-size="7" font-weight="700" fill="#5b6676"><text x="86" y="97.5">CLIENT</text><text x="150" y="97.5">INVOICE</text><text x="206" y="97.5">DUE</text><text x="246" y="97.5">AMOUNT</text><text x="306" y="97.5">STATUS</text></g>
+    <g font-size="8" fill="#1b2330">
+      <text x="86" y="116">Harbor Dental</text><text x="150" y="116">INV-1042</text><text x="206" y="116">Oct 02</text><text x="246" y="116">$1,280.00</text>
+      <text x="86" y="140">Pine &amp; Co</text><text x="150" y="140">INV-1043</text><text x="206" y="140">Oct 18</text><text x="246" y="140">$640.00</text>
+      <text x="86" y="164">Northgate Gym</text><text x="150" y="164">INV-1044</text><text x="206" y="164">Oct 21</text><text x="246" y="164">$2,150.00</text>
+      <text x="86" y="188">Alder Studio</text><text x="150" y="188">INV-1045</text><text x="206" y="188">Oct 30</text><text x="246" y="188">$415.00</text>
+    </g>
+    <g font-size="7" font-weight="600">
+      <rect x="304" y="108" width="40" height="12" rx="6" fill="#fbe3df"/><text x="324" y="116.5" fill="#c2412d" text-anchor="middle">Overdue</text>
+      <rect x="304" y="132" width="40" height="12" rx="6" fill="#e1ecfb"/><text x="324" y="140.5" fill="#2a4fa8" text-anchor="middle">Sent</text>
+      <rect x="304" y="156" width="40" height="12" rx="6" fill="#eceff3"/><text x="324" y="164.5" fill="#5b6676" text-anchor="middle">Draft</text>
+      <rect x="304" y="180" width="40" height="12" rx="6" fill="#e1ecfb"/><text x="324" y="188.5" fill="#2a4fa8" text-anchor="middle">Sent</text>
+    </g>
+    <g fill="#e3e7ec"><rect x="80" y="124" width="272" height=".8"/><rect x="80" y="148" width="272" height=".8"/><rect x="80" y="172" width="272" height=".8"/><rect x="80" y="196" width="272" height=".8"/></g>
+    <path id="v2" class="veil" fill-rule="evenodd"/><path id="g2" class="ring"/>
+  </svg></div>
+  <div class="bar"><button class="btn" id="b2">Back</button><button class="btn primary" id="n2">Next</button><span class="count" id="c2">Step 1 of 4</span></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Tour tip</span><p class="big" id="t2"></p></div>
+  <div class="why"><b>Why masking does the work:</b> Real software screens are noisy. Dimming everything but one control removes the "where am I supposed to look" problem, which is the main thing new users get stuck on.<span><b>Storyline:</b> one Merge Shapes frame per step, or a single frame moved with motion paths between steps.</span></div>
+</section>
+
+<!-- 03 RX -->
+<section class="panel" role="tabpanel" data-p="2" hidden>
+  <div class="meta"><span class="chip">Pharmacy tech compliance</span><span class="chip tech">Subtract-style cutout, one field at a time</span></div>
+  <h2>Label-to-order verification</h2>
+  <p class="story">Techs check a filled label against the prescriber's order, one field at a time. The cutout won't let them skim the whole label and assume it's fine.</p>
+  <div class="stage"><svg id="s3" viewBox="0 0 360 240" aria-label="Prescription label with one field visible">
+    <rect width="360" height="240" fill="#d8d2c6"/>
+    <rect x="30" y="16" width="300" height="208" rx="6" fill="#fff" stroke="#bdb6a8"/>
+    <rect x="30" y="16" width="300" height="24" rx="6" fill="#2b6f6a"/><rect x="30" y="30" width="300" height="10" fill="#2b6f6a"/>
+    <text x="42" y="32" font-size="9" font-weight="700" fill="#fff">LINDEN PHARMACY</text><text x="318" y="32" font-size="8" fill="#cfe7e4" text-anchor="end">Rx 4471902</text>
+    <g font-size="6.5" font-weight="700" fill="#8a8578" letter-spacing=".5">
+      <text x="44" y="54">PATIENT</text><text x="44" y="82">DATE OF BIRTH</text><text x="44" y="110">DRUG + STRENGTH</text><text x="44" y="138">DIRECTIONS</text><text x="44" y="166">QUANTITY</text><text x="44" y="194">PRESCRIBER</text>
+    </g>
+    <g font-size="10" font-weight="600" fill="#1b2330">
+      <text x="44" y="66">MARIA DELGADO</text><text x="44" y="94">03/14/1958</text><text x="44" y="122">METOPROLOL TARTRATE 25 MG TAB</text>
+      <text x="44" y="150">TAKE 1 TABLET BY MOUTH TWICE DAILY</text><text x="44" y="178">QTY 60 · 2 REFILLS</text><text x="44" y="206">DR. A. OKAFOR</text>
+    </g>
+    <g fill="#1b2330"><rect x="268" y="48" width="2" height="22"/><rect x="272" y="48" width="1" height="22"/><rect x="275" y="48" width="3" height="22"/><rect x="280" y="48" width="1" height="22"/><rect x="283" y="48" width="2" height="22"/><rect x="287" y="48" width="1" height="22"/><rect x="290" y="48" width="3" height="22"/><rect x="295" y="48" width="1" height="22"/><rect x="298" y="48" width="2" height="22"/><rect x="302" y="48" width="1" height="22"/><rect x="305" y="48" width="3" height="22"/><rect x="310" y="48" width="2" height="22"/></g>
+    <path id="v3" class="veil" fill-rule="evenodd"/><path id="g3" class="ring"/>
+  </svg></div>
+  <div class="prompt" aria-live="polite"><span class="lbl" id="k3">Order says</span><p class="big" id="o3"></p><p class="fb" id="f3"></p></div>
+  <div class="bar"><button class="btn ok" id="y3">Matches</button><button class="btn no" id="x3">Doesn't match</button><button class="btn primary" id="n3" hidden>Next field</button><span class="count" id="c3">Field 1 of 6</span></div>
+  <div class="why"><b>Why masking does the work:</b> Most dispensing errors happen when someone reads the label as a whole and their brain fills in what it expects. Isolating each field enforces the field-by-field check the procedure already requires.<span><b>Storyline:</b> six frames (or one frame on a motion path), with a T/F question per field.</span></div>
+</section>
+
+<!-- 04 PLANOGRAM -->
+<section class="panel" role="tabpanel" data-p="3" hidden>
+  <div class="meta"><span class="chip">Retail store leads</span><span class="chip tech">True mask (clip-path)</span></div>
+  <h2>Planogram lens audit</h2>
+  <p class="story">A district manager trains store leads to audit a shelf. The lens shows the approved planogram underneath. Tap any facing that doesn't match.</p>
+  <div class="stage"><svg id="s4" class="track" viewBox="0 0 360 240" aria-label="Cereal shelf with a lens that reveals the planogram">
+    <defs><clipPath id="lens"><circle id="lc" cx="150" cy="118" r="38"/></clipPath>
+      <pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M12 0H0V12" fill="none" stroke="#b9cbe6" stroke-width=".6"/></pattern></defs>
+    <rect width="360" height="240" fill="#e9e4da"/>
+    <g id="actual"></g>
+    <g clip-path="url(#lens)"><rect width="360" height="240" fill="#eaf1fb"/><rect width="360" height="240" fill="url(#grid)"/><g id="plan"></g></g>
+    <circle id="lr" cx="150" cy="118" r="38" class="ring"/>
+    <g id="marks4"></g>
+  </svg></div>
+  <div class="bar"><button class="btn" id="r4">Reset</button><span class="count" id="c4">0 / 3 found</span></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Audit</span><p class="fb" id="f4">Move the lens over the shelf. Inside it you'll see what should be there.</p></div>
+  <div class="why"><b>Why masking does the work:</b> The comparison happens inside the lens, so learners have to physically check each facing instead of glancing between two separate pictures.<span><b>Build note:</b> this is the one mock that masks the content itself. In Storyline you'd fake it with a lens-shaped hole over the planogram image, but the clip-path version is cleaner.</span></div>
+</section>
+
+<!-- 05 CALL -->
+<section class="panel" role="tabpanel" data-p="4" hidden>
+  <div class="meta"><span class="chip">Contact center new hire</span><span class="chip tech">Subtract-style cutout, follows the call</span></div>
+  <h2>Where to look, line by line</h2>
+  <p class="story">New agents hear a billing call play out. As the caller talks, the cutout moves to the part of the desktop they should be checking.</p>
+  <div class="stage"><svg id="s5" viewBox="0 0 360 240" aria-label="Agent desktop with four panels">
+    <rect width="360" height="240" fill="#eceff3"/>
+    <rect width="360" height="22" fill="#23303f"/><text x="10" y="15" font-size="8.5" font-weight="700" fill="#fff">Brightline Support · Agent desktop</text>
+    <rect x="296" y="5" width="56" height="12" rx="6" fill="#c2412d"/><text x="324" y="13.5" font-size="7" font-weight="600" fill="#fff" text-anchor="middle">● ON CALL 02:14</text>
+    <g fill="#fff" stroke="#d5dbe3"><rect x="8" y="30" width="166" height="92" rx="4"/><rect x="186" y="30" width="166" height="92" rx="4"/><rect x="8" y="130" width="166" height="102" rx="4"/><rect x="186" y="130" width="166" height="102" rx="4"/></g>
+    <g font-size="6.5" font-weight="700" fill="#5b6676" letter-spacing=".5"><text x="16" y="43">ACCOUNT</text><text x="194" y="43">BILLING HISTORY</text><text x="16" y="143">INTERACTION NOTES</text><text x="194" y="143">KNOWLEDGE BASE</text></g>
+    <g font-size="8" fill="#1b2330"><text x="16" y="58" font-weight="700" font-size="9.5">Jordan Reyes</text><text x="16" y="72">Acct ••• 8821</text><text x="16" y="85">Home Internet 500</text>
+      <rect x="16" y="96" width="9" height="9" rx="1.5" fill="none" stroke="#c2412d"/><text x="30" y="104" fill="#c2412d">Identity not verified</text></g>
+    <g font-size="7.5" fill="#1b2330"><text x="194" y="64">Oct 14</text><text x="226" y="64">Equipment fee</text><text x="344" y="64" text-anchor="end">$89.99</text>
+      <text x="194" y="84">Oct 01</text><text x="226" y="84">Monthly service</text><text x="344" y="84" text-anchor="end">$65.00</text>
+      <text x="194" y="104">Sep 01</text><text x="226" y="104">Monthly service</text><text x="344" y="104" text-anchor="end">$65.00</text></g>
+    <g font-size="7.5" fill="#1b2330"><text x="16" y="160" font-weight="700">Oct 16 · K. Morales</text><text x="16" y="173">Called re: equipment fee.</text><text x="16" y="185">Promised callback within 48 hrs.</text><text x="16" y="197" fill="#c2412d">Callback not logged.</text></g>
+    <rect x="194" y="150" width="150" height="14" rx="3" fill="#eef1f6"/><text x="200" y="160" font-size="7" fill="#5b6676">equipment fee refund</text>
+    <g font-size="7.5" fill="#1b2330"><text x="194" y="180" font-weight="700" fill="#2a4fa8">KB-217 · Equipment fee refunds</text><text x="194" y="193">Refundable within 30 days if the</text><text x="194" y="205">equipment is returned. Agent can</text><text x="194" y="217">credit up to $100 without approval.</text></g>
+    <path id="v5" class="veil" fill-rule="evenodd"/><path id="g5" class="ring"/>
+  </svg></div>
+  <div class="bar"><button class="btn" id="b5">Back</button><button class="btn primary" id="n5">Next line</button><span class="count" id="c5">Line 1 of 4</span></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Caller</span><p class="say" id="q5"></p><span class="lbl">Coach</span><p class="big" id="t5"></p></div>
+  <div class="why"><b>Why masking does the work:</b> New agents freeze on a four-panel desktop because they don't know which panel answers which question. The cutout links what the caller says to where the answer lives.<span><b>Storyline:</b> frame on a motion path, cued to the call audio's timeline.</span></div>
+</section>
+
+<!-- 06 BAR -->
+<section class="panel" role="tabpanel" data-p="5" hidden>
+  <div class="meta"><span class="chip">Hospitality · Perfect Pour series</span><span class="chip tech">Subtract-style cutout, zone by zone</span></div>
+  <h2>Back-bar inspection walk</h2>
+  <p class="story">Bar staff walk the back bar the way a health inspector would, one zone at a time, and call pass or fail.</p>
+  <div class="stage"><svg id="s6" viewBox="0 0 360 240" aria-label="Top-down view of a back bar">
+    <rect width="360" height="240" fill="#3b3f45"/>
+    <rect x="10" y="28" width="340" height="186" rx="6" fill="#b9c0c7"/>
+    <rect x="20" y="44" width="72" height="62" rx="6" fill="#dfe4e8"/><rect x="28" y="52" width="56" height="44" rx="10" fill="#9fb0bd"/>
+    <rect x="34" y="60" width="30" height="22" rx="3" fill="#f7f7f2"/><g fill="#e8cf3a"><circle cx="42" cy="68" r="5"/><circle cx="52" cy="72" r="5"/><circle cx="46" cy="76" r="4.5"/><circle cx="57" cy="66" r="4"/></g>
+    <rect x="72" y="46" width="12" height="6" rx="1" fill="#4a86c5"/><text x="56" y="102" font-size="6.5" fill="#4a5568" text-anchor="middle">HANDSINK</text>
+    <rect x="100" y="44" width="122" height="72" rx="6" fill="#d9e9f3"/>
+    <g fill="#fff" opacity=".85"><rect x="108" y="52" width="9" height="9" rx="2"/><rect x="122" y="58" width="9" height="9" rx="2"/><rect x="140" y="50" width="9" height="9" rx="2"/><rect x="160" y="60" width="9" height="9" rx="2"/><rect x="178" y="52" width="9" height="9" rx="2"/><rect x="196" y="62" width="9" height="9" rx="2"/><rect x="110" y="80" width="9" height="9" rx="2"/><rect x="132" y="90" width="9" height="9" rx="2"/><rect x="150" y="80" width="9" height="9" rx="2"/><rect x="172" y="92" width="9" height="9" rx="2"/><rect x="194" y="84" width="9" height="9" rx="2"/><rect x="206" y="100" width="9" height="9" rx="2"/></g>
+    <path d="M140 74 h26 a8 8 0 0 1 0 16 h-26 z" fill="#8c96a0"/><rect x="166" y="79" width="30" height="5" rx="2" fill="#2f3640"/>
+    <text x="161" y="112" font-size="6.5" fill="#4a5568" text-anchor="middle">ICE WELL</text>
+    <circle cx="256" cy="72" r="22" fill="#c2412d"/><circle cx="256" cy="72" r="17" fill="#d7ead3"/>
+    <rect x="284" y="50" width="10" height="44" rx="2" fill="#f4f4f4"/><rect x="285.5" y="58" width="7" height="10" fill="#4d9a5a"/>
+    <text x="300" y="66" font-size="7" font-weight="700" fill="#1b2330">200</text><text x="300" y="75" font-size="6" fill="#1b2330">ppm</text>
+    <text x="260" y="108" font-size="6.5" fill="#4a5568" text-anchor="middle">SANITIZER</text>
+    <rect x="100" y="132" width="130" height="70" rx="5" fill="#e6e9ec" stroke="#9aa3ac"/><rect x="106" y="138" width="118" height="58" rx="3" fill="none" stroke="#c4cad0"/>
+    <rect x="190" y="146" width="28" height="16" rx="2" fill="#1b2330"/><text x="204" y="157.5" font-size="8" font-weight="700" fill="#ff7a59" text-anchor="middle">44°F</text>
+    <text x="150" y="172" font-size="6.5" fill="#4a5568" text-anchor="middle">REACH-IN COOLER</text>
+    <rect x="246" y="126" width="94" height="78" rx="5" fill="#e9eef2" stroke="#9aa3ac"/>
+    <g><rect x="252" y="132" width="26" height="30" rx="2" fill="#7fbf5a"/><rect x="282" y="132" width="26" height="30" rx="2" fill="#e8cf3a"/><rect x="312" y="132" width="22" height="30" rx="2" fill="#d84b5b"/></g>
+    <rect x="248" y="128" width="90" height="38" rx="3" fill="#fff" opacity=".35"/>
+    <rect x="256" y="170" width="74" height="14" rx="2" fill="#fff"/><text x="293" y="179.5" font-size="6.5" font-weight="600" fill="#1b2330" text-anchor="middle">LIMES/LEMONS · 10/23</text>
+    <text x="293" y="198" font-size="6.5" fill="#4a5568" text-anchor="middle">GARNISH TRAY</text>
+    <path id="v6" class="veil" fill-rule="evenodd"/><path id="g6" class="ring"/>
+  </svg></div>
+  <div class="prompt" aria-live="polite"><span class="lbl" id="k6">Zone 1</span><p class="big" id="q6"></p><p class="fb" id="f6"></p></div>
+  <div class="bar"><button class="btn ok" id="y6">Pass</button><button class="btn no" id="x6">Fail</button><button class="btn primary" id="n6" hidden>Next zone</button><span class="count" id="c6">Zone 1 of 5</span></div>
+  <div class="why"><b>Why masking does the work:</b> Inspectors work zone by zone and so should staff. The cutout turns a cluttered bar into a checklist the learner physically walks through.<span><b>Storyline:</b> same frame-per-zone setup as the Rx check, so you could build both from one template.</span></div>
+</section>
+
+<!-- 07 QC TEMPLATE -->
+<section class="panel" role="tabpanel" data-p="6" hidden>
+  <div class="meta"><span class="chip r2">Round 2</span><span class="chip">Packaging line QC</span><span class="chip tech">Fixed windows, content moves behind</span></div>
+  <h2>Go/no-go overlay gauge</h2>
+  <p class="story">Each carton stops behind a steel template. Every window is cut to the tolerance for one feature. If the whole feature shows inside its window, it passes. If the plate hides any of it, it's out of spec.</p>
+  <div class="stage"><svg id="s7" viewBox="0 0 360 240" aria-label="Carton behind an inspection template with four windows">
+    <defs><pattern id="belt" width="20" height="240" patternUnits="userSpaceOnUse"><rect width="20" height="240" fill="#2b2f35"/><rect width="3" height="240" fill="#3a4048"/></pattern></defs>
+    <rect width="360" height="240" fill="url(#belt)"/>
+    <g id="carton7"></g>
+    <g id="plate7">
+      <path id="pp7" fill="#9ea7b0" fill-rule="evenodd"/>
+      <g fill="none" stroke="#3d454e" stroke-width="1"><rect x="108" y="30" width="144" height="12"/><rect x="116" y="56" width="16" height="16"/><rect x="228" y="160" width="16" height="16"/><rect x="138" y="190" width="110" height="16"/></g>
+      <g font-family="JetBrains Mono, monospace" font-size="6.5" fill="#4a535d" letter-spacing=".6">
+        <text x="256" y="39">SEAL ±1.5</text><text x="72" y="67">REG A</text><text x="250" y="171">REG B</text><text x="252" y="201">LOT/EXP</text>
+        <text x="14" y="232">TEMPLATE QT-12 · CARTON 12×1L · REV C</text>
+      </g>
+      <g fill="#7d868f"><circle cx="16" cy="16" r="4"/><circle cx="344" cy="16" r="4"/><circle cx="16" cy="224" r="4"/><circle cx="344" cy="224" r="4"/></g>
+    </g>
+  </svg></div>
+  <div class="bar"><button class="btn ok" id="y7">Accept</button><button class="btn no" id="x7">Reject</button><button class="btn" id="l7" hidden>Lift template</button><button class="btn primary" id="n7" hidden>Next carton</button><span class="count" id="c7">Carton 1 of 5</span></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Inspector</span><p class="fb" id="f7">Carton in position. Every feature must sit fully inside its window.</p></div>
+  <div class="repro"><span class="tag yes">Storyline: reproduces 1:1</span><span>Draw the plate, draw four tolerance rectangles, Union the rectangles, then Subtract them from the plate. The carton is one object on a motion path behind it, with one state per defect.</span></div>
+  <div class="why"><b>Why masking does the work:</b> The window arrangement is the spec. Learners don't judge "does that look crooked." They judge "is the whole mark in the window," which is how physical overlay gauges work on real lines. Lift the template after a carton and the skewed label looks almost fine to the eye. That gap is the lesson.</div>
+</section>
+
+<!-- 08 WALL -->
+<section class="panel" role="tabpanel" data-p="7" hidden>
+  <div class="meta"><span class="chip r2">Round 2</span><span class="chip">Property maintenance</span><span class="chip tech">Learner-cut openings, geometry grows</span></div>
+  <h2>Find the leak in four cuts</h2>
+  <p class="story">There's a water stain on a finished bathroom wall. A maintenance tech gets four inspection cuts before the patch job gets expensive. Tap a section to cut it open. Adjacent cuts merge into one bigger opening.</p>
+  <div class="stage"><svg id="s8" viewBox="0 0 360 240" aria-label="Finished wall with a water stain; tap sections to cut them open">
+    <defs>
+      <mask id="m8"><rect width="360" height="240" fill="#fff"/><g id="cuts8"></g></mask>
+      <radialGradient id="stain"><stop offset="0" stop-color="#9c7a45" stop-opacity=".55"/><stop offset=".7" stop-color="#b08d55" stop-opacity=".25"/><stop offset="1" stop-color="#b08d55" stop-opacity="0"/></radialGradient>
+    </defs>
+    <!-- cavity -->
+    <rect width="360" height="240" fill="#e4d3a8"/>
+    <g fill="#d6c08e" opacity=".7"><rect x="20" y="20" width="320" height="180"/></g>
+    <g fill="#c9a46a" stroke="#a9844d" stroke-width=".8"><rect x="56" y="20" width="8" height="180"/><rect x="136" y="20" width="8" height="180"/><rect x="216" y="20" width="8" height="180"/><rect x="296" y="20" width="8" height="180"/><rect x="20" y="194" width="320" height="8"/><rect x="20" y="16" width="320" height="8"/></g>
+    <rect x="94" y="16" width="12" height="186" fill="#f4f4f1" stroke="#c8c8c2" stroke-width=".8"/>
+    <rect x="91" y="64" width="18" height="10" rx="2" fill="#e7e7e1" stroke="#b8b8b0" stroke-width=".8"/><rect x="91" y="146" width="18" height="10" rx="2" fill="#e7e7e1" stroke="#b8b8b0" stroke-width=".8"/>
+    <rect x="28" y="96" width="18" height="26" rx="2" fill="#4a7fc0"/><path d="M37 96 V20" stroke="#e8c53a" stroke-width="3" fill="none"/>
+    <path d="M106 104 H340" stroke="#d2493a" stroke-width="4"/><path d="M106 116 H340" stroke="#3a7dc9" stroke-width="4"/>
+    <g fill="#a9b3bc" stroke="#7d8790" stroke-width=".6"><rect x="134" y="98" width="12" height="24" rx="1"/><rect x="214" y="98" width="12" height="24" rx="1"/></g>
+    <path d="M300 112 L300 121" stroke="#6d757d" stroke-width="2"/><circle cx="300" cy="112" r="2" fill="#8a929a"/>
+    <g fill="#5aa0d8"><ellipse cx="301" cy="126" rx="1.6" ry="2.4"/><ellipse cx="302" cy="136" rx="1.4" ry="2.2"/><ellipse cx="301" cy="150" rx="1.3" ry="2"/></g>
+    <path d="M301 122 Q303 160 300 194" stroke="#5aa0d8" stroke-width="1.6" fill="none" opacity=".7"/>
+    <ellipse cx="300" cy="190" rx="22" ry="5" fill="#5aa0d8" opacity=".35"/>
+    <!-- finished wall -->
+    <g mask="url(#m8)">
+      <rect width="360" height="240" fill="#ece8df"/>
+      <g fill="#cfc9bd"><circle cx="60" cy="40" r="1.2"/><circle cx="60" cy="100" r="1.2"/><circle cx="60" cy="160" r="1.2"/><circle cx="140" cy="40" r="1.2"/><circle cx="140" cy="100" r="1.2"/><circle cx="140" cy="160" r="1.2"/><circle cx="220" cy="40" r="1.2"/><circle cx="220" cy="100" r="1.2"/><circle cx="220" cy="160" r="1.2"/><circle cx="300" cy="40" r="1.2"/><circle cx="300" cy="160" r="1.2"/></g>
+      <ellipse cx="298" cy="176" rx="40" ry="32" fill="url(#stain)"/><ellipse cx="300" cy="148" rx="14" ry="26" fill="url(#stain)" opacity=".6"/>
+    </g>
+    <rect x="0" y="202" width="360" height="12" fill="#f7f5f0"/><rect x="0" y="214" width="360" height="26" fill="#9b8f80"/>
+    <rect id="hov8" x="0" y="0" width="0" height="0" fill="none" stroke="#c9741f" stroke-width="1.5" stroke-dasharray="4 3"/>
+  </svg></div>
+  <div class="bar"><button class="btn" id="r8">Patch &amp; restart</button><span class="count" id="c8">0 / 4 cuts</span></div>
+  <div class="prompt spec"><span class="lbl">Plumbing spec · Sheet P-2</span><span>Steel nail plates required wherever a supply line passes through a stud within 1¼ in. of the wall face.</span></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Diagnose</span><p class="fb" id="f8">Make your cuts, then call the cause.</p>
+    <div class="opts"><button class="btn" data-a="drain">Leaking joint on the drain stack</button><button class="btn" data-a="screw">Drywall screw through the cold line where a nail plate is missing</button><button class="btn" data-a="cond">Condensation dripping off the cold line</button></div></div>
+  <div class="repro"><span class="tag part">Storyline: partly reproducible</span><span>Use Merge Shapes → <b>Fragment</b> to split the drywall along your cut lines. Each fragment becomes its own shape you can hide on click, so learner-chosen cuts work fine. What doesn't port: the hole growing open as one continuous shape. Storyline only gives you static shapes, so fake the grow with a Zoom entrance on a cut-edge graphic.</span></div>
+  <div class="why"><b>Without the mask:</b> it becomes "pick the cause from three options." The cuts are where the reasoning lives.<span><b>Why masking does the work:</b> The opening is the learner's investigation path. Where they choose to cut, and in what order, is the reasoning you're assessing. Water runs down, so the evidence is below and the cause is above. The four-cut budget makes guessing cost something.</span></div>
+</section>
+
+<!-- 09 PERMISSIONS -->
+<section class="panel" role="tabpanel" data-p="8" hidden>
+  <div class="meta"><span class="chip r3">Round 3</span><span class="chip">SaaS admin</span><span class="chip tech">Configuration · roles union into one window</span></div>
+  <h2>Role access previewer</h2>
+  <p class="story">An admin gets a ticket and toggles roles. Each role opens its own regions of the record, and stacked roles merge into one combined view. Then flip to the employee's actual screen.</p>
+  <div class="prompt"><span class="lbl">Ticket #4471</span><span>"Priya is an Account Manager. She needs Contact, Deals, and Billing. She should <b>not</b> see the card on file."</span></div>
+  <div class="bar"><button class="btn" aria-pressed="false" data-role="sales">Sales</button><button class="btn" aria-pressed="false" data-role="support">Support</button><button class="btn" aria-pressed="false" data-role="bview">Billing Viewer</button><button class="btn" aria-pressed="false" data-role="fin">Finance Admin</button></div>
+  <div class="stage"><svg id="s9" viewBox="0 0 360 240" aria-label="Customer account record with role-based visibility">
+    <defs><mask id="m9"><rect width="360" height="240" fill="#fff"/><g id="holes9"></g></mask></defs>
+    <rect width="360" height="240" fill="#f4f6f9"/>
+    <rect width="360" height="24" fill="#1f2a44"/><text x="10" y="16" font-size="9.5" font-weight="700" fill="#fff">Acme Dental Group</text><text x="350" y="16" font-size="7.5" fill="#9aa8c4" text-anchor="end" id="who9">Admin view · all fields</text>
+    <g id="pn9"></g>
+    <rect id="veil9" class="veil" y="24" width="360" height="216" mask="url(#m9)"/>
+  </svg></div>
+  <div class="bar"><div class="seg"><button class="btn" aria-pressed="true" id="ma9">Admin overlay</button><button class="btn" aria-pressed="false" id="mb9">Priya's screen</button></div><button class="btn primary" id="go9">Assign to Priya</button></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Result</span><p class="fb" id="f9">No roles assigned. Priya sees nothing.</p></div>
+  <div class="repro"><span class="tag part">Storyline: partly reproducible</span><span>Each role's visible area is one Union'd shape cut from a dark plate, but every role combination needs its own precomputed plate (four roles means 16). The "Priya's screen" reflow is plain motion paths.</span></div>
+  <div class="why"><b>Without the mask:</b> it still works as a checklist of field names. Masking makes overlap and least privilege visible, but it's the least essential of the four.<span><b>Note:</b> "Priya's screen" follows GPT's point that real apps remove and reflow hidden panels instead of showing black boxes.</span></div>
+</section>
+
+<!-- 10 DELIVERY -->
+<section class="panel" role="tabpanel" data-p="9" hidden>
+  <div class="meta"><span class="chip r3">Round 3</span><span class="chip">Restaurant regional ops</span><span class="chip tech">Configuration · union of zones minus the river</span></div>
+  <h2>Friday surge coverage</h2>
+  <p class="story">7:40 pm on a Friday and orders are stacking up. As the regional ops manager, get every neighborhood lit without any store quoting more than 45 minutes. Zones stop at the river.</p>
+  <div class="stage"><svg id="s10" viewBox="0 0 360 240" aria-label="City map with delivery zones">
+    <defs>
+      <clipPath id="west"><polygon points="0,0 188,0 196,60 180,120 196,180 188,240 0,240"/></clipPath>
+      <clipPath id="east"><polygon points="214,0 360,0 360,240 214,240 226,180 206,120 222,60"/></clipPath>
+      <mask id="m10"><rect width="360" height="240" fill="#fff"/><g id="z10"></g></mask>
+      <pattern id="blk" width="30" height="30" patternUnits="userSpaceOnUse"><rect width="30" height="30" fill="#ebe7dc"/><path d="M30 0H0V30" fill="none" stroke="#d6d0c2" stroke-width="2"/></pattern>
+    </defs>
+    <rect width="360" height="240" fill="url(#blk)"/>
+    <g fill="#bcd4a6"><rect x="20" y="20" width="40" height="28" rx="3"/><rect x="250" y="88" width="34" height="22" rx="3"/><rect x="120" y="60" width="26" height="40" rx="3"/></g>
+    <polygon points="188,0 214,0 222,60 206,120 226,180 214,240 188,240 196,180 180,120 196,60" fill="#9cc3dd"/>
+    <g id="nb10"></g>
+    <rect class="veil" width="360" height="240" mask="url(#m10)"/>
+    <g id="zo10"></g><g id="st10"></g>
+  </svg></div>
+  <div class="stores" id="ctl10"></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Status</span><p class="fb" id="f10"></p></div>
+  <div class="repro"><span class="tag part">Storyline: partly reproducible</span><span>Each store's zone is a real Merge Shapes build: circle minus the river (Subtract). Combining zones live isn't. Fake it by stacking lit zone shapes over a dark map, with one state per radius.</span></div>
+  <div class="why"><b>Without the mask:</b> it becomes a table of neighborhoods and checkmarks. The dark map is what makes "Northpoint has 8 orders and nobody can reach it" obvious at a glance.</div>
+</section>
+
+<!-- 11 CAMPAIGN -->
+<section class="panel" role="tabpanel" data-p="10" hidden>
+  <div class="meta"><span class="chip r3">Round 3</span><span class="chip">Marketing / media production</span><span class="chip tech">Three masks on one source · Union + Intersect</span></div>
+  <h2>One layout, three formats</h2>
+  <p class="story">One promo graphic has to work as a web banner, a phone story, and a square post. Each format is a differently shaped window onto the same art. Drag the pint and the headline until all three keep both whole.</p>
+  <div class="stage"><svg id="s11" viewBox="0 0 360 240" class="track" aria-label="Promo artwork with three crop windows">
+    <defs><mask id="m11"><rect width="360" height="240" fill="#fff"/><rect x="15" y="65" width="330" height="110" fill="#000"/><rect x="135" y="40" width="90" height="160" fill="#000"/><rect x="105" y="45" width="150" height="150" fill="#000"/></mask>
+      <radialGradient id="bok"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".55"/><stop offset="1" stop-color="#ffcf7a" stop-opacity="0"/></radialGradient></defs>
+    <g id="camp">
+      <rect width="360" height="240" fill="#23323f"/>
+      <circle cx="60" cy="50" r="40" fill="url(#bok)"/><circle cx="300" cy="190" r="50" fill="url(#bok)"/><circle cx="200" cy="30" r="26" fill="url(#bok)"/><circle cx="110" cy="200" r="30" fill="url(#bok)"/>
+      <rect y="196" width="360" height="44" fill="#4a3424"/><rect y="196" width="360" height="3" fill="#6b4c34"/>
+      <g id="pint" data-w="50" data-h="80" transform="translate(40 110)" style="cursor:grab">
+        <path d="M0 0H50L44 80H6Z" fill="#d9921f"/><path d="M0 0H50L49 13H1Z" fill="#fbf4e4"/><path d="M0 0H50L44 80H6Z" fill="none" stroke="#f5e6c8" stroke-width="1.2" opacity=".8"/>
+        <path d="M10 18L13 72" stroke="#fff" stroke-width="2" opacity=".35"/>
+      </g>
+      <g id="head" data-w="84" data-h="28" transform="translate(240 20)" style="cursor:grab">
+        <rect width="84" height="28" fill="transparent"/>
+        <text x="0" y="12" font-size="12" font-weight="800" fill="#ffcf7a" letter-spacing=".5">PERFECT POUR</text><text x="0" y="25" font-size="9" fill="#f2ead8">Fridays · 5 pm</text>
+      </g>
+      <text x="350" y="232" font-size="7" fill="#c8b59a" text-anchor="end" letter-spacing="1">TAPROOM 9</text>
+    </g>
+    <rect class="veil" width="360" height="240" mask="url(#m11)" style="pointer-events:none"/>
+    <g fill="none" stroke-width="1.2" style="pointer-events:none"><rect x="15" y="65" width="330" height="110" stroke="#6fb3ff"/><rect x="135" y="40" width="90" height="160" stroke="#f08ad8"/><rect x="105" y="45" width="150" height="150" stroke="#9fe27b"/></g>
+    <g font-family="JetBrains Mono, monospace" font-size="6.5" style="pointer-events:none"><text x="18" y="73" fill="#6fb3ff">BANNER 3:1</text><text x="138" y="37" fill="#f08ad8">STORY 9:16</text><text x="108" y="192" fill="#9fe27b">SQUARE 1:1</text></g>
+    <rect id="safe11" x="135" y="65" width="90" height="110" fill="#ffffff" fill-opacity=".12" stroke="#fff" stroke-dasharray="4 3" style="pointer-events:none" hidden/>
+  </svg></div>
+  <div class="previews">
+    <div class="pv" id="pv0" style="flex:1 1 100%">Banner<svg viewBox="15 65 330 110" style="width:100%"><use href="#camp"/></svg></div>
+    <div class="pv" id="pv1">Story<svg viewBox="135 40 90 160" style="width:84px"><use href="#camp"/></svg></div>
+    <div class="pv" id="pv2">Square<svg viewBox="105 45 150 150" style="width:150px"><use href="#camp"/></svg></div>
+  </div>
+  <div class="bar"><button class="btn" aria-pressed="false" id="sz11">Show safe zone (Intersect)</button><button class="btn" id="r11">Reset</button></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Format check</span><p class="fb" id="f11"></p></div>
+  <div class="repro"><span class="tag yes">PowerPoint tip hiding in here</span><span>Draw the three crop rectangles and run Intersect, and you get the safe zone in one click. Run Union, then Subtract it from a plate, and you get the dimmed overlay. The live drag-and-preview is HTML-only.</span></div>
+  <div class="why"><b>Without the mask:</b> nothing left. The crops are the product. This is the closest match to the pie-chart clip, since the shapes are the format.</div>
+</section>
+
+<!-- 12 PRIVACY FILM -->
+<section class="panel" role="tabpanel" data-p="11" hidden>
+  <div class="meta"><span class="chip r3">Round 3</span><span class="chip">Workplace / facilities design</span><span class="chip tech">Configuration · the mask is a physical product</span></div>
+  <h2>Meeting room film band</h2>
+  <p class="story">Spec frosted film for a glass meeting room. Everything inside the band blurs. Hide what's confidential, keep the room reading as occupied, and leave enough glass clear for daylight.</p>
+  <div class="stage"><svg id="s12" viewBox="0 0 360 240" aria-label="Glass meeting room wall with an adjustable frosted film band">
+    <defs>
+      <filter id="frost" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="5"/></filter>
+      <clipPath id="band"><rect id="bandr" x="0" width="360"/></clipPath>
+      <g id="roomg">
+        <rect width="360" height="240" fill="#dfe3e8"/><rect y="226" width="360" height="14" fill="#a99f92"/>
+        <rect x="40" y="95" width="110" height="36" fill="#1f2a44"/><text x="95" y="107" font-size="6.5" font-weight="700" fill="#ffcf7a" text-anchor="middle">Q4 ACQUISITION · CONFIDENTIAL</text>
+        <g fill="#6fb3ff"><rect x="56" y="114" width="10" height="12"/><rect x="72" y="110" width="10" height="16"/><rect x="88" y="117" width="10" height="9"/><rect x="104" y="106" width="10" height="20"/><rect x="120" y="112" width="10" height="14"/></g>
+        <circle cx="172" cy="80" r="11" fill="#7a5a44"/><rect x="160" y="91" width="24" height="56" rx="6" fill="#3d6e8f"/><rect x="162" y="147" width="8" height="79" fill="#2b3440"/><rect x="174" y="147" width="8" height="79" fill="#2b3440"/>
+        <rect x="190" y="157" width="150" height="5" fill="#8a6a4c"/><rect x="200" y="162" width="5" height="64" fill="#6b4f38"/><rect x="326" y="162" width="5" height="64" fill="#6b4f38"/>
+        <circle cx="228" cy="118" r="9" fill="#a0765a"/><rect x="216" y="127" width="24" height="34" rx="6" fill="#8f4f4f"/>
+        <circle cx="298" cy="118" r="9" fill="#5a4032"/><rect x="286" y="127" width="24" height="34" rx="6" fill="#4f7a55"/>
+        <g fill="#c9d6e6"><path d="M240 157 l6 -18 h18 l-6 18z"/><path d="M270 157 l-6 -18 h-18" fill="none"/><path d="M286 157 l-6 -18 h-18 l6 18z"/></g>
+      </g>
+    </defs>
+    <use href="#roomg"/>
+    <g clip-path="url(#band)"><use href="#roomg" filter="url(#frost)"/><rect width="360" height="240" fill="#f4f7fa" opacity=".55"/></g>
+    <rect id="bando" x="0" width="360" fill="none" stroke="#c9741f" stroke-width="1" stroke-dasharray="4 3"/>
+    <g fill="#5e6873"><rect x="0" y="6" width="360" height="5"/><rect x="0" y="6" width="5" height="220"/><rect x="355" y="6" width="5" height="220"/><rect x="176" y="6" width="4" height="220"/></g>
+    <g font-family="JetBrains Mono, monospace" font-size="6.5" fill="#3d454e"><text x="8" y="229">0"</text><text x="8" y="175">24"</text><text x="8" y="121">48"</text><text x="8" y="67">72"</text><text x="8" y="16">96"</text></g>
+  </svg></div>
+  <div class="bar" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <label class="rng" for="lo12">Film bottom <span id="lov12"></span><input type="range" id="lo12" min="0" max="90" value="0"></label>
+    <label class="rng" for="hi12">Film top <span id="hiv12"></span><input type="range" id="hi12" min="6" max="96" value="36"></label>
+  </div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Spec check · viewed from the hallway</span><ul class="checks" id="k12"></ul></div>
+  <div class="repro"><span class="tag part">Storyline: partly reproducible</span><span>The film is a shape over a pre-blurred copy of the room photo, cropped with Intersect. Slider-driven resizing isn't native, so you'd swap states in steps of a few inches.</span></div>
+  <div class="why"><b>Without the mask:</b> nothing left. The film is the mask, and its edges are the whole decision. Screen top (58") and standing head height (60") sit two inches apart, which is the real design tension.</div>
+</section>
+
+<!-- 13 FEATURE RELEASE -->
+<section class="panel" role="tabpanel" data-p="12" hidden>
+  <div class="meta"><span class="chip r4">Round 4</span><span class="chip">SaaS product admin</span><span class="chip tech">Intersect: tier ∩ region ∩ beta</span></div>
+  <h2>Feature flag rollout</h2>
+  <p class="story">Each dot is a customer account. Every condition you add narrows the lit region. Unlike #09, where roles add access, here rules subtract reach.</p>
+  <div class="prompt"><span class="lbl">Release ticket</span><span>Ship <b>Forecasting</b> to Enterprise accounts in the beta program. Legal hasn't cleared it for EU data residency. Standard accounts must not see it.</span></div>
+  <div class="bar"><span class="op">Tier</span><button class="btn" data-tier="0" aria-pressed="true">Free</button><button class="btn" data-tier="1" aria-pressed="true">Standard</button><button class="btn" data-tier="2" aria-pressed="true">Pro</button><button class="btn" data-tier="3" aria-pressed="true">Enterprise</button></div>
+  <div class="bar"><span class="op">Region</span><button class="btn" data-reg="0" aria-pressed="true">NA</button><button class="btn" data-reg="1" aria-pressed="true">EU</button><button class="btn" data-reg="2" aria-pressed="true">APAC</button><span class="op" style="margin-left:8px">Program</span><button class="btn" id="beta13" aria-pressed="false">Beta only</button></div>
+  <div class="stage"><svg id="s13" viewBox="0 0 360 240" aria-label="Grid of customer accounts by tier and region">
+    <defs><mask id="m13"><rect width="360" height="240" fill="#fff"/><g id="holes13"></g></mask></defs>
+    <rect width="360" height="240" fill="#f4f6f9"/>
+    <g id="grid13"></g>
+    <rect class="veil" x="70" y="34" width="280" height="168" mask="url(#m13)"/>
+    <g id="named13"></g>
+  </svg></div>
+  <div class="bar"><span class="count" id="c13" style="margin-left:0"></span></div>
+  <div class="bar"><span class="op">Preview as</span><div class="seg" id="pv13"></div></div>
+  <div class="app" id="app13"></div>
+  <div class="bar"><button class="btn primary" id="go13">Release</button></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Result</span><p class="fb" id="f13">Configure the flag, then release.</p></div>
+  <div class="repro"><span class="tag part">Storyline: partly reproducible</span><span>Intersect is literally a Merge Shapes operation: column band ∩ row band. The beta filter, which shrinks the lit region down to individual dots, is a different plate per combination, so you'd precompute a handful.</span></div>
+  <div class="why"><b>Without the mask:</b> it becomes a rules form plus a reach count. The grid makes reach legible, but the preview is where the decision gets confirmed. It's useful, not essential.</div>
+</section>
+
+<!-- 14 BADGE ACCESS -->
+<section class="panel" role="tabpanel" data-p="13" hidden>
+  <div class="meta"><span class="chip r4">Round 4</span><span class="chip">Facilities security</span><span class="chip tech">Union of rooms, then reachability</span></div>
+  <h2>Contractor badge planner</h2>
+  <p class="story">An HVAC contractor needs the mechanical room for two days. Each access group opens a set of rooms. The catch is space: a door is only useful if he can walk to it.</p>
+  <div class="bar"><button class="btn" data-grp="gen" aria-pressed="false">General Staff</button><button class="btn" data-grp="fac" aria-pressed="false">Facilities</button><button class="btn" data-grp="it" aria-pressed="false">IT</button><button class="btn" data-grp="mech" aria-pressed="false">Mechanical Vendor</button><button class="btn" data-grp="dock" aria-pressed="false">Loading Dock</button></div>
+  <div class="stage"><svg id="s14" viewBox="0 0 360 240" aria-label="Office floor plan with badge access">
+    <defs><mask id="m14"><rect width="360" height="240" fill="#fff"/><g id="holes14"></g></mask>
+      <pattern id="hatch14" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="none"/><rect width="2" height="6" fill="#c9741f" opacity=".55"/></pattern></defs>
+    <rect width="360" height="240" fill="#f2efe8"/>
+    <g id="plan14"></g>
+    <rect class="veil" width="360" height="240" mask="url(#m14)"/>
+    <g id="over14"></g><g id="route14"></g>
+  </svg></div>
+  <div class="bar"><button class="btn" id="walk14">Walk the badge to Mechanical</button><button class="btn primary" id="go14">Issue badge</button></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Result</span><p class="fb" id="f14">Assign groups. Hatched rooms are granted but unreachable.</p></div>
+  <div class="repro"><span class="tag yes">Storyline: reproduces well</span><span>Each access group is one Union'd shape of its rooms, Subtracted from a dark plan plate. Five groups make a manageable number of plates, or you can stack per-group lit shapes. Reachability is trigger logic, and the route is a motion path.</span></div>
+  <div class="why"><b>Without the mask:</b> you lose the most important information, which is whether the granted rooms connect. A checklist would happily issue the Mechanical Vendor badge alone, and he'd be stuck at the front door. The geometry carries the reasoning here.</div>
+</section>
+
+<!-- 15 CLIENT REPORT -->
+<section class="panel" role="tabpanel" data-p="14" hidden>
+  <div class="meta"><span class="chip r4">Round 4</span><span class="chip">Account management · info governance</span><span class="chip tech">Subtract inside elements, not whole sections</span></div>
+  <h2>Client-safe quarterly review</h2>
+  <p class="story">An account manager sends Acme its Q3 review. Sharing rules work at the level of individual pieces: a benchmark chart can keep its bars and lose other clients' names.</p>
+  <div class="bar"><span class="op">Recipient preset</span><div class="seg"><button class="btn" data-pre="int">Internal</button><button class="btn" data-pre="cli">Client</button></div></div>
+  <div class="bar"><span class="op">Share</span><button class="btn" data-cat="perf">Performance</button><button class="btn" data-cat="names">Other clients' names</button><button class="btn" data-cat="pricing">Internal pricing</button><button class="btn" data-cat="notes">Internal notes</button></div>
+  <div class="stage"><svg id="s15" viewBox="0 0 360 240" aria-label="Quarterly account review document">
+    <defs><pattern id="hatch15" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#1b2330" opacity=".55"/><rect width="2" height="6" fill="#c2412d" opacity=".8"/></pattern></defs>
+    <rect width="360" height="240" fill="#d9dde3"/>
+    <rect x="30" y="6" width="300" height="230" fill="#fff"/>
+    <text x="42" y="24" font-size="10" font-weight="800" fill="#1b2330">Q3 Account Review · Acme Dental Group</text>
+    <text x="42" y="38" font-size="7.5" fill="#5b6676">Uptime held above target all quarter. Ticket volume fell 18% after the</text>
+    <text x="42" y="48" font-size="7.5" fill="#5b6676">imaging rollout. Satisfaction is the highest among peer practices.</text>
+    <g font-size="6.5" fill="#5b6676" font-weight="700"><rect x="42" y="56" width="88" height="34" rx="3" fill="#eef1f6"/><rect x="136" y="56" width="88" height="34" rx="3" fill="#eef1f6"/><rect x="230" y="56" width="88" height="34" rx="3" fill="#eef1f6"/>
+      <text x="48" y="66">UPTIME</text><text x="142" y="66">TICKETS RESOLVED</text><text x="236" y="66">CSAT</text></g>
+    <g font-size="13" font-weight="800" fill="#1b2330"><text x="48" y="84">99.94%</text><text x="142" y="84">412</text><text x="236" y="84">4.7 / 5</text></g>
+    <text x="42" y="104" font-size="6.5" font-weight="700" fill="#5b6676">CSAT VS. PEER PRACTICES</text>
+    <g font-size="7.5" fill="#1b2330"><text x="42" y="118">Acme (you)</text><text x="42" y="132">Harbor Dental</text><text x="42" y="146">Pine &amp; Co</text></g>
+    <g><rect x="110" y="111" width="188" height="9" fill="#3b6fd8"/><rect x="110" y="125" width="164" height="9" fill="#9fb4dd"/><rect x="110" y="139" width="148" height="9" fill="#9fb4dd"/></g>
+    <g font-size="7" fill="#1b2330"><text x="302" y="118">4.7</text><text x="278" y="132">4.1</text><text x="262" y="146">3.8</text></g>
+    <text x="42" y="166" font-size="6.5" font-weight="700" fill="#5b6676">PRICING</text>
+    <text x="42" y="178" font-size="8" fill="#1b2330">Contract rate $14.20/seat · Discount 22% · Gross margin 61%</text>
+    <text x="42" y="200" font-size="6.5" font-weight="700" fill="#5b6676">ACCOUNT TEAM NOTES</text>
+    <text x="42" y="212" font-size="8" fill="#1b2330">Renewal risk medium. Push SSO upsell before Q1.</text>
+    <text x="42" y="223" font-size="8" fill="#1b2330">Lena prefers calls to email.</text>
+    <g id="red15"></g>
+  </svg></div>
+  <div class="bar"><div class="seg"><button class="btn" aria-pressed="true" id="ma15">Internal markup</button><button class="btn" aria-pressed="false" id="mb15">Acme's copy</button></div><button class="btn primary" id="go15">Send to Acme</button></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Result</span><p class="fb" id="f15">Pick a preset or set the rules.</p></div>
+  <div class="repro"><span class="tag yes">Storyline: reproduces well</span><span>Redaction is static shapes over static text. Union the hidden regions for each preset into one shape. Four categories means 16 plates max, but only three presets actually matter.</span></div>
+  <div class="why"><b>Without the mask:</b> mostly survives as a checklist. Redaction is the real-world convention for documents, so the bars are authentic rather than decorative. The one interesting part is the chart, where the names go but the bars stay. That's where masking beats "include/exclude section."</div>
+</section>
+
+<!-- 16 LEARNING PATH -->
+<section class="panel" role="tabpanel" data-p="15" hidden>
+  <div class="meta"><span class="chip r4">Round 4</span><span class="chip">LMS admin · learning design</span><span class="chip tech">(Role ∪ track) − credited</span></div>
+  <h2>Onboarding path builder</h2>
+  <p class="story">Configure onboarding for a promoted employee. Role and track light up the catalog, then prior completions get punched back out as credited.</p>
+  <div class="prompt"><span class="lbl">Employee profile</span><span><b>Marcus Hill</b> was promoted from associate to shift supervisor this week. Last year he completed Foundations of Service, Safety 101, and Systems Basics.</span></div>
+  <div class="bar"><span class="op">Role</span><div class="seg"><button class="btn" data-role16="0">Associate</button><button class="btn" data-role16="1">Supervisor</button><button class="btn" data-role16="2">Manager</button></div></div>
+  <div class="bar"><span class="op">Track</span><div class="seg"><button class="btn" data-trk="new">New hire</button><button class="btn" data-trk="pro">Internal promotion</button></div></div>
+  <div class="bar"><span class="op">Credit</span><button class="btn" data-cred="1">Foundations of Service</button><button class="btn" data-cred="2">Safety 101</button><button class="btn" data-cred="3">Systems Basics</button></div>
+  <div class="stage"><svg id="s16" viewBox="0 0 360 240" aria-label="Course catalog grid">
+    <defs><mask id="m16"><rect width="360" height="240" fill="#fff"/><g id="holes16"></g></mask>
+      <pattern id="hatch16" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#eef7f1"/><rect width="2" height="6" fill="#2f8f5b" opacity=".5"/></pattern></defs>
+    <rect width="360" height="240" fill="#f4f6f9"/>
+    <g id="cat16"></g>
+    <rect class="veil" width="360" height="240" mask="url(#m16)"/>
+    <g id="over16"></g>
+  </svg></div>
+  <div class="bar"><div class="seg"><button class="btn" aria-pressed="true" id="ma16">Catalog view</button><button class="btn" aria-pressed="false" id="mb16">Marcus's dashboard</button></div><button class="btn primary" id="go16">Assign path</button></div>
+  <div class="prompt" id="dash16" hidden></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Result</span><p class="fb" id="f16">Set role, track, and credits.</p></div>
+  <div class="repro"><span class="tag part">Storyline: partly reproducible</span><span>The role rows are a Union. Credits are a Subtract with hatched "credited" shapes on top. The combinations multiply fast (3 roles × 2 tracks × 8 credit sets), so in practice this becomes states and triggers, not plates.</span></div>
+  <div class="why"><b>Without the mask:</b> it's a filtered list, and honestly works fine as one. The catalog view helps explain why a module is in or out (the role brought it in, a credit took it out), which is useful for LMS admin training. But this is visual treatment, not essential masking.</div>
+</section>
+
+<!-- 17 AI BOUNDARY -->
+<section class="panel" role="tabpanel" data-p="16" hidden>
+  <div class="meta"><span class="chip r4">Round 4</span><span class="chip">Enterprise AI governance</span><span class="chip tech">Intersect of two unions</span></div>
+  <h2>Assistant knowledge scope</h2>
+  <p class="story">Configure what the HR Helpdesk assistant can draw from. The orange outline is what the assistant is allowed to search, and the blue outline is what the person asking can access. It can only answer from where they overlap.</p>
+  <div class="bar"><span class="op">Assistant can search</span><button class="btn" data-col="0">HR Policies</button><button class="btn" data-col="1">Benefits</button><button class="btn" data-col="2">Employee Records</button><button class="btn" data-col="3">Payroll</button><button class="btn" data-col="4">Eng Wiki</button><button class="btn" data-col="5">Sales Playbooks</button></div>
+  <div class="bar"><span class="op">Asking as</span><div class="seg"><button class="btn" data-as="emp">Employee</button><button class="btn" data-as="hr">HR Manager</button></div></div>
+  <div class="stage"><svg id="s17" viewBox="0 0 360 240" aria-label="Knowledge collections with assistant scope and user access">
+    <defs><mask id="m17"><rect width="360" height="240" fill="#fff"/><g id="holes17"></g></mask></defs>
+    <rect width="360" height="240" fill="#f4f6f9"/>
+    <g id="col17"></g>
+    <rect class="veil" width="360" height="240" mask="url(#m17)"/>
+    <g id="out17"></g>
+    <g font-family="JetBrains Mono, monospace" font-size="6.5"><rect x="14" y="10" width="10" height="6" fill="none" stroke="#f0a04b" stroke-width="1.4" stroke-dasharray="3 2"/><text x="28" y="16" fill="#5b6676">assistant scope</text><rect x="104" y="10" width="10" height="6" fill="none" stroke="#3b6fd8" stroke-width="1.4"/><text x="118" y="16" fill="#5b6676">user access</text><rect x="180" y="10" width="10" height="6" fill="#fff" stroke="#9aa3ac"/><text x="194" y="16" fill="#5b6676">lit = usable</text></g>
+  </svg></div>
+  <div class="bar"><button class="btn" id="ask17">Ask: "How much bereavement leave do I get?"</button><button class="btn primary" id="go17">Publish config</button></div>
+  <div class="prompt" aria-live="polite"><span class="lbl">Assistant</span><p class="fb" id="f17">Ask a question to see which sources it can use.</p><div id="cites17"></div></div>
+  <div class="repro"><span class="tag part">Storyline: partly reproducible</span><span>Intersect of two Unions is a real Merge Shapes sequence, but it's precomputed per combination: 6 collections × 2 roles is too many plates to build by hand. You'd simplify to three collections. <b>Caveat:</b> this visualizes the access model. It isn't the enforcement, which happens in the retrieval system, not in a picture.</span></div>
+  <div class="why"><b>Without the mask:</b> you could explain it with a table, but "only the overlap" is the core concept of permission-aware retrieval, and the overlap is hard to read from a table. The visual carries the idea. It would make a strong AI-fluency teaching piece.</div>
+</section>
+
+<!-- 18 BADGE v2 -->
+<section class="panel" role="tabpanel" data-p="17" hidden>
+  <div class="meta"><span class="chip b">Build · v2 of #14</span><span class="chip">Facilities security</span><span class="chip tech">Union per group → Union into badge → Subtract from building</span></div>
+  <h2>Contractor badge planner</h2>
+  <p class="story">Dale from Northside HVAC is servicing the rooftop units' air handler in the mechanical room for two days. Build his badge in the admin view, then switch to his view and walk it. Revise until he gets there without the server room ever opening.</p>
+  <div class="bar"><div class="seg"><button class="btn" id="va18" aria-pressed="true">Admin view</button><button class="btn" id="vb18" aria-pressed="false">Dale's view</button></div></div>
+  <div class="bar" id="grp18"></div>
+  <div class="stage"><svg id="s18" viewBox="0 0 360 240" aria-label="Office floor plan; access groups merge into a badge footprint">
+    <defs>
+      <filter id="ring18" x="-4%" y="-4%" width="108%" height="108%"><feMorphology in="SourceGraphic" operator="dilate" radius="2" result="d"/><feComposite in="d" in2="SourceAlpha" operator="out"/></filter>
+      <filter id="ringB18" x="-4%" y="-4%" width="108%" height="108%"><feMorphology in="SourceGraphic" operator="dilate" radius="3.5" result="d"/><feComposite in="d" in2="SourceAlpha" operator="out"/></filter>
+      <mask id="m18"><rect width="360" height="240" fill="#fff"/><g id="holes18"></g></mask>
+    </defs>
+    <rect width="360" height="240" fill="#f2efe8"/>
+    <g id="plan18"></g>
+    <g id="groups18"></g>
+    <g id="foot18"></g>
+    <rect id="veil18" class="veil" width="360" height="240" mask="url(#m18)" style="opacity:0;transition:opacity .45s ease"/>
+    <g id="doors18"></g><g id="trail18"></g><g id="dale18"></g>
+  </svg></div>
+  <div class="prompt"><span class="lbl">Badge shape</span><span class="formula" id="fx18">Badge = ∅</span></div>
+  <div class="bar"><button class="btn" id="walk18" hidden>Walk Dale in</button><button class="btn primary" id="go18">Issue badge</button></div>
+  <div class="prompt" aria-live="polite"><span class="lbl" id="fl18">Admin</span><p class="fb" id="f18">Toggle access groups. Each group's rooms fuse into one shape, and the groups fuse into the badge outline.</p></div>
+  <div class="repro"><span class="tag yes">Storyline: reproduces 1:1</span><span>Build each group by selecting its rooms and choosing Merge Shapes → <b>Union</b>. Put those on a base layer as tinted shapes. The badge outline is a Union of the active groups, so precompute the handful of combinations that matter. Dale's view is a dark building plate with the badge shape <b>Subtracted</b>, and Dale is a dot on motion paths that stop at the first locked door.</span></div>
+  <div class="why"><b>What changed from #14:</b> the merge is visible, since you watch groups fuse into a badge, and there's a second view where the consequence shows up. In admin view, Mechanical Vendor alone looks fine because the room is lit. In Dale's view he's stuck outside the front door. That's the configure → preview → discover → revise loop.</div>
+</section>
+
+<!-- 19 BADGE v3 -->
+<section class="panel" role="tabpanel" data-p="18" hidden>
+  <div class="meta"><span class="chip b">Build · v3</span><span class="chip">Facilities security</span><span class="chip tech">Merged footprint · perspective shift · inspection lens</span></div>
+  <h2>The 6:30 AM badge</h2>
+  <div class="prompt"><span class="lbl">Work order WO-2291</span><span><b>Dale Pruitt, Northside HVAC.</b> Air handler service in Mechanical, Tue–Wed, starting <b>6:30 AM</b>. The server room stays restricted.</span></div>
+  <div class="phase" id="ph19"><span data-ph="cfg">1 Configure</span><span data-ph="exp">2 Experience</span><span data-ph="inv">3 Investigate</span><span data-ph="rev">4 Revise</span></div>
+  <div class="bar"><div class="seg"><button class="btn" id="va19" aria-pressed="true">Admin view</button><button class="btn" id="vb19" aria-pressed="false">Dale's view</button></div></div>
+  <div class="bar" id="grp19"></div>
+  <div class="stagehead"><span id="sh19">Admin · badge footprint</span><span class="clock" id="ck19"></span></div>
+  <div class="stage"><svg id="s19" viewBox="0 0 360 240" aria-label="Office floor plan; badge footprint, Dale's walk, and a door inspection lens">
+    <defs>
+      <filter id="ring19" x="-4%" y="-4%" width="108%" height="108%"><feMorphology in="SourceGraphic" operator="dilate" radius="2" result="d"/><feComposite in="d" in2="SourceAlpha" operator="out"/></filter>
+      <filter id="ringB19" x="-4%" y="-4%" width="108%" height="108%"><feMorphology in="SourceGraphic" operator="dilate" radius="3.5" result="d"/><feComposite in="d" in2="SourceAlpha" operator="out"/></filter>
+      <mask id="m19"><rect width="360" height="240" fill="#fff"/><g id="holes19"></g></mask>
+      <clipPath id="lens19c"><circle id="lc19" cx="300" cy="190" r="46"/></clipPath>
+    </defs>
+    <rect width="360" height="240" fill="#f2efe8"/>
+    <g id="plan19"></g><g id="groups19"></g><g id="foot19"></g>
+    <rect id="veil19" class="veil" width="360" height="240" mask="url(#m19)" style="opacity:0;transition:opacity .45s ease"/>
+    <g id="doors19"></g><g id="trail19"></g><g id="dale19"></g>
+    <g id="lens19" clip-path="url(#lens19c)" style="display:none"><rect width="360" height="240" fill="#0f2238" opacity=".94"/><g id="ctl19"></g></g>
+    <circle id="lr19" cx="300" cy="190" r="46" class="ring" style="display:none"/>
+  </svg></div>
+  <div class="prompt"><span class="lbl">Badge shape</span><span class="formula" id="fx19">Badge = ∅</span></div>
+  <div class="bar"><button class="btn" id="walk19" hidden>Walk Dale in</button><button class="btn" id="lensb19" hidden aria-pressed="false">Inspect doors</button><button class="btn primary" id="go19">Issue badge</button></div>
+  <div class="prompt" id="sch19" hidden><span class="lbl">Schedules · unlocked by inspection</span>
+    <div class="opts"><button class="btn" id="shift19" aria-pressed="false">Move the Loading Dock group to 6:00 AM (affects 38 badges)</button><button class="btn" id="ovr19" aria-pressed="false">Add a temporary window to Dale's badge only: Tue–Wed, 6:00 AM–3:00 PM</button></div></div>
+  <div class="prompt" aria-live="polite"><span class="lbl" id="fl19">Admin</span><p class="fb" id="f19"></p></div>
+  <div class="repro"><span class="tag part">Storyline: mostly reproducible</span><span>The footprint is a Union per group, Subtracted from the building plate. Dale's walk is motion paths with a trigger per door. The lens is the #04 technique: a lens-shaped hole in a plate over a "controller" layer, dragged with drag-and-drop. Schedule logic is variables. Nothing here needs geometry that changes live.</span></div>
+  <div class="why"><b>The test:</b> the admin footprint can't show time, Dale's view shows <i>that</i> he failed but not <i>why</i>, and the lens shows the why. If each layer answers a question the others can't, the three masking techniques are one system and not three tricks.<span><b>Open question for GPT's "investigate first" idea:</b> a pre-flight inspection mode could let a careful admin catch the 7:00 schedule before Dale ever arrives. That would reward expertise instead of trial and error.</span></div>
+</section>
+</div>
+
+<script>
+const W=360,H=240,OUTER=`M0 0H${W}V${H}H0Z`;
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $=id=>document.getElementById(id);
+function rr(x,y,w,h,r=8){r=Math.min(r,w/2,h/2);return `M${x+r} ${y}h${w-2*r}a${r} ${r} 0 0 1 ${r} ${r}v${h-2*r}a${r} ${r} 0 0 1 ${-r} ${r}h${-(w-2*r)}a${r} ${r} 0 0 1 ${-r} ${-r}v${-(h-2*r)}a${r} ${r} 0 0 1 ${r} ${-r}Z`;}
+function pt(svg,e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n;}
+
+/* Subtract-style spotlight: outer rect + hole subpath, evenodd */
+function Spot(veil,ring,init){
+  let cur={...init},raf;
+  const draw=r=>{veil.setAttribute('d',OUTER+rr(r.x,r.y,r.w,r.h));ring.setAttribute('d',rr(r.x,r.y,r.w,r.h));};
+  draw(cur);
+  return {go(to){cancelAnimationFrame(raf);if(RM){cur={...to};draw(cur);return;}
+    const from={...cur},t0=performance.now(),ms=480;
+    const step=t=>{let k=Math.min(1,(t-t0)/ms);k=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      cur={x:from.x+(to.x-from.x)*k,y:from.y+(to.y-from.y)*k,w:from.w+(to.w-from.w)*k,h:from.h+(to.h-from.h)*k};
+      draw(cur);if(k<1)raf=requestAnimationFrame(step);};
+    raf=requestAnimationFrame(step);}};
+}
+
+/* Tabs */
+const tabs=[...document.querySelectorAll('.tab')],panels=[...document.querySelectorAll('.panel')];
+function show(i){tabs.forEach((t,j)=>t.setAttribute('aria-selected',j===i));panels.forEach((p,j)=>p.hidden=j!==i);
+  try{localStorage.setItem('mml-tab',i)}catch(e){}}
+tabs.forEach((t,i)=>t.addEventListener('click',()=>show(i)));
+try{const s=+localStorage.getItem('mml-tab');if(s>=0&&s<tabs.length)show(s)}catch(e){}
+
+/* 01 Hazard */
+(()=>{const svg=$('s1'),light=$('light'),holes=$('holes1'),marks=$('marks1');
+  const hz=[{x:78,y:208,r:30,t:'Liquid spill in the walkway'},{x:318,y:114,r:28,t:'Pallet blocking the emergency exit'},
+    {x:212,y:100,r:30,t:'Forklift left with forks raised'},{x:47,y:14,r:24,t:'Overstacked boxes leaning off the top rack'},{x:268,y:216,r:28,t:'Cord stretched across the aisle'}];
+  let found=new Set();
+  const move=e=>{const p=pt(svg,e);light.setAttribute('cx',p.x);light.setAttribute('cy',p.y);return p;};
+  svg.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons)move(e);});
+  svg.addEventListener('pointerdown',e=>{const p=move(e);
+    let best=-1,bd=1e9;hz.forEach((h,i)=>{const d=Math.hypot(h.x-p.x,h.y-p.y);if(d<h.r+8&&d<bd){bd=d;best=i;}});
+    if(best<0){$('f1').textContent='Nothing unsafe right there. Keep sweeping.';$('f1').className='fb';return;}
+    if(found.has(best)){$('f1').textContent='Already logged that one.';return;}
+    found.add(best);const h=hz[best];
+    el('circle',{cx:h.x,cy:h.y,r:h.r-2,fill:'#000'},holes);
+    el('circle',{cx:h.x,cy:h.y,r:h.r-2,class:'ring'},marks);
+    const li=document.createElement('li');li.textContent=h.t;$('l1').appendChild(li);
+    $('c1').textContent=`${found.size} / 5 found`;
+    $('f1').className='fb good';$('f1').textContent=found.size===5?'All five found. Walkthrough complete.':'Logged. Keep sweeping.';});
+  $('r1').onclick=()=>{found.clear();holes.innerHTML='';marks.innerHTML='';$('l1').innerHTML='';$('c1').textContent='0 / 5 found';
+    $('f1').className='fb';$('f1').textContent='Move the light (or drag on touch) and tap anything unsafe.';};
+})();
+
+/* 02 SaaS */
+(()=>{const steps=[
+  {r:{x:2,y:52,w:68,h:24},t:'Everything billing-related lives under Invoices in the left nav.'},
+  {r:{x:176,y:63,w:52,h:20},t:'Filter to Overdue first. That is where most client calls start.'},
+  {r:{x:78,y:102,w:276,h:24},t:'Open the overdue invoice to see payment history and which reminders already went out.'},
+  {r:{x:257,y:33,w:98,h:30},t:'Need to bill something new? Start here. Drafts save automatically.'}];
+  let i=0;const sp=Spot($('v2'),$('g2'),steps[0].r);
+  const go=()=>{sp.go(steps[i].r);$('t2').textContent=steps[i].t;$('c2').textContent=`Step ${i+1} of 4`;$('b2').disabled=i===0;$('n2').textContent=i===3?'Restart':'Next';};
+  $('n2').onclick=()=>{i=i===3?0:i+1;go();};$('b2').onclick=()=>{if(i>0){i--;go();}};go();
+})();
+
+/* 03 Rx */
+(()=>{const F=[
+  {y:44,o:'Maria Delgado',m:true},{y:72,o:'DOB 03/14/1958',m:true},
+  {y:100,o:'Metoprolol tartrate 50 mg tablet',m:false,why:'Strength is wrong. The label says 25 mg, the order says 50 mg. Back to the pharmacist.'},
+  {y:128,o:'1 tab PO BID',m:true,why:'PO BID means by mouth, twice daily.'},{y:156,o:'Qty 60, refills 2',m:true},{y:184,o:'Dr. Adaeze Okafor',m:true}];
+  let i=0,score=0;const rect=k=>({x:36,y:F[k].y,w:288,h:28});const sp=Spot($('v3'),$('g3'),rect(0));
+  const load=()=>{sp.go(rect(i));$('o3').textContent=F[i].o;$('k3').textContent='Order says';$('f3').textContent='';$('f3').className='fb';
+    $('c3').textContent=`Field ${i+1} of 6`;$('y3').hidden=$('x3').hidden=false;$('n3').hidden=true;};
+  const answer=a=>{const f=F[i],right=a===f.m;if(right)score++;
+    $('f3').className='fb '+(right?'good':'bad');
+    $('f3').textContent=(right?'Correct. ':'Not quite. ')+(f.why||(f.m?'This field matches the order.':''));
+    $('y3').hidden=$('x3').hidden=true;$('n3').hidden=false;$('n3').textContent=i===5?'See result':'Next field';};
+  $('y3').onclick=()=>answer(true);$('x3').onclick=()=>answer(false);
+  $('n3').onclick=()=>{if(i<5){i++;load();return;}
+    if(i===5){i=6;sp.go({x:30,y:16,w:300,h:208});$('k3').textContent='Result';
+      $('o3').textContent=`${score} of 6 fields called correctly.`;$('f3').className='fb';$('f3').textContent='The label has one error: the strength. It does not go out.';
+      $('n3').textContent='Start over';$('c3').textContent='Done';return;}
+    i=0;score=0;load();};
+  load();
+})();
+
+/* 04 Planogram — true mask via clip-path */
+(()=>{const P={O:['Oat Rings','#c8862b'],H:['Honey Puffs','#e0b12a'],B:['Bran Flakes','#7a5232'],G:['Granola','#5e8c3a'],M:['Muesli','#3d7d8c'],
+    C:['Corn Squares','#d4682a'],K:['Choco Bites','#5b3a2e'],R:['Rice Crisps','#3a6fb0']};
+  const plan=['OOHHB','GGMCC','KKRRB'],actual=['OOHKB','GG_CC','KKRRM'];
+  const sx=c=>20+c*64,sy=r=>14+r*72,aG=$('actual'),pG=$('plan'),svg=$('s4'),lc=$('lc'),lr=$('lr'),marks=$('marks4');
+  for(let r=0;r<3;r++){el('rect',{x:10,y:sy(r)+64,width:340,height:7,fill:'#9aa1a8'},aG);
+    for(let c=0;c<5;c++){const a=actual[r][c],p=plan[r][c],x=sx(c),y=sy(r);
+      el('rect',{x:x+14,y:y+56,width:32,height:8,fill:'#fff',stroke:'#c5cbd1','stroke-width':.6},aG);
+      if(a!=='_'){el('rect',{x:x+4,y:y+6,width:52,height:50,rx:2,fill:P[a][1]},aG);
+        el('rect',{x:x+4,y:y+14,width:52,height:9,fill:'rgba(255,255,255,.22)'},aG);
+        const t=el('text',{x:x+30,y:y+44,'font-size':7,'font-weight':700,fill:'#fff','text-anchor':'middle'},aG);t.textContent=P[a][0];}
+      el('rect',{x:x+4,y:y+6,width:52,height:50,rx:2,fill:'#fff',stroke:P[p][1],'stroke-width':1.5,'stroke-dasharray':'3 2'},pG);
+      el('rect',{x:x+4,y:y+6,width:52,height:8,fill:P[p][1]},pG);
+      const t=el('text',{x:x+30,y:y+36,'font-size':7,'font-weight':700,fill:'#1f3d6b','text-anchor':'middle'},pG);t.textContent=P[p][0];
+      const s=el('text',{x:x+30,y:y+48,'font-size':6,fill:'#5b6676','text-anchor':'middle'},pG);s.textContent=`Slot ${r+1}-${c+1}`;}}
+  let found=new Set();
+  const mv=e=>{const p=pt(svg,e);for(const n of [lc,lr]){n.setAttribute('cx',p.x);n.setAttribute('cy',p.y);}return p;};
+  svg.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons)mv(e);});
+  svg.addEventListener('pointerdown',e=>{const p=mv(e),c=Math.floor((p.x-20)/64),r=Math.floor((p.y-14)/72);const f=$('f4');
+    if(c<0||c>4||r<0||r>2){return;}
+    const k=r*5+c;if(plan[r][c]===actual[r][c]){f.className='fb';f.textContent='That facing matches the planogram.';return;}
+    if(found.has(k)){f.textContent='Already flagged.';return;}
+    found.add(k);el('rect',{x:sx(c)+1,y:sy(r)+3,width:58,height:56,rx:4,fill:'none',stroke:'#c2412d','stroke-width':2.5},marks);
+    const msg=actual[r][c]==='_'?`Slot ${r+1}-${c+1}: empty facing, should be ${P[plan[r][c]][0]}.`:`Slot ${r+1}-${c+1}: ${P[actual[r][c]][0]} where ${P[plan[r][c]][0]} belongs.`;
+    $('c4').textContent=`${found.size} / 3 found`;f.className='fb good';f.textContent=found.size===3?msg+' All three found.':msg;});
+  $('r4').onclick=()=>{found.clear();marks.innerHTML='';$('c4').textContent='0 / 3 found';$('f4').className='fb';$('f4').textContent='Move the lens over the shelf. Inside it you\'ll see what should be there.';};
+})();
+
+/* 05 Call */
+(()=>{const L=[
+  {r:{x:6,y:28,w:170,h:96},q:'"Hi, there\'s a charge on my bill I don\'t recognize."',t:'Verify identity in the Account panel before you discuss any charges.'},
+  {r:{x:188,y:53,w:162,h:16},q:'"It\'s $89.99, from the 14th."',t:'Find the exact line in Billing History so you\'re both looking at the same charge.'},
+  {r:{x:6,y:128,w:170,h:106},q:'"I already called about this last week and nobody got back to me."',t:'Check the notes. A callback was promised and never logged. Acknowledge that first.'},
+  {r:{x:184,y:128,w:170,h:106},q:'"Can I just get that refunded?"',t:'KB-217 says you can credit up to $100 without approval. You can fix this on the call.'}];
+  let i=0;const sp=Spot($('v5'),$('g5'),L[0].r);
+  const go=()=>{sp.go(L[i].r);$('q5').textContent=L[i].q;$('t5').textContent=L[i].t;$('c5').textContent=`Line ${i+1} of 4`;$('b5').disabled=i===0;$('n5').textContent=i===3?'Restart':'Next line';};
+  $('n5').onclick=()=>{i=i===3?0:i+1;go();};$('b5').onclick=()=>{if(i>0){i--;go();}};go();
+})();
+
+/* 06 Bar */
+(()=>{const Z=[
+  {r:{x:16,y:40,w:80,h:70},q:'Is the handsink accessible and used only for handwashing?',a:false,why:'There\'s a tub of lemons in the basin. Handsinks are for handwashing only.'},
+  {r:{x:96,y:40,w:130,h:80},q:'Is the ice scoop stored correctly?',a:false,why:'The scoop handle is touching the ice. Store it in a holder outside the well.'},
+  {r:{x:230,y:44,w:84,h:70},q:'Is the sanitizer at the right concentration?',a:true,why:'The strip reads 200 ppm, inside this quat product\'s 200–400 ppm label range.'},
+  {r:{x:96,y:128,w:138,h:78},q:'Is the reach-in holding cold food at 41°F or below?',a:false,why:'It reads 44°F. That\'s above the 41°F limit, so the product needs to be checked.'},
+  {r:{x:242,y:122,w:102,h:84},q:'Are garnishes covered, labeled, and dated?',a:true,why:'Covered, labeled, and dated today.'}];
+  let i=0,score=0;const sp=Spot($('v6'),$('g6'),Z[0].r);
+  const load=()=>{sp.go(Z[i].r);$('k6').textContent=`Zone ${i+1}`;$('q6').textContent=Z[i].q;$('f6').textContent='';$('f6').className='fb';
+    $('c6').textContent=`Zone ${i+1} of 5`;$('y6').hidden=$('x6').hidden=false;$('n6').hidden=true;};
+  const ans=a=>{const z=Z[i],ok=a===z.a;if(ok)score++;$('f6').className='fb '+(ok?'good':'bad');
+    $('f6').textContent=(ok?'Correct. ':'Not quite. ')+z.why;$('y6').hidden=$('x6').hidden=true;$('n6').hidden=false;$('n6').textContent=i===4?'See result':'Next zone';};
+  $('y6').onclick=()=>ans(true);$('x6').onclick=()=>ans(false);
+  $('n6').onclick=()=>{if(i<4){i++;load();return;}
+    if(i===4){i=5;sp.go({x:10,y:28,w:340,h:186});$('k6').textContent='Result';$('q6').textContent=`${score} of 5 zones called correctly.`;
+      $('f6').className='fb';$('f6').textContent='Three violations: blocked handsink, scoop in the ice, cooler at 44°F.';$('n6').textContent='Start over';$('c6').textContent='Done';return;}
+    i=0;score=0;load();};
+  load();
+})();
+
+/* 07 QC template — plate = outer minus union of four tolerance windows */
+(()=>{const pp=$('pp7'),pg=$('plate7'),cg=$('carton7');
+  const win=[[108,30,144,12],[116,56,16,16],[228,160,16,16],[138,190,110,16]];
+  pp.setAttribute('d',OUTER+win.map(([x,y,w,h])=>`M${x} ${y}h${w}v${h}h${-w}Z`).join(''));
+  const C=[{ok:true,why:'All four features sit fully inside their windows.'},
+    {skew:4,ok:false,why:'REG B is cut off by the plate. The label went on rotated about 4°, past tolerance.'},
+    {ok:true,why:'Clean carton. Everything is inside its window.'},
+    {date:16,ok:false,why:'The LOT/EXP slot hides the end of the code. The printer has drifted right and the expiry is unreadable.'},
+    {seal:11,ok:false,why:'The SEAL window is empty. The glue bead ran low, outside the band where it bonds the flap.'}];
+  const mark=(x,y)=>`<g stroke="#1b2330" stroke-width=".9" fill="none"><circle cx="${x}" cy="${y}" r="3.5"/><path d="M${x-6} ${y}h12M${x} ${y-6}v12"/></g>`;
+  let bars='';[0,2,3,5,7,8,10,13,14,16,18,21,22,24,26,29,31,33,35,38,40,42,45,47,50,52,54,57].forEach((o,k)=>{bars+=`<rect x="${152+o}" y="136" width="${k%3?1:2}" height="20"/>`;});
+  function draw(s){cg.innerHTML=`<rect x="90" y="24" width="180" height="194" rx="2" fill="#efe6d2" stroke="#b9a984"/>
+    <path d="M90 50H270" stroke="#c9b892"/>
+    <path d="M100 ${36+(s.seal||0)}H260" stroke="#c98a2a" stroke-width="3.5" stroke-linecap="round"/>
+    <g transform="rotate(${s.skew||0} 124 64)"><rect x="116" y="56" width="128" height="120" fill="#fff" stroke="#d8d2c4"/>
+      <rect x="116" y="76" width="128" height="22" fill="#2e6e8e"/><text x="180" y="91" font-size="10" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="1">NORTHFIELD</text>
+      <text x="180" y="113" font-size="8.5" font-weight="600" fill="#1b2330" text-anchor="middle">Oat Beverage</text>
+      <text x="180" y="125" font-size="6.5" fill="#5b6676" text-anchor="middle">12 × 1 L · Refrigerate after opening</text>
+      <g fill="#1b2330">${bars}</g>${mark(124,64)}${mark(236,168)}</g>
+    <text x="${144+(s.date||0)}" y="201.5" font-family="JetBrains Mono, monospace" font-size="8" fill="#1b2330">LOT 2310B · EXP 04/27</text>`;}
+  let i=0,score=0,lifted=false,raf;
+  const slide=(a,b,done)=>{cancelAnimationFrame(raf);if(RM){cg.setAttribute('transform',`translate(${b} 0)`);done&&done();return;}
+    const t0=performance.now(),ms=650;const st=t=>{let k=Math.min(1,(t-t0)/ms);k=1-Math.pow(1-k,3);
+      cg.setAttribute('transform',`translate(${a+(b-a)*k} 0)`);if(k<1)raf=requestAnimationFrame(st);else done&&done();};raf=requestAnimationFrame(st);};
+  const setLift=v=>{lifted=v;pg.style.opacity=v?.18:1;$('l7').textContent=v?'Lower template':'Lift template';};
+  const busy=v=>{$('y7').disabled=$('x7').disabled=v;};
+  const load=()=>{draw(C[i]);setLift(false);$('y7').hidden=$('x7').hidden=false;$('l7').hidden=$('n7').hidden=true;busy(true);
+    $('c7').textContent=`Carton ${i+1} of 5`;$('f7').className='fb';$('f7').textContent='Carton moving into position…';
+    slide(-330,0,()=>{busy(false);$('f7').textContent='Carton in position. Every feature must sit fully inside its window.';});};
+  const ans=a=>{const c=C[i],ok=a===c.ok;if(ok)score++;$('f7').className='fb '+(ok?'good':'bad');
+    $('f7').textContent=(ok?'Correct. ':'Not quite. ')+c.why;$('y7').hidden=$('x7').hidden=true;$('l7').hidden=false;$('n7').hidden=false;
+    $('n7').textContent=i===4?'See result':'Next carton';};
+  $('y7').onclick=()=>ans(true);$('x7').onclick=()=>ans(false);$('l7').onclick=()=>setLift(!lifted);
+  $('n7').onclick=()=>{if(i===5){i=0;score=0;load();return;}
+    setLift(false);slide(0,340,()=>{if(i<4){i++;load();}else{i=5;cg.innerHTML='';$('l7').hidden=true;$('c7').textContent='Done';
+      $('f7').className='fb';$('f7').textContent=`${score} of 5 called correctly. Three rejects: skewed label, drifted date code, low seal bead.`;$('n7').textContent='Run again';}});};
+  load();
+})();
+
+/* 08 Wall — learner-cut openings, merged through a mask */
+(()=>{const svg=$('s8'),cuts=$('cuts8'),hov=$('hov8'),MAX=4;
+  const OBS={'00':'Electrical cable and the drain stack. Both dry.','01':'Outlet box. The drain stack beside it is dry.','02':'Drain joint near the bottom. Dry.',
+    '10':'Top of the stud bay. Dry.','11':'Hot and cold lines through the stud. Nail plate installed.','12':'Dry. Nothing here.',
+    '20':'Dry.','21':'Lines through the next stud. Nail plate installed.','22':'Dry.',
+    '30':'Dry above the lines. The water starts lower.','31':'Screw through the cold line at the stud. No nail plate. Active drip.','32':'Water running down the stud and pooling on the plate. It\'s coming from above.'};
+  let open=new Set(),done=false,seed=7;
+  const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  function jag(x,y,w,h){x-=3;y-=3;w+=6;h+=6;const p=[],j=()=>(rnd()-.5)*5;
+    for(let t=0;t<=w;t+=10)p.push([x+t,y+j()]);for(let t=10;t<=h;t+=10)p.push([x+w+j(),y+t]);
+    for(let t=w-10;t>=0;t-=10)p.push([x+t,y+h+j()]);for(let t=h-10;t>0;t-=10)p.push([x+j(),y+t]);
+    return p.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');}
+  const cell=p=>{const c=Math.floor((p.x-20)/80),r=Math.floor((p.y-20)/60);return(c<0||c>3||r<0||r>2)?null:{c,r};};
+  svg.addEventListener('pointermove',e=>{if(done||open.size>=MAX){hov.setAttribute('width',0);return;}const k=cell(pt(svg,e));
+    if(!k||open.has(''+k.c+k.r)){hov.setAttribute('width',0);return;}
+    hov.setAttribute('x',20+k.c*80);hov.setAttribute('y',20+k.r*60);hov.setAttribute('width',80);hov.setAttribute('height',60);});
+  svg.addEventListener('pointerleave',()=>hov.setAttribute('width',0));
+  svg.addEventListener('pointerdown',e=>{if(done)return;const k=cell(pt(svg,e));if(!k)return;const id=''+k.c+k.r;
+    if(open.has(id))return;if(open.size>=MAX){$('f8').className='fb bad';$('f8').textContent='Out of cuts. Call the cause.';return;}
+    open.add(id);hov.setAttribute('width',0);
+    const x=20+k.c*80,y=20+k.r*60,cx=x+40,cy=y+30,poly=el('polygon',{points:jag(x,y,80,60),fill:'#000'},cuts);
+    if(!RM){const t0=performance.now();const st=t=>{let s=Math.min(1,(t-t0)/380);s=1-Math.pow(1-s,3);
+      poly.setAttribute('transform',`translate(${cx} ${cy}) scale(${.15+.85*s}) translate(${-cx} ${-cy})`);if(s<1)requestAnimationFrame(st);};requestAnimationFrame(st);}
+    $('c8').textContent=`${open.size} / ${MAX} cuts`;$('f8').className='fb';$('f8').textContent=OBS[id];});
+  document.querySelectorAll('#s8 ~ .prompt .opts .btn, [data-p="7"] .opts .btn').forEach(b=>b.onclick=()=>{if(done)return;done=true;const a=b.dataset.a,f=$('f8');
+    if(a==='screw'){f.className='fb good';f.textContent=open.has('31')?`Correct, found in ${open.size} cut${open.size>1?'s':''}. A screw went through the cold line where the spec calls for a nail plate.`:'Right answer, but you never opened the wall where it was. On the job that\'s a guess.';}
+    else if(a==='drain'){f.className='fb bad';f.textContent='The drain is dry everywhere. The water is on the right side, below the supply lines.';}
+    else{f.className='fb bad';f.textContent='Condensation would wet the whole cold run. This is one point source with a screw through it.';}
+    hov.setAttribute('width',0);});
+  $('r8').onclick=()=>{open.clear();cuts.innerHTML='';done=false;seed=7;$('c8').textContent=`0 / ${MAX} cuts`;$('f8').className='fb';$('f8').textContent='Make your cuts, then call the cause.';};
+})();
+
+/* 09 Permissions — union of role regions */
+(()=>{const P={contact:[8,32,168,60,'CONTACT',['Dr. Lena Park · Practice owner','lena@acmedental.co','(555) 014-2290']],
+    deals:[184,32,168,60,'DEALS',['Imaging upgrade · $18,400','Stage: Proposal sent','Close: Nov 14']],
+    billing:[8,100,168,64,'BILLING',['Plan: Pro · 12 seats','Next invoice: Nov 01 · $1,140','Balance: $0.00']],
+    payment:[184,100,168,64,'PAYMENT METHOD',['Visa ending 4417 · Exp 08/28','Auto-pay: on','AP contact: Dana Ruiz']],
+    tickets:[8,172,168,60,'SUPPORT TICKETS',['#8812 Login loop · Open','#8790 CSV export · Closed']],
+    notes:[184,172,168,60,'INTERNAL NOTES',['Renewal risk: medium','Wants SSO before renewal']]};
+  const ROLES={sales:['contact','deals','notes'],support:['contact','tickets','notes'],bview:['billing'],fin:['billing','payment']};
+  const ORDER=Object.keys(P),SLOTS=[[8,32],[184,32],[8,100],[184,100],[8,172],[184,172]],pn=$('pn9'),G={};
+  ORDER.forEach(k=>{const [x,y,w,h,t,ls]=P[k];const g=el('g',{class:'pnl'},pn);G[k]=g;
+    el('rect',{x,y,width:w,height:h,rx:4,fill:'#fff',stroke:'#d5dbe3'},g);
+    const tt=el('text',{x:x+8,y:y+13,'font-size':6.5,'font-weight':700,fill:'#5b6676','letter-spacing':.5},g);tt.textContent=t;
+    ls.forEach((s,i)=>{const n=el('text',{x:x+8,y:y+27+i*12,'font-size':8,fill:'#1b2330','font-weight':i?400:600},g);n.textContent=s;});});
+  const on=new Set();let mode='admin';
+  const vis=()=>{const v=new Set();on.forEach(r=>ROLES[r].forEach(k=>v.add(k)));return v;};
+  function render(){const v=vis(),holes=$('holes9');holes.innerHTML='';
+    ORDER.forEach(k=>{if(v.has(k)){const [x,y,w,h]=P[k];el('rect',{x:x-4,y:y-4,width:w+8,height:h+8,rx:8,fill:'#000'},holes);}});
+    if(mode==='admin'){$('veil9').style.display='';$('who9').textContent='Admin view · Priya\'s access lit';
+      ORDER.forEach(k=>{G[k].style.transform='';G[k].style.opacity=1;});}
+    else{$('veil9').style.display='none';$('who9').textContent='Signed in as Priya S.';let s=0;
+      ORDER.forEach(k=>{if(v.has(k)){const [x,y]=P[k],[sx,sy]=SLOTS[s++];G[k].style.transform=`translate(${sx-x}px,${sy-y}px)`;G[k].style.opacity=1;}
+        else{G[k].style.opacity=0;G[k].style.transform='';}});}
+    const f=$('f9');f.className='fb';f.textContent=v.size?`Priya would see: ${ORDER.filter(k=>v.has(k)).map(k=>P[k][4].toLowerCase()).join(', ')}.`:'No roles assigned. Priya sees nothing.';}
+  document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{const r=b.dataset.role;on.has(r)?on.delete(r):on.add(r);b.setAttribute('aria-pressed',on.has(r));render();});
+  $('ma9').onclick=()=>{mode='admin';$('ma9').setAttribute('aria-pressed',true);$('mb9').setAttribute('aria-pressed',false);render();};
+  $('mb9').onclick=()=>{mode='user';$('mb9').setAttribute('aria-pressed',true);$('ma9').setAttribute('aria-pressed',false);render();};
+  $('go9').onclick=()=>{const v=vis(),f=$('f9'),need=['contact','deals','billing'],miss=need.filter(k=>!v.has(k));
+    if(miss.length){f.className='fb bad';f.textContent=`Priya still can't see ${miss.map(k=>P[k][4].toLowerCase()).join(' or ')}.`;}
+    else if(v.has('payment')){f.className='fb bad';f.textContent='She can see what she needs, but Finance Admin exposes the card on file. More access than she needs.';}
+    else if(on.has('support')){f.className='fb bad';f.textContent='Works, but Support adds tickets she doesn\'t need. Least privilege says drop it.';}
+    else{f.className='fb good';f.textContent='Correct. Sales + Billing Viewer covers exactly what she needs, and nothing payment-related.';}};
+  render();
+})();
+
+/* 10 Delivery — union of zones, river subtracted */
+(()=>{const R={S:[55,28],M:[75,38],L:[100,52]};
+  const ST=[{id:'A',n:'Downtown',x:110,y:130,b:'west',on:true,r:'M'},{id:'B',n:'Eastgate',x:290,y:150,b:'east',on:true,r:'S'},{id:'C',n:'Northpoint',x:265,y:50,b:'east',on:false,r:'S'}];
+  const NB=[{n:'Old Town',x:80,y:80,b:'west',o:14},{n:'Riverside',x:150,y:190,b:'west',o:9},{n:'Mill District',x:50,y:170,b:'west',o:6},
+    {n:'Eastgate',x:300,y:200,b:'east',o:11},{n:'Northpoint',x:290,y:30,b:'east',o:8},{n:'Harbor',x:240,y:115,b:'east',o:12}];
+  const nbG=$('nb10');
+  NB.forEach(q=>{el('circle',{cx:q.x,cy:q.y,r:4,fill:'#c2412d'},nbG);const t=el('text',{x:q.x+7,y:q.y+3,'font-size':7.5,'font-weight':600,fill:'#1b2330'},nbG);t.textContent=`${q.n} · ${q.o}`;});
+  const ctl=$('ctl10');
+  ST.forEach(s=>{const d=document.createElement('div');d.className='store';
+    d.innerHTML=`<b>${s.id} · ${s.n}</b><div class="bar"><button class="btn" data-on>${s.on?'Open':'Closed'}</button><div class="seg">${['S','M','L'].map(k=>`<button class="btn" data-r="${k}">${k} · ${R[k][1]}m</button>`).join('')}</div></div>`;
+    ctl.appendChild(d);s.el=d;
+    d.querySelector('[data-on]').onclick=()=>{s.on=!s.on;draw();};
+    d.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{s.r=b.dataset.r;draw();});});
+  function draw(){const z=$('z10'),zo=$('zo10'),st=$('st10');z.innerHTML=zo.innerHTML=st.innerHTML='';
+    ST.forEach(s=>{const btn=s.el.querySelector('[data-on]');btn.textContent=s.on?'Open':'Closed';btn.setAttribute('aria-pressed',s.on);
+      s.el.querySelectorAll('[data-r]').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.r===s.r);b.disabled=!s.on;});
+      if(s.on){const g=el('g',{'clip-path':`url(#${s.b})`},z);el('circle',{cx:s.x,cy:s.y,r:R[s.r][0],fill:'#000'},g);
+        const g2=el('g',{'clip-path':`url(#${s.b})`},zo);el('circle',{cx:s.x,cy:s.y,r:R[s.r][0],fill:'none',stroke:'#c9741f','stroke-width':1.2,'stroke-dasharray':'4 3'},g2);}
+      el('rect',{x:s.x-7,y:s.y-7,width:14,height:14,rx:3,fill:s.on?'#1f2a44':'#6b7280',stroke:'#fff','stroke-width':1.2},st);
+      const t=el('text',{x:s.x,y:s.y+3,'font-size':8,'font-weight':700,fill:'#fff','text-anchor':'middle'},st);t.textContent=s.id;});
+    const cov=NB.filter(q=>ST.some(s=>s.on&&s.b===q.b&&Math.hypot(s.x-q.x,s.y-q.y)<=R[s.r][0]));
+    const maxQ=Math.max(0,...ST.filter(s=>s.on).map(s=>R[s.r][1])),orders=NB.reduce((a,q)=>a+q.o,0),co=cov.reduce((a,q)=>a+q.o,0);
+    const miss=NB.filter(q=>!cov.includes(q)).map(q=>q.n),f=$('f10');
+    if(cov.length===6&&maxQ<=45){f.className='fb good';f.textContent=`All 6 neighborhoods covered, ${co} orders reachable, longest quote ${maxQ} min. Surge handled.`;}
+    else{f.className='fb'+(maxQ>45?' bad':'');f.textContent=`${cov.length} of 6 covered (${co}/${orders} orders). Longest quote ${maxQ} min${maxQ>45?', over the 45-min limit':''}.${miss.length?' Dark: '+miss.join(', ')+'.':''}`;}}
+  draw();
+})();
+
+/* 11 Campaign — three crops of one source, safe zone = intersection */
+(()=>{const svg=$('s11'),CROPS=[[15,65,330,110],[135,40,90,160],[105,45,150,150]],items=[$('pint'),$('head')];
+  const START={pint:[40,110],head:[240,20]};let drag=null;
+  const pos=g=>{const m=/translate\(([-\d.]+) ([-\d.]+)\)/.exec(g.getAttribute('transform'));return[+m[1],+m[2]];};
+  const box=g=>{const [x,y]=pos(g);return[x,y,+g.dataset.w,+g.dataset.h];};
+  function check(){const f=$('f11');let all=true;
+    CROPS.forEach(([cx,cy,cw,ch],i)=>{const ok=items.every(g=>{const [x,y,w,h]=box(g);return x>=cx&&y>=cy&&x+w<=cx+cw&&y+h<=cy+ch;});
+      $('pv'+i).className='pv '+(ok?'ok':'bad');if(!ok)all=false;});
+    const bad=CROPS.map((c,i)=>$('pv'+i).classList.contains('bad')?['banner','story','square'][i]:null).filter(Boolean);
+    f.className='fb '+(all?'good':'');f.textContent=all?'All three formats keep the pint and the headline whole.':`Something gets cut off in: ${bad.join(', ')}.`;}
+  items.forEach(g=>g.addEventListener('pointerdown',e=>{const p=pt(svg,e),[x,y]=pos(g);drag={g,dx:p.x-x,dy:p.y-y};svg.setPointerCapture(e.pointerId);e.preventDefault();}));
+  svg.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(svg,e),w=+drag.g.dataset.w,h=+drag.g.dataset.h;
+    const x=Math.max(0,Math.min(360-w,p.x-drag.dx)),y=Math.max(0,Math.min(240-h,p.y-drag.dy));drag.g.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)})`);check();});
+  const end=()=>{drag=null;};svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
+  $('sz11').onclick=()=>{const s=$('safe11'),show=s.hasAttribute('hidden');s.toggleAttribute('hidden',!show);$('sz11').setAttribute('aria-pressed',show);};
+  $('r11').onclick=()=>{items.forEach(g=>{const [x,y]=START[g.id];g.setAttribute('transform',`translate(${x} ${y})`);});check();};
+  check();
+})();
+
+/* 12 Privacy film — band clips a blurred copy of the room */
+(()=>{const Y=i=>226-i*2.25,lo=$('lo12'),hi=$('hi12');
+  function upd(e){let a=+lo.value,b=+hi.value;
+    if(b<a+4){if(e&&e.target===lo){b=Math.min(96,a+4);hi.value=b;}else{a=Math.max(0,b-4);lo.value=a;}}
+    $('lov12').textContent=a+'"';$('hiv12').textContent=b+'"';
+    for(const id of ['bandr','bando']){const r=$(id);r.setAttribute('y',Y(b));r.setAttribute('height',Y(a)-Y(b));}
+    const C=[['Confidential screen hidden (42–58")',a<=42&&b>=58],['Laptop screens hidden (30–38")',a<=30&&b>=38],
+      ['Room reads as occupied: standing heads clear (60"+)',b<=60],['Glass marking covered, so nobody walks into it (34–40")',a<=34&&b>=40],
+      ['At least half the glass stays clear for daylight (band ≤ 48")',b-a<=48]];
+    $('k12').innerHTML=C.map(([t,ok])=>`<li class="${ok?'pass':''}">${t}</li>`).join('');}
+  lo.oninput=upd;hi.oninput=upd;upd();
+})();
+
+const press=(b,v)=>b.setAttribute('aria-pressed',!!v);
+const tog=(set,v)=>{set.has(v)?set.delete(v):set.add(v);};
+
+/* 13 Feature release — intersection narrows reach */
+(()=>{const T=['Free','Standard','Pro','Enterprise'],RG=['NA','EU','APAC'],x0=70,cw=70,y0=34,rh=56;
+  const tiers=new Set([0,1,2,3]),regs=new Set([0,1,2]);let beta=false,who=0;
+  const NAMED=[{n:'Acme',t:3,r:0,b:true},{n:'Brio',t:3,r:1,b:true},{n:'Cedar',t:1,r:0,b:true},{n:'Dover',t:3,r:2,b:false}];
+  const dots=[],gd=$('grid13');
+  T.forEach((t,i)=>{const s=el('text',{x:x0+i*cw+cw/2,y:26,'font-size':8,'font-weight':700,fill:'#1b2330','text-anchor':'middle'},gd);s.textContent=t;});
+  RG.forEach((r,j)=>{const s=el('text',{x:62,y:y0+j*rh+rh/2+3,'font-size':8,'font-weight':700,fill:'#1b2330','text-anchor':'end'},gd);s.textContent=r;});
+  for(let t=0;t<4;t++)for(let r=0;r<3;r++){el('rect',{x:x0+t*cw+1,y:y0+r*rh+1,width:cw-2,height:rh-2,rx:3,fill:'#fff',stroke:'#d5dbe3'},gd);
+    for(let i=0;i<6;i++){const x=x0+t*cw+14+(i%3)*21,y=y0+r*rh+18+Math.floor(i/3)*20;
+      let b=t===3?i%2===0:(t*3+r*5+i)%5===0;const nm=NAMED.findIndex(q=>q.t===t&&q.r===r);
+      const named=nm>=0&&i===0;if(named)b=NAMED[nm].b;
+      dots.push({t,r,x,y,b,named:named?nm:-1});
+      if(!named){el('circle',{cx:x,cy:y,r:3.5,fill:'#6c7a8c'},gd);if(b)el('circle',{cx:x,cy:y,r:6,fill:'none',stroke:'#c9741f','stroke-width':1.3},gd);}}}
+  const hit=d=>tiers.has(d.t)&&regs.has(d.r)&&(!beta||d.b);
+  const appHTML=q=>{const on=hit(dots.find(d=>d.named===q));const N=NAMED[q];
+    return `<nav><span>Dashboard</span><span>Invoices</span><span>Reports</span>${on?'<span class="new">Forecasting · New</span>':''}</nav><main>Signed in as <b>${N.n}</b> · ${T[N.t]} · ${RG[N.r]} · ${N.b?'beta':'not in beta'}<br>${on?'Forecasting appears in the nav.':'No Forecasting. This account is outside the flag.'}</main>`;};
+  const pv=$('pv13');NAMED.forEach((q,k)=>{const b=document.createElement('button');b.className='btn';b.textContent=q.n;b.onclick=()=>{who=k;draw();};pv.appendChild(b);});
+  function draw(){const h=$('holes13'),nm=$('named13');h.innerHTML=nm.innerHTML='';
+    if(!beta){tiers.forEach(t=>regs.forEach(r=>el('rect',{x:x0+t*cw+1,y:y0+r*rh+1,width:cw-2,height:rh-2,rx:3,fill:'#000'},h)));}
+    else dots.filter(hit).forEach(d=>el('circle',{cx:d.x,cy:d.y,r:9,fill:'#000'},h));
+    dots.filter(d=>d.named>=0).forEach(d=>{const on=hit(d);
+      el('rect',{x:d.x-5,y:d.y-5,width:10,height:10,rx:2,fill:on?'#2f8f5b':'#9aa3ac',stroke:'#fff'},nm);
+      if(d.b)el('circle',{cx:d.x,cy:d.y,r:8,fill:'none',stroke:'#c9741f','stroke-width':1.3},nm);
+      const s=el('text',{x:d.x,y:d.y+3,'font-size':7,'font-weight':800,fill:'#fff','text-anchor':'middle'},nm);s.textContent=NAMED[d.named].n[0];});
+    const n=dots.filter(hit).length;$('c13').textContent=`Reaches ${n} of ${dots.length} accounts`;
+    document.querySelectorAll('[data-tier]').forEach(b=>press(b,tiers.has(+b.dataset.tier)));
+    document.querySelectorAll('[data-reg]').forEach(b=>press(b,regs.has(+b.dataset.reg)));press($('beta13'),beta);
+    [...pv.children].forEach((b,k)=>press(b,k===who));$('app13').innerHTML=appHTML(who);}
+  document.querySelectorAll('[data-tier]').forEach(b=>b.onclick=()=>{tog(tiers,+b.dataset.tier);draw();});
+  document.querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>{tog(regs,+b.dataset.reg);draw();});
+  $('beta13').onclick=()=>{beta=!beta;draw();};
+  $('go13').onclick=()=>{const f=$('f13');f.className='fb bad';
+    if([0,1,2].some(t=>tiers.has(t)))f.textContent=`Non-Enterprise tiers are still in the flag. Cedar (Standard) would see Forecasting if it's in beta.`;
+    else if(!tiers.has(3))f.textContent='Nobody gets it. Enterprise is off.';
+    else if(!beta)f.textContent='Every Enterprise account gets it, including Dover, who never joined the beta.';
+    else if(regs.has(1))f.textContent='Brio is in the EU. Legal hasn\'t cleared EU data residency yet.';
+    else if(!regs.has(0)||!regs.has(2))f.textContent=`Too narrow. Eligible beta accounts in ${!regs.has(0)?'NA':'APAC'} are left out.`;
+    else{f.className='fb good';f.textContent=`Shipped to ${dots.filter(hit).length} Enterprise beta accounts in NA and APAC. Acme gets it; Brio, Cedar, and Dover don't.`;}};
+  draw();
+})();
+
+/* 14 Badge access — union of rooms + reachability */
+(()=>{const R={office:[14,24,176,136,'Open office'],idf:[190,24,70,50,'IT closet'],print:[190,74,70,86,'Print / copy'],
+    hall:[90,160,170,22,'Main hall'],lobby:[14,160,76,62,'Lobby'],kitchen:[90,182,80,40,'Kitchen'],conf:[170,182,90,40,'Conference'],
+    svc:[260,24,24,198,''],mech:[284,24,62,66,'Mechanical'],server:[284,90,62,62,'Server room'],storage:[284,152,62,40,'Storage'],dock:[284,192,62,30,'Dock']};
+  const E=[['lobby','hall'],['hall','office'],['hall','kitchen'],['hall','conf'],['hall','print'],['print','idf'],['hall','svc'],['svc','mech'],['svc','server'],['svc','storage'],['svc','dock']];
+  const ENT=['lobby','dock'];
+  const G={gen:['lobby','hall','office','kitchen','conf','print'],fac:['svc','mech','server','storage','dock'],it:['lobby','hall','print','idf','svc','server'],mech:['mech'],dock:['dock','svc','storage']};
+  const GN={gen:'General Staff',fac:'Facilities',it:'IT',mech:'Mechanical Vendor',dock:'Loading Dock'};
+  const on=new Set(),plan=$('plan14');
+  const ctr=k=>{const [x,y,w,h]=R[k];return[x+w/2,y+h/2];};
+  for(const k in R){const [x,y,w,h,l]=R[k];el('rect',{x,y,width:w,height:h,fill:'#fbfaf6',stroke:'#8a8478','stroke-width':1.2},plan);
+    if(l){const t=el('text',{x:x+w/2,y:y+h/2+3,'font-size':7.5,'font-weight':600,fill:'#3d454e','text-anchor':'middle'},plan);t.textContent=l;}}
+  const sv=el('text',{x:272,y:123,'font-size':6.5,fill:'#3d454e','text-anchor':'middle',transform:'rotate(-90 272 123)'},plan);sv.textContent='SERVICE CORRIDOR';
+  el('path',{d:'M44 230 L52 222 L60 230',fill:'none',stroke:'#2f8f5b','stroke-width':2},plan);el('path',{d:'M354 199 L346 207 L354 215',fill:'none',stroke:'#2f8f5b','stroke-width':2},plan);
+  const g=()=>{const s=new Set();on.forEach(k=>G[k].forEach(r=>s.add(r)));return s;};
+  function reach(gr){const seen=new Map();const q=[];ENT.forEach(e=>{if(gr.has(e)){seen.set(e,null);q.push(e);}});
+    while(q.length){const a=q.shift();E.forEach(([u,v])=>{const b=u===a?v:v===a?u:null;if(b&&gr.has(b)&&!seen.has(b)){seen.set(b,a);q.push(b);}});}return seen;}
+  function draw(){const gr=g(),rc=reach(gr),h=$('holes14'),o=$('over14');h.innerHTML=o.innerHTML=$('route14').innerHTML='';
+    gr.forEach(k=>{const [x,y,w,hh]=R[k];el('rect',{x,y,width:w,height:hh,fill:'#000'},h);
+      if(!rc.has(k)){el('rect',{x,y,width:w,height:hh,fill:'url(#hatch14)'},o);
+        if(w>40){const t=el('text',{x:x+w/2,y:y+hh/2+13,'font-size':6.5,'font-weight':700,fill:'#9a4f10','text-anchor':'middle'},o);t.textContent='NO ROUTE';}}
+      if(k==='server')el('rect',{x:x+1.5,y:y+1.5,width:w-3,height:hh-3,fill:'none',stroke:'#c2412d','stroke-width':2.5},o);});
+    document.querySelectorAll('[data-grp]').forEach(b=>press(b,on.has(b.dataset.grp)));return rc;}
+  document.querySelectorAll('[data-grp]').forEach(b=>b.onclick=()=>{tog(on,b.dataset.grp);draw();$('f14').className='fb';$('f14').textContent='Assign groups. Hatched rooms are granted but unreachable.';});
+  $('walk14').onclick=()=>{const rc=draw(),f=$('f14');
+    if(!rc.has('mech')){f.className='fb bad';f.textContent=g().has('mech')?'He badges in and gets stuck. Every route to Mechanical crosses a locked door.':'No badge access to Mechanical at all.';return;}
+    const pts=[];let k='mech';while(k){pts.unshift(ctr(k));k=rc.get(k);}
+    const first=pts[0];pts.unshift(first[0]>200?[346,207]:[52,222]);
+    el('polyline',{points:pts.map(p=>p.join(',')).join(' '),fill:'none',stroke:'#2f8f5b','stroke-width':2.5,'stroke-dasharray':'5 3','stroke-linecap':'round'},$('route14'));
+    f.className='fb good';f.textContent=`Route: ${first[0]>200?'rear dock door':'front door'} → Mechanical.`;};
+  $('go14').onclick=()=>{const gr=g(),rc=draw(),f=$('f14');f.className='fb bad';
+    if(gr.has('server'))f.textContent=`The server room is open to him through ${[...on].filter(k=>G[k].includes('server')).map(k=>GN[k]).join(' and ')}.`;
+    else if(!gr.has('mech'))f.textContent='He can\'t get into the mechanical room.';
+    else if(!rc.has('mech'))f.textContent='The badge opens Mechanical, but he can\'t reach it. Every route crosses a locked door.';
+    else if(on.has('gen')){f.className='fb';f.textContent='It works, but General Staff also opens the whole office. The dock route is tighter.';}
+    else{f.className='fb good';f.textContent='Correct. Loading Dock + Mechanical Vendor: in through the dock, up the service corridor, server room stays locked.';}};
+  draw();
+})();
+
+/* 15 Client report — sub-element redaction */
+(()=>{const C={perf:[[40,54,282,38],[108,108,206,42]],names:[[40,123,66,26]],pricing:[[40,158,284,24]],notes:[[40,192,284,36]]};
+  const share=new Set(['perf','names','pricing','notes']);let mode='admin';
+  const PRE={int:['perf','names','pricing','notes'],cli:['perf','names']};
+  function draw(){const g=$('red15');g.innerHTML='';
+    for(const k in C)if(!share.has(k))C[k].forEach(([x,y,w,h])=>{
+      if(mode==='admin'){el('rect',{x,y,width:w,height:h,fill:'url(#hatch15)',rx:2},g);}
+      else{el('rect',{x,y,width:w,height:h,fill:'#111'},g);if(w>60){const t=el('text',{x:x+w/2,y:y+h/2+2.5,'font-size':6.5,'font-weight':700,fill:'#fff','text-anchor':'middle','letter-spacing':1},g);t.textContent='REDACTED';}}});
+    document.querySelectorAll('[data-cat]').forEach(b=>press(b,share.has(b.dataset.cat)));
+    press($('ma15'),mode==='admin');press($('mb15'),mode!=='admin');}
+  document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{tog(share,b.dataset.cat);document.querySelectorAll('[data-pre]').forEach(p=>press(p,false));draw();});
+  document.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{share.clear();PRE[b.dataset.pre].forEach(k=>share.add(k));
+    document.querySelectorAll('[data-pre]').forEach(p=>press(p,p===b));draw();});
+  $('ma15').onclick=()=>{mode='admin';draw();};$('mb15').onclick=()=>{mode='rec';draw();};
+  $('go15').onclick=()=>{const f=$('f15');f.className='fb bad';
+    if(share.has('pricing'))f.textContent='Margin and discount are going to the client. Internal pricing has to stay internal.';
+    else if(share.has('notes'))f.textContent='"Push SSO upsell" is going to the customer you\'re upselling.';
+    else if(share.has('names'))f.textContent='Harbor Dental and Pine & Co are other customers. Their names can\'t go to Acme. The Client preset missed this.';
+    else if(!share.has('perf'))f.textContent='You redacted the performance numbers, which are the whole point of the report.';
+    else{f.className='fb good';f.textContent='Clean. Acme sees its numbers and the benchmark bars, without other clients\' names, pricing, or notes.';}
+    mode='rec';draw();};
+  draw();
+})();
+
+/* 16 Learning path — (role ∪ track) − credits */
+(()=>{const M=['Company|Orientation','Foundations|of Service','Safety 101','Systems|Basics','Leading|Former Peers','Scheduling|& Coverage','Coaching|Conversations','Handling|Escalations','Budget|Basics','Hiring &|Interviewing','Performance|Reviews','Strategy for|Managers'];
+  const MIN=[45,60,30,40,50,45,60,40,45,50,40,60],RL=['Foundations','Supervisor','Manager'];
+  let role=null,trk=null,mode='cat';const cred=new Set(),cat=$('cat16');
+  const pos=i=>[14+(i%4)*84,30+Math.floor(i/4)*68];
+  RL.forEach((r,j)=>{const t=el('text',{x:14,y:24+j*68,'font-size':6.5,'font-weight':700,fill:'#5b6676','letter-spacing':.6},cat);t.textContent=r.toUpperCase();});
+  M.forEach((m,i)=>{const [x,y]=pos(i);el('rect',{x,y,width:78,height:58,rx:5,fill:'#fff',stroke:'#d5dbe3'},cat);
+    m.split('|').forEach((ln,k,a)=>{const t=el('text',{x:x+39,y:y+30-(a.length-1)*5+k*10,'font-size':7.5,'font-weight':600,fill:'#1b2330','text-anchor':'middle'},cat);t.textContent=ln;});
+    const s=el('text',{x:x+39,y:y+52,'font-size':6,fill:'#5b6676','text-anchor':'middle'},cat);s.textContent=MIN[i]+' min';
+    if(i===0||i===4){const b=el('text',{x:x+6,y:y+10,'font-size':5.5,fill:'#9a4f10','font-weight':700},cat);b.textContent=i?'PROMOTION TRACK':'NEW HIRE TRACK';}});
+  const scope=i=>role!==null&&Math.floor(i/4)<=role&&(i!==0||trk==='new')&&(i!==4||trk==='pro');
+  const path=()=>M.map((_,i)=>i).filter(i=>scope(i)&&!cred.has(i));
+  function draw(){const h=$('holes16'),o=$('over16');h.innerHTML=o.innerHTML='';
+    M.forEach((_,i)=>{if(!scope(i))return;const [x,y]=pos(i);el('rect',{x:x-2,y:y-2,width:82,height:62,rx:6,fill:'#000'},h);
+      if(cred.has(i)){el('rect',{x,y,width:78,height:58,rx:5,fill:'url(#hatch16)',opacity:.85},o);const t=el('text',{x:x+39,y:y+10,'font-size':6.5,'font-weight':700,fill:'#2f8f5b','text-anchor':'middle'},o);t.textContent='✓ CREDITED';}
+      else el('rect',{x:x+1,y:y+1,width:76,height:56,rx:5,fill:'none',stroke:'#c9741f','stroke-width':2},o);});
+    document.querySelectorAll('[data-role16]').forEach(b=>press(b,+b.dataset.role16===role));
+    document.querySelectorAll('[data-trk]').forEach(b=>press(b,b.dataset.trk===trk));
+    document.querySelectorAll('[data-cred]').forEach(b=>press(b,cred.has(+b.dataset.cred)));
+    press($('ma16'),mode==='cat');press($('mb16'),mode!=='cat');
+    const d=$('dash16'),p=path();d.hidden=mode==='cat';
+    d.innerHTML=`<span class="lbl">Marcus's dashboard</span><span><b>Your onboarding</b> · ${p.length} modules · ${p.reduce((a,i)=>a+MIN[i],0)} min</span><ol class="pathlist">${p.map(i=>`<li>${M[i].replace('|',' ')}</li>`).join('')||'<li>Nothing assigned yet</li>'}</ol>`;}
+  document.querySelectorAll('[data-role16]').forEach(b=>b.onclick=()=>{role=+b.dataset.role16;draw();});
+  document.querySelectorAll('[data-trk]').forEach(b=>b.onclick=()=>{trk=b.dataset.trk;draw();});
+  document.querySelectorAll('[data-cred]').forEach(b=>b.onclick=()=>{tog(cred,+b.dataset.cred);draw();});
+  $('ma16').onclick=()=>{mode='cat';draw();};$('mb16').onclick=()=>{mode='dash';draw();};
+  $('go16').onclick=()=>{const f=$('f16'),miss=[1,2,3].filter(i=>!cred.has(i));f.className='fb bad';
+    if(role!==1)f.textContent=role===2?'Manager pulls in budget and hiring modules he doesn\'t need yet.':'He\'s a supervisor now. That path skips all the supervisor modules.';
+    else if(trk!=='pro')f.textContent=trk==='new'?'New hire track sends him back through Company Orientation and skips Leading Former Peers.':'Pick a track.';
+    else if(miss.length)f.textContent=`He'd retake ${miss.map(i=>M[i].replace('|',' ')).join(', ')}.`;
+    else{f.className='fb good';f.textContent=`Correct. Four supervisor modules, ${path().reduce((a,i)=>a+MIN[i],0)} minutes, nothing he's already done.`;}
+    mode='dash';draw();};
+  draw();
+})();
+
+/* 17 AI boundary — assistant scope ∩ user access */
+(()=>{const C=['HR Policies','Benefits','Employee Records','Payroll','Eng Wiki','Sales Playbooks'];
+  const D=[['Leave policy 2026','Code of conduct','Remote work'],['Benefits guide','EAP overview'],['J. Reyes · file','M. Hill · file','A. Okafor · file'],['Oct payroll run','Salary bands'],['Deploy runbook','API style guide'],['Renewal playbook','Pricing objections']];
+  const ACC={emp:[0,1,4,5],hr:[0,1,2,3,4,5]};const ai=new Set([0,1,2,3,4,5]);let as='emp';const cg=$('col17');
+  const Z=i=>[14+(i%3)*114,26+Math.floor(i/3)*104,106,96];
+  C.forEach((c,i)=>{const [x,y,w,h]=Z(i);el('rect',{x,y,width:w,height:h,rx:5,fill:'#fff',stroke:'#d5dbe3'},cg);
+    const t=el('text',{x:x+8,y:y+15,'font-size':7.5,'font-weight':700,fill:'#1b2330'},cg);t.textContent=c;
+    D[i].forEach((d,k)=>{el('rect',{x:x+8,y:y+24+k*22,width:10,height:13,rx:1,fill:i===2||i===3?'#f3d9d4':'#dfe8f6',stroke:'#9aa3ac','stroke-width':.6},cg);
+      const s=el('text',{x:x+22,y:y+33+k*22,'font-size':7,fill:'#3d454e'},cg);s.textContent=d;});});
+  const usable=i=>ai.has(i)&&ACC[as].includes(i);
+  function draw(){const h=$('holes17'),o=$('out17');h.innerHTML=o.innerHTML='';
+    C.forEach((_,i)=>{const [x,y,w,hh]=Z(i);if(usable(i))el('rect',{x:x-2,y:y-2,width:w+4,height:hh+4,rx:6,fill:'#000'},h);
+      if(ai.has(i))el('rect',{x:x+1,y:y+1,width:w-2,height:hh-2,rx:5,fill:'none',stroke:'#f0a04b','stroke-width':1.6,'stroke-dasharray':'4 3'},o);
+      if(ACC[as].includes(i))el('rect',{x:x+4,y:y+4,width:w-8,height:hh-8,rx:4,fill:'none',stroke:'#3b6fd8','stroke-width':1.2},o);});
+    document.querySelectorAll('[data-col]').forEach(b=>press(b,ai.has(+b.dataset.col)));
+    document.querySelectorAll('[data-as]').forEach(b=>press(b,b.dataset.as===as));}
+  const reset=()=>{$('f17').className='fb';$('f17').textContent='Ask a question to see which sources it can use.';$('cites17').innerHTML='';};
+  document.querySelectorAll('[data-col]').forEach(b=>b.onclick=()=>{tog(ai,+b.dataset.col);draw();reset();});
+  document.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>{as=b.dataset.as;draw();reset();});
+  $('ask17').onclick=()=>{const f=$('f17'),c=$('cites17');let cites=[];
+    if(!usable(0)){f.className='fb bad';f.textContent='"I can\'t find a leave policy in the sources I\'m allowed to use."';c.innerHTML='';return;}
+    f.className='fb';f.textContent='"Up to five days of paid bereavement leave for immediate family, three for extended family. The EAP also offers free counseling."';
+    cites.push('<div class="cite">Source: HR Policies › Leave policy 2026</div>');if(usable(1))cites.push('<div class="cite">Source: Benefits › EAP overview</div>');
+    if(usable(2))cites.push('<div class="cite leak">Also retrieved: Employee Records › J. Reyes · file (leave history)</div>');
+    if(usable(3))cites.push('<div class="cite leak">Also retrieved: Payroll › Oct payroll run (bereavement pay codes)</div>');
+    if(as==='emp'&&(ai.has(2)||ai.has(3)))cites.push('<div class="cite">Records and payroll are in scope but outside this employee\'s access, so they\'re excluded. Ask as HR Manager to see the risk.</div>');
+    c.innerHTML=cites.join('');};
+  $('go17').onclick=()=>{const f=$('f17');$('cites17').innerHTML='';f.className='fb bad';
+    if(!ai.has(0))f.textContent='HR Policies is off. The helpdesk can\'t answer policy questions.';
+    else if(ai.has(2)||ai.has(3))f.textContent='When an HR manager asks, the assistant pulls individual records and payroll into a helpdesk answer. Keep sensitive collections out of a general-purpose assistant.';
+    else if(ai.has(4)||ai.has(5)){f.className='fb';f.textContent='Safe, but Eng Wiki and Sales Playbooks don\'t belong in an HR helpdesk. Narrow scope gives better answers.';}
+    else{f.className='fb good';f.textContent='Correct. HR Policies + Benefits: it answers the question for anyone, and no role can pull records through it.';}};
+  draw();
+})();
+
+/* 18 Badge v2 — visible union, second view, walk */
+(()=>{const R={office:[14,24,176,136,'Open office'],idf:[190,24,70,50,'IT closet'],print:[190,74,70,86,'Print / copy'],
+    hall:[90,160,170,22,'Main hall'],lobby:[14,160,76,62,'Lobby'],kitchen:[90,182,80,40,'Kitchen'],conf:[170,182,90,40,'Conference'],
+    svc:[260,24,24,198,''],mech:[284,24,62,66,'Mechanical'],server:[284,90,62,62,'Server room'],storage:[284,152,62,40,'Storage'],dock:[284,192,62,30,'Dock']};
+  const E=[['lobby','hall'],['hall','office'],['hall','kitchen'],['hall','conf'],['hall','print'],['print','idf'],['hall','svc'],['svc','mech'],['svc','server'],['svc','storage'],['svc','dock']];
+  const G=[{k:'gen',n:'General Staff',c:'#3b6fd8',r:['lobby','hall','office','kitchen','conf','print']},
+    {k:'fac',n:'Facilities',c:'#c2412d',r:['svc','mech','server','storage','dock']},
+    {k:'it',n:'IT',c:'#8a4fc9',r:['lobby','hall','print','idf','svc','server']},
+    {k:'mech',n:'Mechanical Vendor',c:'#d98a1f',r:['mech']},
+    {k:'dock',n:'Loading Dock',c:'#2f8f5b',r:['dock','svc','storage']}];
+  const ENT={lobby:[52,232],dock:[358,207]};
+  const on=new Set();let view='admin',walking=0;
+  const plan=$('plan18'),gs=$('groups18'),foot=$('foot18'),holes=$('holes18');
+  const ctr=k=>{const [x,y,w,h]=R[k];return[x+w/2,y+h/2];};
+  function door(a,b){const [ax,ay,aw,ah]=R[a],[bx,by,bw,bh]=R[b];
+    if(Math.abs(ax+aw-bx)<1||Math.abs(bx+bw-ax)<1){const x=Math.abs(ax+aw-bx)<1?bx:ax;return{x,y:(Math.max(ay,by)+Math.min(ay+ah,by+bh))/2,v:true};}
+    const y=Math.abs(ay+ah-by)<1?by:ay;return{x:(Math.max(ax,bx)+Math.min(ax+aw,bx+bw))/2,y,v:false};}
+  const rectsInto=(par,rooms,fill,attrs={})=>{const g=el('g',attrs,par);rooms.forEach(k=>{const [x,y,w,h]=R[k];el('rect',{x,y,width:w,height:h,fill},g);});return g;};
+  for(const k in R){const [x,y,w,h,l]=R[k];el('rect',{x,y,width:w,height:h,fill:'#fbfaf6',stroke:'#8a8478','stroke-width':1.2},plan);
+    if(l){const t=el('text',{x:x+w/2,y:y+h/2+3,'font-size':7.5,'font-weight':600,fill:'#3d454e','text-anchor':'middle'},plan);t.textContent=l;}
+    const m=el('rect',{x,y,width:w,height:h,fill:'#000',class:'mh',style:'opacity:0'},holes);m.id='mh18-'+k;}
+  const sv=el('text',{x:272,y:123,'font-size':6.5,fill:'#3d454e','text-anchor':'middle',transform:'rotate(-90 272 123)'},plan);sv.textContent='SERVICE CORRIDOR';
+  el('path',{d:'M44 230 L52 222 L60 230',fill:'none',stroke:'#2f8f5b','stroke-width':2},plan);el('path',{d:'M354 199 L346 207 L354 215',fill:'none',stroke:'#2f8f5b','stroke-width':2},plan);
+  G.forEach(g=>{const p=el('g',{class:'gp',style:'opacity:0'},gs);g.el=p;
+    rectsInto(p,g.r,g.c,{opacity:.16});rectsInto(p,g.r,g.c,{filter:'url(#ring18)'});
+    const b=document.createElement('button');b.className='btn';b.setAttribute('aria-pressed','false');
+    b.innerHTML=`<span class="swatch" style="background:${g.c}"></span>${g.n}`;b.onclick=()=>{if(walking)return;tog(on,g.k);clearWalk();draw();};$('grp18').appendChild(b);g.btn=b;});
+  const granted=()=>{const s=new Set();G.forEach(g=>{if(on.has(g.k))g.r.forEach(r=>s.add(r));});return s;};
+  function clearWalk(){$('trail18').innerHTML='';$('dale18').innerHTML='';}
+  function draw(){const gr=granted(),admin=view==='admin';
+    G.forEach(g=>{g.el.style.opacity=admin&&on.has(g.k)?1:0;press(g.btn,on.has(g.k));g.btn.disabled=!admin;});
+    for(const k in R)$('mh18-'+k).style.opacity=gr.has(k)?1:0;
+    foot.innerHTML='';if(admin&&gr.size)rectsInto(foot,[...gr],'#1b2330',{filter:'url(#ringB18)'});
+    $('veil18').style.opacity=admin?0:1;
+    const d=$('doors18');d.innerHTML='';
+    if(!admin){E.forEach(([a,b])=>{if(!gr.has(a)&&!gr.has(b))return;const p=door(a,b),ok=gr.has(a)&&gr.has(b);
+      el('rect',p.v?{x:p.x-2,y:p.y-6,width:4,height:12,rx:1}:{x:p.x-6,y:p.y-2,width:12,height:4,rx:1},d).setAttribute('fill',ok?'#4cc283':'#ef6a55');});
+      for(const e in ENT){const [x,y]=ENT[e];el('circle',{cx:x,cy:y-6,r:3,fill:gr.has(e)?'#4cc283':'#ef6a55'},d);}}
+    const names=G.filter(g=>on.has(g.k)).map(g=>g.n);
+    $('fx18').textContent=names.length?`Badge = ${names.join(' ∪ ')}  →  ${gr.size} room${gr.size>1?'s':''}`:'Badge = ∅';
+    press($('va18'),admin);press($('vb18'),!admin);$('walk18').hidden=admin;$('fl18').textContent=admin?'Admin':'Dale';}
+  function route(gr){const start=gr.has('dock')?'dock':'lobby';const prev=new Map([[start,null]]),q=[start];
+    while(q.length){const a=q.shift();E.forEach(([u,v])=>{const b=u===a?v:v===a?u:null;if(b&&!prev.has(b)){prev.set(b,a);q.push(b);}});}
+    const path=[];let k='mech';while(k){path.unshift(k);k=prev.get(k);}return{start,path};}
+  function walk(){if(walking)return;clearWalk();const gr=granted(),{start,path}=route(gr),f=$('f18');
+    const pts=[ENT[start]];let stop=null;
+    if(!gr.has(start)){stop={at:start==='dock'?'the dock door':'the front door'};}
+    else{pts.push(ctr(path[0]));for(let i=1;i<path.length;i++){const dp=door(path[i-1],path[i]);pts.push([dp.x,dp.y]);
+      if(!gr.has(path[i])){stop={at:(R[path[i]][4]||'Service corridor')+' door'};break;}pts.push(ctr(path[i]));}}
+    const trail=el('polyline',{points:pts[0].join(','),fill:'none',stroke:'#f0a04b','stroke-width':2.5,'stroke-dasharray':'5 3','stroke-linecap':'round'},$('trail18'));
+    const dot=el('g',{},$('dale18'));el('circle',{r:6,fill:'#f0a04b',stroke:'#fff','stroke-width':1.5},dot);
+    const t=el('text',{y:2.5,'font-size':6,'font-weight':800,fill:'#1a1206','text-anchor':'middle'},dot);t.textContent='D';
+    const seg=[];let L=0;for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(l);L+=l;}
+    const at=s=>{let d=s*L;for(let i=0;i<seg.length;i++){if(d<=seg[i]||i===seg.length-1){const k=seg[i]?Math.min(1,d/seg[i]):1;return[pts[i][0]+(pts[i+1][0]-pts[i][0])*k,pts[i][1]+(pts[i+1][1]-pts[i][1])*k,i];}d-=seg[i];}return[...pts[0],0];};
+    const finish=()=>{walking=0;
+      if(stop){el('circle',{cx:pts[pts.length-1][0],cy:pts[pts.length-1][1],r:10,fill:'none',stroke:'#ef6a55','stroke-width':2.5},$('dale18'));
+        f.className='fb bad';f.textContent=`Dale's stuck. His badge is denied at ${stop.at}. Back to admin.`;}
+      else if(gr.has('server')){f.className='fb bad';f.textContent='He made it to Mechanical, but he passed a green door into the server room on the way. Back to admin.';}
+      else{f.className='fb good';f.textContent=`He made it: ${start==='dock'?'dock door':'front door'} → Mechanical, and the server room stayed red the whole way.`;}};
+    if(pts.length<2){dot.setAttribute('transform',`translate(${pts[0]})`);finish();return;}
+    f.className='fb';f.textContent='Walking…';walking=1;
+    if(RM){dot.setAttribute('transform',`translate(${pts[pts.length-1]})`);trail.setAttribute('points',pts.map(p=>p.join(',')).join(' '));finish();return;}
+    const t0=performance.now(),ms=Math.max(900,L*9);
+    const step=now=>{const s=Math.min(1,(now-t0)/ms),[x,y,i]=at(s);dot.setAttribute('transform',`translate(${x} ${y})`);
+      trail.setAttribute('points',pts.slice(0,i+1).concat([[x,y]]).map(p=>p.join(',')).join(' '));
+      if(s<1)requestAnimationFrame(step);else finish();};requestAnimationFrame(step);}
+  $('va18').onclick=()=>{if(walking)return;view='admin';clearWalk();draw();$('f18').className='fb';$('f18').textContent='Toggle access groups. Each group\'s rooms fuse into one shape, and the groups fuse into the badge outline.';};
+  $('vb18').onclick=()=>{if(walking)return;view='dale';clearWalk();draw();$('f18').className='fb';$('f18').textContent=granted().size?'Only his badge footprint is lit. Green doors open, red doors don\'t. Walk him in.':'His badge opens nothing. The whole building is dark.';};
+  $('walk18').onclick=walk;
+  $('go18').onclick=()=>{if(walking)return;const gr=granted(),f=$('f18'),{path}=route(gr);f.className='fb bad';
+    const reach=gr.has(path[0])&&path.every(k=>gr.has(k));
+    if(gr.has('server'))f.textContent=`The server room is inside the badge shape via ${G.filter(g=>on.has(g.k)&&g.r.includes('server')).map(g=>g.n).join(' and ')}.`;
+    else if(!gr.has('mech'))f.textContent='Mechanical isn\'t in the badge shape.';
+    else if(!reach)f.textContent='Mechanical is lit, but the shape isn\'t connected to a door he can use. Switch to Dale\'s view and walk it.';
+    else if(on.has('gen')){f.className='fb';f.textContent='It works, but General Staff adds the whole office to his shape. Loading Dock + Mechanical Vendor is the tightest badge.';}
+    else{f.className='fb good';f.textContent='Issued: Loading Dock ∪ Mechanical Vendor. Four rooms, one connected shape, server room outside it.';}};
+  draw();
+})();
+
+/* 19 Badge v3 — configure → experience → investigate → revise */
+(()=>{const R={office:[14,24,176,136,'Open office'],idf:[190,24,70,50,'IT closet'],print:[190,74,70,86,'Print / copy'],
+    hall:[90,160,170,22,'Main hall'],lobby:[14,160,76,62,'Lobby'],kitchen:[90,182,80,40,'Kitchen'],conf:[170,182,90,40,'Conference'],
+    svc:[260,24,24,198,''],mech:[284,24,62,66,'Mechanical'],server:[284,90,62,62,'Server room'],storage:[284,152,62,40,'Storage'],dock:[284,192,62,30,'Dock']};
+  const E=[['lobby','hall'],['hall','office'],['hall','kitchen'],['hall','conf'],['hall','print'],['print','idf'],['hall','svc'],['svc','mech'],['svc','server'],['svc','storage'],['svc','dock']];
+  const G=[{k:'gen',n:'General Staff',c:'#3b6fd8',h:[7,18],r:['lobby','hall','office','kitchen','conf','print']},
+    {k:'fac',n:'Facilities',c:'#c2412d',h:[0,24],r:['svc','mech','server','storage','dock']},
+    {k:'it',n:'IT',c:'#8a4fc9',h:[6,20],r:['lobby','hall','print','idf','svc','server']},
+    {k:'mech',n:'Mechanical Vendor',c:'#d98a1f',h:[7,17],r:['mech']},
+    {k:'dock',n:'Loading Dock',c:'#2f8f5b',h:[7,19],r:['dock','svc','storage']}];
+  const ENT={lobby:[52,222],dock:[346,207]},T=6.5;
+  const DOORS=[{id:'ext-lobby',n:'FRONT DOOR',to:'lobby',p:ENT.lobby,c:[16,188]},{id:'ext-dock',n:'DOCK · EXTERIOR',to:'dock',p:ENT.dock,c:[286,196]},
+    {id:'lobby-hall',n:'LOBBY → HALL',to:'hall',c:[96,128]},{id:'hall-svc',n:'HALL → SERVICE',to:'svc',c:[186,128]},
+    {id:'svc-dock',n:'DOCK → SERVICE',to:'svc',c:[196,196]},{id:'svc-mech',n:'MECHANICAL',to:'mech',c:[286,30]},
+    {id:'svc-server',n:'SERVER ROOM',to:'server',c:[286,94]},{id:'svc-storage',n:'STORAGE',to:'storage',c:[286,156]}];
+  const on=new Set();let view='admin',walking=0,lensOn=false,lensOK=false,schedOK=false,shift=false,ovr=false,walked=false,issued=false;
+  const plan=$('plan19'),gs=$('groups19'),foot=$('foot19'),holes=$('holes19'),svg=$('s19');
+  const ctr=k=>{const [x,y,w,h]=R[k];return[x+w/2,y+h/2];};
+  function door(a,b){const [ax,ay,aw,ah]=R[a],[bx,by,bw,bh]=R[b];
+    if(Math.abs(ax+aw-bx)<1||Math.abs(bx+bw-ax)<1){const x=Math.abs(ax+aw-bx)<1?bx:ax;return[x,(Math.max(ay,by)+Math.min(ay+ah,by+bh))/2];}
+    const y=Math.abs(ay+ah-by)<1?by:ay;return[(Math.max(ax,bx)+Math.min(ax+aw,bx+bw))/2,y];}
+  DOORS.forEach(d=>{if(!d.p){const [a,b]=d.id.split('-');d.p=door(a,b);}});
+  const fmt=h=>h===0?'00:00':h===24?'24:00':String(Math.floor(h)).padStart(2,'0')+':'+(h%1?'30':'00');
+  const hrs=g=>g.k==='dock'&&shift?[6,19]:g.h;
+  const grants=room=>G.filter(g=>on.has(g.k)&&g.r.includes(room));
+  function canEnter(room){const gs=grants(room);if(!gs.length)return'none';if(ovr)return'ok';return gs.some(g=>{const [a,b]=hrs(g);return T>=a&&T<b;})?'ok':'sched';}
+  const rectsInto=(par,rooms,fill,attrs={})=>{const g=el('g',attrs,par);rooms.forEach(k=>{const [x,y,w,h]=R[k];el('rect',{x,y,width:w,height:h,fill},g);});return g;};
+  for(const k in R){const [x,y,w,h,l]=R[k];el('rect',{x,y,width:w,height:h,fill:'#fbfaf6',stroke:'#8a8478','stroke-width':1.2},plan);
+    if(l){const t=el('text',{x:x+w/2,y:y+h/2+3,'font-size':7.5,'font-weight':600,fill:'#3d454e','text-anchor':'middle'},plan);t.textContent=l;}
+    const m=el('rect',{x,y,width:w,height:h,fill:'#000',class:'mh',style:'opacity:0'},holes);m.id='mh19-'+k;}
+  const sv=el('text',{x:272,y:123,'font-size':6.5,fill:'#3d454e','text-anchor':'middle',transform:'rotate(-90 272 123)'},plan);sv.textContent='SERVICE CORRIDOR';
+  el('path',{d:'M44 230 L52 222 L60 230',fill:'none',stroke:'#2f8f5b','stroke-width':2},plan);el('path',{d:'M354 199 L346 207 L354 215',fill:'none',stroke:'#2f8f5b','stroke-width':2},plan);
+  G.forEach(g=>{const p=el('g',{class:'gp',style:'opacity:0'},gs);g.el=p;
+    rectsInto(p,g.r,g.c,{opacity:.16});rectsInto(p,g.r,g.c,{filter:'url(#ring19)'});
+    const b=document.createElement('button');b.className='btn';b.setAttribute('aria-pressed','false');
+    b.innerHTML=`<span class="swatch" style="background:${g.c}"></span>${g.n}`;b.onclick=()=>{if(walking)return;tog(on,g.k);issued=false;clearWalk();draw();};$('grp19').appendChild(b);g.btn=b;});
+  const granted=()=>{const s=new Set();G.forEach(g=>{if(on.has(g.k))g.r.forEach(r=>s.add(r));});return s;};
+  function clearWalk(){$('trail19').innerHTML='';$('dale19').innerHTML='';$('doors19').innerHTML='';}
+  function plan19(){const gr=granted(),start=gr.has('dock')?'dock':'lobby';const prev=new Map([[start,null]]),q=[start];
+    while(q.length){const a=q.shift();E.forEach(([u,v])=>{const b=u===a?v:v===a?u:null;if(b&&!prev.has(b)){prev.set(b,a);q.push(b);}});}
+    const path=[];let k='mech';while(k){path.unshift(k);k=prev.get(k);}
+    const pts=[ENT[start]],passed=[];let stop=null;
+    const st=canEnter(start);if(st!=='ok')stop={p:ENT[start],why:st,name:start==='dock'?'the dock door':'the front door',id:'ext-'+start};
+    else{passed.push(ENT[start]);pts.push(ctr(start));
+      for(let i=1;i<path.length;i++){const dp=door(path[i-1],path[i]);pts.push(dp);const s=canEnter(path[i]);
+        if(s!=='ok'){stop={p:dp,why:s,name:(R[path[i]][4]||'service corridor').toLowerCase()+' door'};break;}passed.push(dp);pts.push(ctr(path[i]));}}
+    return{start,pts,passed,stop};}
+  function phase(){const st={cfg:on.size>0,exp:walked,inv:schedOK,rev:issued};let cur=null;
+    document.querySelectorAll('#ph19 span').forEach(s=>{const k=s.dataset.ph,d=st[k];s.className=d?'done':'';if(!d&&!cur){cur=k;s.className='on';}});}
+  function drawLens(){const c=$('ctl19');c.innerHTML='';
+    el('path',{d:'M14 24H346V222H14Z',fill:'none',stroke:'#3d6a94','stroke-width':.8},c);
+    for(const k in R){const [x,y,w,h]=R[k];el('rect',{x,y,width:w,height:h,fill:'none',stroke:'#2c4c6e','stroke-width':.6},c);}
+    DOORS.forEach(d=>{const gs=grants(d.to),s=canEnter(d.to),col=s==='ok'?'#4cc283':'#ef6a55';
+      el('circle',{cx:d.p[0],cy:d.p[1],r:3.5,fill:col},c);
+      const [x,y]=d.c;el('rect',{x,y,width:72,height:30,rx:2,fill:'#13314f',stroke:col,'stroke-width':.8},c);
+      const l=(t,yy,fill,w)=>{const n=el('text',{x:x+4,y:y+yy,'font-size':5.6,'font-family':'JetBrains Mono, monospace',fill,'font-weight':w||400},c);n.textContent=t;};
+      l(d.n,8,'#9fc3e6',700);
+      if(!gs.length){l('No group on badge',17,'#d7e3ef');l('✕ NO ACCESS',26,'#ef6a55',700);}
+      else{const g=gs[0],[a,b]=hrs(g);l(ovr?'Dale window 06:00–15:00':`${({gen:'Staff',fac:'Facilities',it:'IT',mech:'Mech vendor',dock:'Dock'})[g.k]} ${fmt(a)}–${fmt(b)}`,17,'#d7e3ef');
+        l(s==='ok'?'✓ OPEN AT 06:30':'✕ 06:30 OUTSIDE HOURS',26,col,700);}});}
+  function draw(){const gr=granted(),admin=view==='admin';
+    G.forEach(g=>{g.el.style.opacity=admin&&on.has(g.k)?1:0;press(g.btn,on.has(g.k));g.btn.disabled=!admin;});
+    for(const k in R)$('mh19-'+k).style.opacity=gr.has(k)?1:0;
+    foot.innerHTML='';if(admin&&gr.size)rectsInto(foot,[...gr],'#1b2330',{filter:'url(#ringB19)'});
+    $('veil19').style.opacity=admin?0:1;
+    const names=G.filter(g=>on.has(g.k)).map(g=>g.n);
+    $('fx19').textContent=(names.length?`Badge = ${names.join(' ∪ ')}  →  ${gr.size} room${gr.size>1?'s':''}`:'Badge = ∅')+(ovr?'  ·  window 06:00–15:00':'')+(shift?'  ·  dock group 06:00':'');
+    press($('va19'),admin);press($('vb19'),!admin);$('walk19').hidden=admin;$('lensb19').hidden=admin||!lensOK;press($('lensb19'),lensOn);
+    const showL=!admin&&lensOn;$('lens19').style.display=showL?'':'none';$('lr19').style.display=showL?'':'none';svg.classList.toggle('lensing',showL);
+    if(showL)drawLens();
+    $('sch19').hidden=!schedOK;press($('shift19'),shift);press($('ovr19'),ovr);
+    $('sh19').textContent=admin?'Admin · badge footprint':lensOn?'Dale · door controller lens':'Dale · Tue morning';$('ck19').textContent=admin?'':'Tue 6:30 AM';
+    $('fl19').textContent=admin?'Admin':'Dale';phase();}
+  const say=(t,c='')=>{$('f19').className='fb '+c;$('f19').textContent=t;};
+  function walk(){if(walking)return;lensOn=false;clearWalk();draw();const {start,pts,passed,stop}=plan19(),gr=granted();
+    const dl=$('doors19');
+    const trail=el('polyline',{points:pts[0].join(','),fill:'none',stroke:'#f0a04b','stroke-width':2.5,'stroke-dasharray':'5 3','stroke-linecap':'round'},$('trail19'));
+    const dot=el('g',{},$('dale19'));el('circle',{r:6,fill:'#f0a04b',stroke:'#fff','stroke-width':1.5},dot);
+    const tx=el('text',{y:2.5,'font-size':6,'font-weight':800,fill:'#1a1206','text-anchor':'middle'},dot);tx.textContent='D';
+    const seg=[];let L=0;for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(l);L+=l;}
+    const at=s=>{let d=s*L;for(let i=0;i<seg.length;i++){if(d<=seg[i]||i===seg.length-1){const k=seg[i]?Math.min(1,d/seg[i]):1;return[pts[i][0]+(pts[i+1][0]-pts[i][0])*k,pts[i][1]+(pts[i+1][1]-pts[i][1])*k,i];}d-=seg[i];}return[...pts[0],0];};
+    const finish=()=>{walking=0;walked=true;passed.forEach(p=>el('circle',{cx:p[0],cy:p[1],r:3.5,fill:'#4cc283'},dl));
+      if(stop){el('circle',{cx:stop.p[0],cy:stop.p[1],r:4,fill:'#ef6a55'},dl);el('circle',{cx:stop.p[0],cy:stop.p[1],r:10,fill:'none',stroke:'#ef6a55','stroke-width':2.5},dl);
+        const first=!lensOK;lensOK=true;
+        say(`The reader at ${stop.name} blinks red. Dale calls the security desk: "My badge doesn't work."${first?' A door inspection lens is now available.':''}`,'bad');}
+      else if(gr.has('server')&&canEnter('server')==='ok')say('Dale reached Mechanical. On the way he passed the server room door, and it would have opened for him.','bad');
+      else say('Dale is in Mechanical at 6:30. Nothing else opened along the way. Go issue it.','good');draw();};
+    if(pts.length<2){dot.setAttribute('transform',`translate(${pts[0]})`);finish();return;}
+    say('Dale badges in…');walking=1;
+    if(RM){dot.setAttribute('transform',`translate(${pts[pts.length-1]})`);trail.setAttribute('points',pts.map(p=>p.join(',')).join(' '));finish();return;}
+    const t0=performance.now(),ms=Math.max(900,L*9);
+    const step=now=>{const s=Math.min(1,(now-t0)/ms),[x,y,i]=at(s);dot.setAttribute('transform',`translate(${x} ${y})`);
+      trail.setAttribute('points',pts.slice(0,i+1).concat([[x,y]]).map(p=>p.join(',')).join(' '));
+      if(s<1)requestAnimationFrame(step);else finish();};requestAnimationFrame(step);}
+  function moveLens(e){if(!lensOn||view==='admin')return;const p=pt(svg,e);for(const n of [$('lc19'),$('lr19')]){n.setAttribute('cx',p.x);n.setAttribute('cy',p.y);}
+    if(!schedOK){const hit=DOORS.find(d=>Math.hypot(d.p[0]-p.x,d.p[1]-p.y)<34&&canEnter(d.to)==='sched');
+      if(hit){schedOK=true;say(`Found it. The ${hit.n.toLowerCase()} reader only honors his ${grants(hit.to)[0].n} group from ${fmt(hrs(grants(hit.to)[0])[0])}. The footprint was right, but the clock wasn't. Schedule controls are unlocked in admin.`,'good');draw();}}}
+  svg.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons)moveLens(e);});
+  svg.addEventListener('pointerdown',moveLens);
+  $('lensb19').onclick=()=>{if(walking)return;lensOn=!lensOn;draw();if(lensOn&&!schedOK)say('Drag the lens over the doors. It shows what each reader actually checks.');};
+  $('va19').onclick=()=>{if(walking)return;view='admin';lensOn=false;clearWalk();draw();
+    say(schedOK?'Fix the schedule without opening anything up for people who don\'t need it, then walk him again.':'Build Dale\'s badge, then switch to his view and walk it.');};
+  $('vb19').onclick=()=>{if(walking)return;view='dale';clearWalk();draw();say(granted().size?'It\'s Tuesday, 6:30 AM. Only his badge footprint is lit. Walk him in.':'His badge opens nothing. The building is dark.');};
+  $('walk19').onclick=walk;
+  $('shift19').onclick=()=>{shift=!shift;issued=false;draw();};$('ovr19').onclick=()=>{ovr=!ovr;issued=false;draw();};
+  $('go19').onclick=()=>{if(walking)return;const gr=granted(),{stop}=plan19();
+    if(gr.has('server'))say(`The server room is inside his badge via ${G.filter(g=>on.has(g.k)&&g.r.includes('server')).map(g=>g.n).join(' and ')}.`,'bad');
+    else if(!gr.has('mech'))say('Mechanical isn\'t in his badge.','bad');
+    else if(stop)say(`Issued, and at 6:30 Tuesday Dale is stuck at ${stop.name}. Walk it in his view before issuing.`,'bad');
+    else if(shift)say('It works, but the dock now opens at 6:00 AM for 38 other badges to fix one contractor. Scope the change to Dale.');
+    else if(on.has('gen'))say('It works, but General Staff adds the whole office. Loading Dock + Mechanical Vendor is tighter.');
+    else{issued=true;say('Issued: Loading Dock ∪ Mechanical Vendor, with a Tue–Wed 6:00 AM window on Dale\'s badge only. Right rooms, right hours, nobody else affected.','good');}
+    draw();};
+  say('Build Dale\'s badge, then switch to his view and walk it.');draw();
+})();
+</script>
+
+</body></html>
