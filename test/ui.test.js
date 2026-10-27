@@ -247,6 +247,35 @@ const tests = {
     const r = await pg.evaluate(() => { const t = [...document.querySelectorAll('#map text')].find(e => e.textContent === 'STAFF ENTRANCE'); return t.getBBox().x; });
     assert(r >= 40, 'label x ' + r);
   },
+  async 'compact map (short phone): one toolbar row, live two-level silhouette, stable scroll, no auto-expand on edits'(pg, b) {
+    const ctx = await b.newContext(devices['iPhone SE']), m = await ctx.newPage(); await m.goto(url); await m.click('#briefBtn');
+    const tops = await m.evaluate(() => ['lv1', 'sizeBtn', 'lensBtn', 'walkBtn'].map(id => Math.round(document.getElementById(id).getBoundingClientRect().top)));
+    assert(Math.max(...tops) - Math.min(...tops) <= 6, 'toolbar rows ' + JSON.stringify(tops));
+    await m.mouse.wheel(0, 700); await m.waitForTimeout(250);
+    const full = await m.evaluate(() => document.getElementById('mapcard').offsetHeight);
+    const card = '[data-g="exhibitOps"]', y0 = await m.evaluate(s => document.querySelector(s).getBoundingClientRect().top, card);
+    const sb = await m.locator('#sizeBtn').boundingBox(); await m.touchscreen.tap(sb.x + sb.width / 2, sb.y + sb.height / 2); await m.waitForTimeout(200);
+    const r = await m.evaluate(s => ({ h: document.getElementById('mapcard').offsetHeight, stage: getComputedStyle(document.querySelector('#mapcard .stage')).display, mini: getComputedStyle(document.getElementById('mini')).display, y: document.querySelector(s).getBoundingClientRect().top }), card);
+    assert(r.stage === 'none' && r.mini !== 'none' && full - r.h >= 90, JSON.stringify({ full, ...r }));
+    assert(Math.abs(r.y - y0) <= 3, `content under the finger moved ${y0} -> ${r.y}`);
+    const cb = await m.locator(card).boundingBox(); await m.touchscreen.tap(cb.x + 40, cb.y + cb.height / 2); await m.waitForTimeout(200);
+    const sum = await m.innerText('#miniSum'); assert(/9 doors granted/.test(sum) && /L1 \+ L2/.test(sum) && /restricted: Quarantine/.test(sum), sum);
+    assert(await m.evaluate(() => document.body.classList.contains('compact')), 'a badge change does not expand the map');
+    const lb = await m.locator('#lensBtn').boundingBox(); await m.touchscreen.tap(lb.x + lb.width / 2, lb.y + lb.height / 2); await m.waitForTimeout(200);
+    assert(!(await m.evaluate(() => document.body.classList.contains('compact'))), 'Inspect expands the map');
+    await m.reload(); assert(!(await m.evaluate(() => document.body.classList.contains('compact'))), 'not persisted');
+    await ctx.close();
+  },
+  async 'compact map: Walk expands it, the silhouette expands it, desktop has no toggle'(pg, b) {
+    const ctx = await b.newContext(devices['Pixel 7']), m = await ctx.newPage(); await m.goto(url); await m.click('#briefBtn');
+    await m.click('#sizeBtn'); await m.click('[data-g="allStaff"]'); await m.click('#walkBtn');
+    assert(!(await m.evaluate(() => document.body.classList.contains('compact'))), 'Walk expands');
+    await m.waitForFunction(() => /Walk complete/.test(document.getElementById('mapnote').textContent) || /Walk stopped/.test(document.getElementById('mapnote').textContent), null, { timeout: 15000 });
+    await m.click('#sizeBtn'); await m.click('#mini'); assert(!(await m.evaluate(() => document.body.classList.contains('compact'))), 'tapping the silhouette expands');
+    await ctx.close();
+    const d = await b.newContext({ viewport: { width: 1280, height: 900 } }), dp = await d.newPage(); await dp.goto(url);
+    assert(!(await dp.isVisible('#sizeBtn')), 'no compact toggle on desktop'); await d.close();
+  },
   async 'Elena: closing needs a verifying walk; a later badge change invalidates it'(pg) {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
     assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'refused before walking');

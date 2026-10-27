@@ -119,6 +119,19 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
 .pill{font:700 10.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:20px;padding:3px 8px;white-space:nowrap}
 .record .kv{margin:6px 0 10px;font-size:13px}.record .who{margin-bottom:4px}
 .decision{margin-top:4px}
+#sizeBtn,.mini{display:none}
+@media (max-width:860px) and (orientation:portrait){
+  #sizeBtn{display:inline-flex;align-items:center;justify-content:center;min-width:40px;padding:9px 0}
+  body.compact #mapcard .stage,body.compact #mapcard .mapfoot{display:none}
+  body.compact #mapcard .mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;padding:8px 10px 10px;background:var(--deep);border:0;border-top:1px solid var(--line);color:var(--ink);cursor:pointer;text-align:left;font:inherit}
+  .mini svg{display:block;width:100%;height:auto;border-radius:6px}
+  .mlv{position:relative;display:block}.mlv b{position:absolute;left:6px;top:3px;font:700 11px var(--f-mono);color:#e2ffff}
+  #miniSum{grid-column:1/-1;font-size:12.5px;line-height:1.35;color:var(--muted)}#miniSum b{color:var(--ink)}
+}
+@media (max-width:360px){
+  #mapcard .maphead{flex-wrap:nowrap;gap:4px;padding:8px}#mapcard .row2{gap:4px;flex-wrap:nowrap}
+  #mapcard .seg button{padding:9px 8px}#mapcard .btn{padding:9px 8px}#sizeBtn{min-width:34px}
+}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 @keyframes pulse{0%{opacity:.25}50%{opacity:.9}100%{opacity:.25}}
 .pulse{animation:pulse 1.4s ease-in-out 3}
@@ -144,10 +157,11 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
     <section class="card" id="mapcard">
       <div class="maphead">
         <div class="seg" role="group" aria-label="Level"><button id="lv1" aria-pressed="true" aria-label="Gallery, level 1"><span class="lvn">Gallery · </span>L1</button><button id="lv2" aria-pressed="false" aria-label="Topside, level 2"><span class="lvn">Topside · </span>L2</button></div>
-        <div class="row2"><button class="btn" id="lensBtn" aria-pressed="false">Inspect ◉</button><button class="btn" id="walkBtn">Walk</button></div>
+        <div class="row2"><button class="btn" id="sizeBtn" aria-pressed="false" aria-label="Collapse map" title="Collapse map">▴</button><button class="btn" id="lensBtn" aria-pressed="false">Inspect ◉</button><button class="btn" id="walkBtn">Walk</button></div>
       </div>
       <div class="stage"><svg id="map" viewBox="0 0 400 300" tabindex="0" role="img" aria-label="Nautilus floor plan"></svg></div>
       <div class="mapfoot"><span id="mapnote"></span><span class="clock" id="clock"></span></div>
+      <button class="mini" id="mini" aria-label="Expand map"><span class="mlv"><svg id="miniA" viewBox="0 0 400 300" aria-hidden="true"></svg><b>L1</b></span><span class="mlv"><svg id="miniB" viewBox="0 0 400 300" aria-hidden="true"></svg><b>L2</b></span><span id="miniSum"></span></button>
     </section>
   </div>
   <div class="col">
@@ -171,7 +185,7 @@ const LOCKED=[];
 const st={};
 function fresh(id){const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:E.clone(sc.doorStatus||{}),groupOverrides:{}},route:sc.routes?sc.routes[0].id:null,prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,record:null,open:{}};}
 ORDER.forEach(id=>st[id]=fresh(id));
-let cur='elena',level=1,lens=false,pane='badge',lensP=[143,88],timer=null;
+let cur='elena',level=1,lens=false,compact=false,pane='badge',lensP=[143,88],timer=null;
 const T=()=>st[cur],SC=()=>S[cur];
 const routeOf=t=>{const r=SC().routes;return r?(r.find(x=>x.id===t.route)||r[0]):null;};
 const actorOf=t=>{const r=routeOf(t);return r&&r.as==='escort'?SC().escort:t.person;};
@@ -224,6 +238,15 @@ const DEFS=sfx=>`<linearGradient id="water${sfx}" x1="0" x2="1" y1="0" y2="1"><s
   <pattern id="dots${sfx}" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="1.1" fill="#d9fff1" opacity=".6"/></pattern>
   <pattern id="strp${sfx}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="6" fill="#ffe3b3" opacity=".45"/></pattern>
   <filter id="ring${sfx}" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceGraphic" operator="dilate" radius="1.8" result="d"/><feComposite in="d" in2="SourceAlpha" operator="out"/></filter>`;
+function miniSVG(l){const t=T(),fp=E.footprint(t.world,t.person),d=t.delta&&t.showDelta?t.delta:null;let s='<rect width="400" height="300" fill="#04161f"/>';
+  for(const [k,o] of Object.entries(E.SPACES)){if(o.l!==l)continue;const lit=fp.spaces.has(k);s+=shapes(k,`fill="${lit?(o.kind==='restricted'?'#e8c98f':'#7fd8bd'):'#143644'}" stroke="#04161f" stroke-width="4"`);}
+  if(d){for(const k of d.addedSpaces.filter(k=>E.SPACES[k].l===l))s+=shapes(k,'fill="none" stroke="#f5d192" stroke-width="6"');for(const k of d.removedSpaces.filter(k=>E.SPACES[k].l===l))s+=shapes(k,'fill="none" stroke="#f39091" stroke-width="6"');}
+  return s;}
+function drawMini(){const t=T(),fp=E.footprint(t.world,t.person),lv=[1,2].filter(l=>[...fp.spaces].some(k=>E.SPACES[k].l===l)),rs=[...fp.spaces].filter(k=>E.SPACES[k].kind==='restricted').map(k=>E.SPACES[k].n);
+  $('miniA').innerHTML=miniSVG(1);$('miniB').innerHTML=miniSVG(2);
+  $('miniSum').innerHTML=`<b>${fp.doors.size} door${fp.doors.size===1?'':'s'} granted</b> · lit on ${lv.length?lv.map(l=>'L'+l).join(' + '):'neither level'}${rs.length?` · restricted: ${rs.join(', ')}`:''} · ${E.fmt(SC().time)}`;}
+// the browser's scroll anchoring keeps the content under the finger in place when the map changes size
+function setCompact(on){if(on===compact)return;compact=on;document.body.classList.toggle('compact',on);drawMap();}
 function drawMap(){
   const other=level===1?2:1;
   let s=`<defs>${DEFS('A')}${DEFS('B')}<clipPath id="lensClip"><circle cx="${lensP[0]}" cy="${lensP[1]}" r="56"/></clipPath></defs>`;
@@ -239,8 +262,10 @@ function drawMap(){
   const mc=$('mapcard');document.documentElement.style.setProperty('--stick',(getComputedStyle(mc).position==='sticky'?mc.offsetHeight+12:0)+'px');
   const l2lit=[...E.footprint(T().world,T().person).spaces].some(k=>E.SPACES[k].l===2)||(T().delta&&T().showDelta&&T().delta.addedSpaces.some(k=>E.SPACES[k].l===2));
   $('lv2').innerHTML=`<span class="lvn">Topside · </span>L2${l2lit&&level!==2?'<i class="litdot"></i>':''}`;$('lv2').setAttribute('aria-label',`Topside, level 2${l2lit?', has lit areas':''}`);
+  $('sizeBtn').textContent=compact?'▾':'▴';$('sizeBtn').setAttribute('aria-pressed',compact);$('sizeBtn').setAttribute('aria-label',compact?'Expand map':'Collapse map');$('sizeBtn').title=compact?'Expand map':'Collapse map';
   $('lv1').setAttribute('aria-pressed',level===1);$('lv2').setAttribute('aria-pressed',level===2);$('lensBtn').setAttribute('aria-pressed',lens);
   const w=T().walk;$('clock').textContent=`${SC().day} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+SC().date.slice(5,7)-1]} ${+SC().date.slice(8)} · ${E.fmt(SC().time)}`;
+  if(compact)drawMini();
   const done=w&&!w.running&&!lens,stop=done&&w.res.stop;
   $('mapnote').className=done?(stop?'walkdone bad':'walkdone ok'):'';
   $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.':w&&w.running?'Walking…':done?(stop?`Walk stopped at ${E.DOORS[stop.door]?E.DOORS[stop.door].n:'a door'}.`:'Walk complete: reached every stop.'):'Lit: granted · dotted: public, joined by open passages · striped: restricted.'+(level===2?' Topside sits above the galleries.':'');}
@@ -400,7 +425,7 @@ function buildWalk(){const sc=SC(),t=T(),r=routeOf(t),actor=actorOf(t),from=(r&&
     else if(s.p){pts.push({x:s.p[0],y:s.p[1],l:E.levelOf(s.from)});}
     const [cx,cy]=center(s.to),arr=sc.targets.includes(s.to)&&!pts.some(p=>p.arrive===s.to);pts.push({x:cx,y:cy,l:E.levelOf(s.to),...(arr?{arrive:s.to}:{})});}
   return{res,pts,i:0,running:true,routeId:r?r.id:null};}
-function startWalk(){if(timer)return;const t=T(),h0=document.documentElement.scrollHeight,y0=scrollY;lens=false;pane='badge';t.walk=buildWalk();level=1;render();document.body.style.minHeight=h0+'px';scrollTo(0,y0);
+function startWalk(){if(timer)return;setCompact(false);const t=T(),h0=document.documentElement.scrollHeight,y0=scrollY;lens=false;pane='badge';t.walk=buildWalk();level=1;render();document.body.style.minHeight=h0+'px';scrollTo(0,y0);
   const tick=()=>{const w=t.walk;if(w.i>=w.pts.length-1){w.running=false;timer=null;render();return;}
     w.i++;level=w.pts[w.i].l;drawMap();timer=setTimeout(tick,RM?40:170);};timer=setTimeout(tick,RM?40:150);}
 
@@ -453,7 +478,7 @@ map.addEventListener('keydown',e=>{if(!lens)return;const k={ArrowLeft:[-12,0],Ar
   lensP=[Math.max(20,Math.min(380,lensP[0]+k[0])),Math.max(20,Math.min(280,lensP[1]+k[1]))];const s=pick(lensP[0],lensP[1],level)||pick(lensP[0],lensP[1],level===1?2:1);if(s)T().sel=s;drawMap();renderInspect();});
 
 $('lv1').onclick=()=>{if(timer)return;level=1;drawMap();};$('lv2').onclick=()=>{if(timer)return;level=2;drawMap();};
-function setLens(on){if(timer)return;const mc=$('mapcard'),y0=mc.getBoundingClientRect().top;
+function setLens(on){if(timer)return;if(on)setCompact(false);const mc=$('mapcard'),y0=mc.getBoundingClientRect().top;
   document.body.style.minHeight=on?document.documentElement.scrollHeight+'px':'';
   lens=on;pane=on?'inspect':'badge';drawMap();renderInspect();
   const y1=mc.getBoundingClientRect().top;if(Math.abs(y1-y0)>1)scrollBy(0,y1-y0);
@@ -461,6 +486,7 @@ function setLens(on){if(timer)return;const mc=$('mapcard'),y0=mc.getBoundingClie
   else if(lensY!=null){scrollTo(0,lensY);lensY=null;}}
 let lensY=null;
 $('lensBtn').onclick=()=>setLens(!lens);
+$('sizeBtn').onclick=()=>{if(!timer)setCompact(!compact);};$('mini').onclick=()=>setCompact(false);
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='backBtn')setLens(false);});
 $('walkBtn').onclick=startWalk;
 {let seen=false;try{seen=localStorage.getItem('nautilus-brief')==='1';}catch(_){}
