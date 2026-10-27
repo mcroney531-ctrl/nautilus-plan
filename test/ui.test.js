@@ -198,6 +198,36 @@ const tests = {
     const name = await m.getAttribute('#lv1', 'aria-label'); await ctx.close();
     assert(Math.max(...r) - Math.min(...r) <= 6, JSON.stringify(r)); assert.equal(name, 'Gallery, level 1');
   },
+  async 'phone: turning Inspect on and off does not jump the page; Back to badge returns'(pg, b) {
+    const ctx = await b.newContext(devices['Pixel 7']), m = await ctx.newPage(); await m.goto(url); await m.click('#briefBtn');
+    await m.mouse.wheel(0, 600); await m.waitForTimeout(250); const y0 = await m.evaluate(() => scrollY);
+    const top0 = await m.evaluate(() => document.getElementById('mapcard').getBoundingClientRect().top);
+    const lb = await m.locator('#lensBtn').boundingBox(); await m.touchscreen.tap(lb.x + lb.width / 2, lb.y + lb.height / 2); await m.waitForTimeout(200); const top1 = await m.evaluate(() => document.getElementById('mapcard').getBoundingClientRect().top);
+    assert(Math.abs(top1 - top0) <= 2, `map moved ${top0} -> ${top1}`);
+    const bb = await m.locator('#backBtn').boundingBox(); await m.touchscreen.tap(bb.x + bb.width / 2, bb.y + bb.height / 2); await m.waitForTimeout(200); assert(await m.isVisible('#badge') && !(await m.isVisible('#inspect')));
+    assert(Math.abs((await m.evaluate(() => scrollY)) - y0) <= 2); await ctx.close();
+  },
+  async 'walk log lists arrivals at requested stops; a stop inside the footprint says the badge is granted there'(pg) {
+    await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    const log = await text(pg, '.walklog'); assert(/Arrived: Kelp Hall/.test(log) && /Arrived: Living Shore/.test(log) && /Arrived: Classroom/.test(log), log);
+    await pg.click('[data-q="marcus"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /didn't open/.test(document.getElementById('review').textContent), null, { timeout: 15000 });
+    const r = await text(pg, '#review'); assert(/inside the lit footprint/.test(r) && !/schedule|07:00|hours/i.test(r.split('Walk log')[1]), r);
+  },
+  async 'finalized vs needs correction: warnings that need fixing make no record and do not finish the shift; Daniel waiting does'(pg) {
+    await pg.click('[data-g="exhibitOps"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    await pg.click('#closeBtn'); assert(/outside the approved scope/.test(await text(pg, '.result')));
+    assert.equal(await pg.locator('.record').count(), 0, 'no issued-credential record for an overbroad badge');
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="wait"]'); await pg.click('#closeBtn');
+    assert.equal(await pg.locator('.record').count(), 1); assert.equal(await pg.locator('#flow li.done').count(), 4, 'Record landmark done for a finalized wait');
+    assert.equal(await pg.locator('[data-q="daniel"] .dot.done').count(), 1); assert.equal(await pg.locator('[data-q="elena"] .dot.done').count(), 0);
+  },
+  async 'Jordan: reading the records counts as investigating, no lens needed'(pg) {
+    await pg.click('[data-q="jordan"]'); await pg.click('[data-rec="WO-1873"]');
+    const done = await pg.locator('#flow li.done').allInnerTexts(); assert(done.some(x => /Investigate/i.test(x)), JSON.stringify(done));
+  },
   async 'Elena: closing needs a verifying walk; a later badge change invalidates it'(pg) {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
     assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'refused before walking');

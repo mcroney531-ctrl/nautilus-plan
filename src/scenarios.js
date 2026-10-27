@@ -54,7 +54,7 @@ const SCENARIOS = {
         doors: ['D-DOCK'], places: 'Loading dock to Receiving', window: 'Tue Oct 27 · 08:00–10:00 · Daniel Brooks only' }] },
     escort: { name: 'Priya Nair', initials: 'PN', role: 'Receiving supervisor',
       credential: { active: true, groups: ['allStaff'], exceptions: [] },
-      authorizations: [{ id: 'ESC-07', status: 'approved', purpose: 'Designated vendor escort (SOP-12)', approver: 'Facilities Manager',
+      authorizations: [{ id: 'ESC-07', status: 'approved', designation: 'vendor-escort', purpose: 'Designated vendor escort (SOP-12)', approver: 'Facilities Manager',
         doors: ['D-WSE'], places: 'West Staff Entrance and the staff service corridors', window: 'Standing designation' }] },
     message: "Morning, Daniel Brooks with the frozen feed order. I'm at the loading dock and my badge isn't getting me in. The supplier wants the load put away within 40 minutes of arrival.",
     faultNotes: { 'D-DOCK': 'Facilities estimate: about 90 minutes to repair' },
