@@ -131,6 +131,11 @@ t('Daniel: escort route is evaluated on the escort badge; his own badge never op
   assert.equal(own.stop.door, 'D-WSE'); assert.equal(own.stop.code, 'NO_GRANT');
   assert.deepEqual(E.outOfScope(w, d), [], 'his badge stays within the delivery record');
 });
+t('Daniel: the escort is designated by a record, not just by a working badge', () => {
+  const w = world(S.daniel), esc = E.clone(S.daniel.escort);
+  assert.deepEqual(E.outOfScope(w, esc), []);
+  esc.authorizations = []; assert(E.outOfScope(w, esc).includes('D-WSE'), 'without the designation the badge alone is out of scope');
+});
 t('Daniel: unescorted shortcut works technically but is out of scope', () => {
   const w = world(S.daniel), d = P('daniel'); d.credential.groups.push('allStaff');
   assert.equal(E.walk(w, d, 'outW', S.daniel.targets, S.daniel.time).stop, null);

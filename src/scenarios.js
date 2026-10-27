@@ -1,7 +1,10 @@
 /* Tickets: people, requests in their own voice, and the records that carry authority. */
 const SCENARIOS = {
   elena: {
-    tab: 'Elena', kind: 'Issue', verify: true, time: 7.25, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['kelp', 'touch', 'classroom'],
+    tab: 'Elena', kind: 'Issue', verify: true, closeAction: 'Issue badge', record: 'issue',
+    principle: 'Least privilege: grant what the work needs, and check everything the badge lights, on both levels.',
+    coach: { review: 'Read what Elena needs and when. Her approved record is WA-1041.', configure: 'Choose groups that cover her rooms and nothing else. Check the lit footprint on both levels.', verify: 'Walk Elena in to check the badge works from her side.', close: 'Issue the badge.' },
+    compare: { groups: ['exhibitOps'], label: 'the standard onboarding template (Exhibit Operations)' }, time: 7.25, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['kelp', 'touch', 'classroom'],
     person: { id: 'elena', name: 'Elena Park', initials: 'EP', role: 'Marine educator · starts Tuesday',
       credential: { active: true, groups: [], exceptions: [] },
       authorizations: [{ id: 'WA-1041', status: 'approved', purpose: 'Education program staff', approver: 'J. Okoye, Education Manager',
@@ -10,7 +13,9 @@ const SCENARIOS = {
     editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
   },
   marcus: {
-    tab: 'Marcus', kind: 'Diagnose', verify: true, time: 5.5, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['dive', 'topside'],
+    tab: 'Marcus', kind: 'Diagnose', verify: true, closeAction: 'Apply access update', record: 'update',
+    principle: 'Where vs. when: a badge can open the right doors at the wrong time. Fix the narrowest thing that works.',
+    coach: { afterFail: 'The walk stopped at a door. Inspect that door to see why.' }, time: 5.5, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['dive', 'topside'],
     person: { id: 'marcus', name: 'Marcus Reyes', initials: 'MR', role: 'Dive crew lead',
       credential: { active: true, groups: ['diveCrew'], exceptions: [] },
       authorizations: [
@@ -24,13 +29,15 @@ const SCENARIOS = {
     groupScheduleEdit: { group: 'diveCrew', to: [5, 19] },
   },
   jordan: {
-    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, hideVerdict: true, time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
+    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, hideVerdict: true, closeAction: 'Submit audit', record: 'offboard',
+    principle: 'Granted is not authorized: access that still works can outlive the work it was approved for.', time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
     person: { id: 'jordan', name: 'Jordan Kim', initials: 'JK', role: 'Exhibit AV vendor',
       credential: { active: true, groups: ['tempExhibitAV'], exceptions: [] },
       authorizations: [{ id: 'WO-1873', status: 'approved', purpose: 'Reef Tunnel AV install (project work)', approver: 'M. Alvarez, Exhibits Manager',
         doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], ends: '2026-07-20', places: 'West Staff Entrance, west core, west mezzanine, tank-top west', window: 'Jul 6 to Jul 20, 2026 · Jordan Kim only' }] },
     message: "We're completing the quarterly contractor access review. Start with Jordan Kim's vendor account and confirm whether the current access is still justified.",
-    notes: [{ id: 'Account history', text: 'Account note, Aug 2026: "Keep vendor profile active for potential follow-up work."' }],
+    notes: [{ id: 'Account history', text: 'Account note, Aug 2026: "Keep vendor profile active for potential follow-up work."' },
+      { id: 'Offboarding policy', text: 'Nautilus offboarding policy (fictional): when a vendor\'s work authorization ends, deactivate the vendor credential. Removing groups alone leaves an active credential on file. Future work needs a new authorization.' }],
     disposition: { options: [
       { id: 'ended', text: 'Work authorization ended; no new approval exists', correct: true },
       { id: 'followup', text: 'Future follow-up work may require access', why: 'Possible future work is not an approval. Access follows a current authorization, and a new request can be raised if the work is approved.' },
@@ -38,21 +45,24 @@ const SCENARIOS = {
     editable: ['tempExhibitAV', 'allStaff', 'education', 'exhibitOps'],
   },
   daniel: {
-    tab: 'Daniel', kind: 'Adapt', goal: 'adapt', verify: true, time: 8.25, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['receiving'],
+    tab: 'Daniel', kind: 'Adapt', goal: 'adapt', verify: true, closeAction: 'Record response', record: 'response',
+    principle: 'Equipment vs. permission: when a valid badge is refused, find the cause before changing anyone\'s access.', time: 8.25, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['receiving'],
     doorStatus: { 'D-DOCK': 'fault' },
     person: { id: 'daniel', name: 'Daniel Brooks', initials: 'DB', role: 'Frozen-feed driver',
       credential: { active: true, groups: ['vendorDelivery'], exceptions: [] },
       authorizations: [{ id: 'PO-4410', status: 'approved', purpose: 'Frozen feed delivery', approver: 'Receiving Supervisor',
         doors: ['D-DOCK'], places: 'Loading dock to Receiving', window: 'Tue Oct 27 · 08:00–10:00 · Daniel Brooks only' }] },
     escort: { name: 'Priya Nair', initials: 'PN', role: 'Receiving supervisor',
-      credential: { active: true, groups: ['allStaff'], exceptions: [] }, authorizations: [] },
+      credential: { active: true, groups: ['allStaff'], exceptions: [] },
+      authorizations: [{ id: 'ESC-07', status: 'approved', purpose: 'Designated vendor escort (SOP-12)', approver: 'Facilities Manager',
+        doors: ['D-WSE'], places: 'West Staff Entrance and the staff service corridors', window: 'Standing designation' }] },
     message: "Morning, Daniel Brooks with the frozen feed order. I'm at the loading dock and my badge isn't getting me in. The supplier wants the load put away within 40 minutes of arrival.",
     faultNotes: { 'D-DOCK': 'Facilities estimate: about 90 minutes to repair' },
     notes: [{ id: 'Facilities procedures', text: 'Facilities SOP-12 (fictional), vendor access. Vendor badges are dock-only. Vendors never hold unescorted staff-side access, and staff groups are never added to a vendor badge. If a vendor cannot get in, find out why before changing anything. Badge outside its delivery window: Receiving confirms a new window. Door or reader out of service: the vendor waits at the entrance, or a designated vendor escort brings them in through another entrance, badges each door and stays with them.' }],
     routes: [
       { id: 'dock', label: 'Dock entrance (normal route)', note: 'Daniel badges the dock reader', start: 'outD', as: 'self' },
       { id: 'selfWest', label: 'Send Daniel to the West Staff Entrance on his own badge', note: 'He walks round from the dock', start: 'outW', as: 'self' },
-      { id: 'escortWest', label: 'Escort Daniel in through the West Staff Entrance', note: 'Priya Nair, Receiving supervisor', start: 'outW', as: 'escort',
+      { id: 'escortWest', label: 'Escort Daniel in through the West Staff Entrance', note: 'Priya Nair, Receiving supervisor · designated vendor escort (ESC-07)', start: 'outW', as: 'escort',
         tradeoff: "Daniel reaches Receiving on Priya's badge, and his own badge never opens a staff-side door. The cost is about half an hour of Priya's time away from Receiving, and the order moves in by hand cart. Waiting for the repair would have kept staff in place but put the feed past the supplier's 40-minute limit." },
       { id: 'wait', label: 'Wait at the dock', note: 'Daniel stays at the dock until he can get in', wait: true,
         tradeoff: "Policy-compliant, but not a completed delivery. No one gets access they were not given and no staff leave their posts, but the frozen feed sits on the dock for about 90 minutes against the supplier's 40-minute window, so the order may be rejected. Follow-up to record: tell Receiving and the supplier about the delay, and log the dock reader fault with Facilities. An escort through the West Staff Entrance would have kept both the policy and the delivery." },

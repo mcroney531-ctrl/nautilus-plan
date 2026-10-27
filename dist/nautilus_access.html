@@ -85,6 +85,7 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
   .grid,.col{display:contents}
   .desk{display:none}
   html{scroll-padding-top:var(--stick,0px)}
+  .lvn{display:none}
   .queue{gap:4px}.qt{flex:1 1 0;min-width:0;justify-content:center;padding:9px 4px;gap:6px}.qt small{display:none}
   body[data-pane="badge"] #inspect,body[data-pane="inspect"] #badge,body[data-pane="inspect"] #review{display:none}
   #mapcard{position:sticky;top:6px;z-index:5;box-shadow:0 6px 18px rgba(2,12,18,.6)}
@@ -98,13 +99,24 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
 /* Short landscape: map fills the left column, everything else scrolls on the right */
 @media (orientation:landscape) and (max-height:520px){
   .wrap{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start;column-gap:14px}
-  .wrap>header,.wrap>nav,.wrap>.foot,#ticket,#badge,#review,#inspect,.tabs{grid-column:2}
-  #mapcard{grid-column:1;grid-row:1/span 8;top:8px}
+  .wrap>header,.wrap>nav,.wrap>.foot,.wrap>#brief,.wrap>#shift,#ticket,#flow,#badge,#review,#inspect{grid-column:2}
+  #mapcard{grid-column:1;grid-row:1/span 11;top:8px}
   .stage svg{max-height:calc(100vh - 118px)}
   html{scroll-padding-top:0}
   #mapcard .wn{display:inline}
   header{padding-bottom:8px}.id svg{width:30px;height:30px}.id h1{font-size:20px}.id small{display:none}.desk{display:none}
 }
+.flow{display:flex;gap:4px;list-style:none;margin:8px 0 0;padding:0}
+.flow li{flex:1;font:650 11px var(--f-body);letter-spacing:.04em;color:var(--muted);border-top:3px solid var(--line);padding-top:6px}
+.flow li.done{color:var(--glass);border-color:var(--glass)}.flow li.now{color:var(--ink);border-color:var(--gold)}
+.coach{margin:8px 0 0;font-size:13.5px;color:#d6ecef}
+.litdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--glass);margin-left:6px;vertical-align:middle}
+.fp{margin:10px 0 0}
+.record .rhead{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}
+.record .rhead span{font:700 10.5px var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:#8acbd2}
+.pill{font:700 10.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:20px;padding:3px 8px;white-space:nowrap}
+.record .kv{margin:6px 0 10px;font-size:13px}.record .who{margin-bottom:4px}
+.decision{margin-top:4px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 @keyframes pulse{0%{opacity:.25}50%{opacity:.9}100%{opacity:.25}}
 .pulse{animation:pulse 1.4s ease-in-out 3}
@@ -118,13 +130,18 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
 </header>
 
 <nav class="queue" id="queue" aria-label="Ticket queue"></nav>
+<section class="card pad brief" id="brief" aria-labelledby="briefH" hidden><span class="eyebrow" id="briefH">Supervisor · Ops desk</span>
+  <p class="coach">Morning. Four access tickets today. For each one: read the request and its records, set the badge, walk the person in to check it works from their side, and inspect anything that doesn't add up before you close it.</p>
+  <p class="note">On the map, lit areas are where a badge is granted and the dots are doors with readers. A door opens into an area, and open passages join areas, so one door can light several rooms. Topside (L2) sits above the galleries.</p>
+  <div class="row2"><button class="btn primary" id="briefBtn">Start shift</button></div></section>
+<section class="card pad" id="shift" hidden></section>
 
 <div class="grid">
   <div class="col">
     <section class="card pad ticket" id="ticket" aria-live="polite"></section>
     <section class="card" id="mapcard">
       <div class="maphead">
-        <div class="seg" role="group" aria-label="Level"><button id="lv1" aria-pressed="true">Gallery · L1</button><button id="lv2" aria-pressed="false">Topside · L2</button></div>
+        <div class="seg" role="group" aria-label="Level"><button id="lv1" aria-pressed="true" aria-label="Gallery, level 1"><span class="lvn">Gallery · </span>L1</button><button id="lv2" aria-pressed="false" aria-label="Topside, level 2"><span class="lvn">Topside · </span>L2</button></div>
         <div class="row2"><button class="btn" id="lensBtn" aria-pressed="false">Inspect ◉</button><button class="btn" id="walkBtn">Walk</button></div>
       </div>
       <div class="stage"><svg id="map" viewBox="0 0 400 300" tabindex="0" role="img" aria-label="Nautilus floor plan"></svg></div>
@@ -132,6 +149,7 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
     </section>
   </div>
   <div class="col">
+    <section class="card pad" id="flow" aria-live="polite"></section>
     <section class="card pad" id="badge"></section>
     <section class="card pad" id="review"></section>
     <section class="card pad" id="inspect"></section>
@@ -318,7 +336,10 @@ if (typeof module !== 'undefined') module.exports = Engine;
 /* Tickets: people, requests in their own voice, and the records that carry authority. */
 const SCENARIOS = {
   elena: {
-    tab: 'Elena', kind: 'Issue', verify: true, time: 7.25, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['kelp', 'touch', 'classroom'],
+    tab: 'Elena', kind: 'Issue', verify: true, closeAction: 'Issue badge', record: 'issue',
+    principle: 'Least privilege: grant what the work needs, and check everything the badge lights, on both levels.',
+    coach: { review: 'Read what Elena needs and when. Her approved record is WA-1041.', configure: 'Choose groups that cover her rooms and nothing else. Check the lit footprint on both levels.', verify: 'Walk Elena in to check the badge works from her side.', close: 'Issue the badge.' },
+    compare: { groups: ['exhibitOps'], label: 'the standard onboarding template (Exhibit Operations)' }, time: 7.25, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['kelp', 'touch', 'classroom'],
     person: { id: 'elena', name: 'Elena Park', initials: 'EP', role: 'Marine educator · starts Tuesday',
       credential: { active: true, groups: [], exceptions: [] },
       authorizations: [{ id: 'WA-1041', status: 'approved', purpose: 'Education program staff', approver: 'J. Okoye, Education Manager',
@@ -327,7 +348,9 @@ const SCENARIOS = {
     editable: ['allStaff', 'education', 'exhibitOps', 'diveCrew'],
   },
   marcus: {
-    tab: 'Marcus', kind: 'Diagnose', verify: true, time: 5.5, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['dive', 'topside'],
+    tab: 'Marcus', kind: 'Diagnose', verify: true, closeAction: 'Apply access update', record: 'update',
+    principle: 'Where vs. when: a badge can open the right doors at the wrong time. Fix the narrowest thing that works.',
+    coach: { afterFail: 'The walk stopped at a door. Inspect that door to see why.' }, time: 5.5, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['dive', 'topside'],
     person: { id: 'marcus', name: 'Marcus Reyes', initials: 'MR', role: 'Dive crew lead',
       credential: { active: true, groups: ['diveCrew'], exceptions: [] },
       authorizations: [
@@ -341,13 +364,15 @@ const SCENARIOS = {
     groupScheduleEdit: { group: 'diveCrew', to: [5, 19] },
   },
   jordan: {
-    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, hideVerdict: true, time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
+    tab: 'Jordan', kind: 'Audit', goal: 'audit', revoke: true, hideVerdict: true, closeAction: 'Submit audit', record: 'offboard',
+    principle: 'Granted is not authorized: access that still works can outlive the work it was approved for.', time: 10, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['topside'],
     person: { id: 'jordan', name: 'Jordan Kim', initials: 'JK', role: 'Exhibit AV vendor',
       credential: { active: true, groups: ['tempExhibitAV'], exceptions: [] },
       authorizations: [{ id: 'WO-1873', status: 'approved', purpose: 'Reef Tunnel AV install (project work)', approver: 'M. Alvarez, Exhibits Manager',
         doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'], ends: '2026-07-20', places: 'West Staff Entrance, west core, west mezzanine, tank-top west', window: 'Jul 6 to Jul 20, 2026 · Jordan Kim only' }] },
     message: "We're completing the quarterly contractor access review. Start with Jordan Kim's vendor account and confirm whether the current access is still justified.",
-    notes: [{ id: 'Account history', text: 'Account note, Aug 2026: "Keep vendor profile active for potential follow-up work."' }],
+    notes: [{ id: 'Account history', text: 'Account note, Aug 2026: "Keep vendor profile active for potential follow-up work."' },
+      { id: 'Offboarding policy', text: 'Nautilus offboarding policy (fictional): when a vendor\'s work authorization ends, deactivate the vendor credential. Removing groups alone leaves an active credential on file. Future work needs a new authorization.' }],
     disposition: { options: [
       { id: 'ended', text: 'Work authorization ended; no new approval exists', correct: true },
       { id: 'followup', text: 'Future follow-up work may require access', why: 'Possible future work is not an approval. Access follows a current authorization, and a new request can be raised if the work is approved.' },
@@ -355,21 +380,24 @@ const SCENARIOS = {
     editable: ['tempExhibitAV', 'allStaff', 'education', 'exhibitOps'],
   },
   daniel: {
-    tab: 'Daniel', kind: 'Adapt', goal: 'adapt', verify: true, time: 8.25, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['receiving'],
+    tab: 'Daniel', kind: 'Adapt', goal: 'adapt', verify: true, closeAction: 'Record response', record: 'response',
+    principle: 'Equipment vs. permission: when a valid badge is refused, find the cause before changing anyone\'s access.', time: 8.25, day: 'Tue', date: '2026-10-27', start: 'outD', targets: ['receiving'],
     doorStatus: { 'D-DOCK': 'fault' },
     person: { id: 'daniel', name: 'Daniel Brooks', initials: 'DB', role: 'Frozen-feed driver',
       credential: { active: true, groups: ['vendorDelivery'], exceptions: [] },
       authorizations: [{ id: 'PO-4410', status: 'approved', purpose: 'Frozen feed delivery', approver: 'Receiving Supervisor',
         doors: ['D-DOCK'], places: 'Loading dock to Receiving', window: 'Tue Oct 27 · 08:00–10:00 · Daniel Brooks only' }] },
     escort: { name: 'Priya Nair', initials: 'PN', role: 'Receiving supervisor',
-      credential: { active: true, groups: ['allStaff'], exceptions: [] }, authorizations: [] },
+      credential: { active: true, groups: ['allStaff'], exceptions: [] },
+      authorizations: [{ id: 'ESC-07', status: 'approved', purpose: 'Designated vendor escort (SOP-12)', approver: 'Facilities Manager',
+        doors: ['D-WSE'], places: 'West Staff Entrance and the staff service corridors', window: 'Standing designation' }] },
     message: "Morning, Daniel Brooks with the frozen feed order. I'm at the loading dock and my badge isn't getting me in. The supplier wants the load put away within 40 minutes of arrival.",
     faultNotes: { 'D-DOCK': 'Facilities estimate: about 90 minutes to repair' },
     notes: [{ id: 'Facilities procedures', text: 'Facilities SOP-12 (fictional), vendor access. Vendor badges are dock-only. Vendors never hold unescorted staff-side access, and staff groups are never added to a vendor badge. If a vendor cannot get in, find out why before changing anything. Badge outside its delivery window: Receiving confirms a new window. Door or reader out of service: the vendor waits at the entrance, or a designated vendor escort brings them in through another entrance, badges each door and stays with them.' }],
     routes: [
       { id: 'dock', label: 'Dock entrance (normal route)', note: 'Daniel badges the dock reader', start: 'outD', as: 'self' },
       { id: 'selfWest', label: 'Send Daniel to the West Staff Entrance on his own badge', note: 'He walks round from the dock', start: 'outW', as: 'self' },
-      { id: 'escortWest', label: 'Escort Daniel in through the West Staff Entrance', note: 'Priya Nair, Receiving supervisor', start: 'outW', as: 'escort',
+      { id: 'escortWest', label: 'Escort Daniel in through the West Staff Entrance', note: 'Priya Nair, Receiving supervisor · designated vendor escort (ESC-07)', start: 'outW', as: 'escort',
         tradeoff: "Daniel reaches Receiving on Priya's badge, and his own badge never opens a staff-side door. The cost is about half an hour of Priya's time away from Receiving, and the order moves in by hand cart. Waiting for the repair would have kept staff in place but put the feed past the supplier's 40-minute limit." },
       { id: 'wait', label: 'Wait at the dock', note: 'Daniel stays at the dock until he can get in', wait: true,
         tradeoff: "Policy-compliant, but not a completed delivery. No one gets access they were not given and no staff leave their posts, but the frozen feed sits on the dock for about 90 minutes against the supplier's 40-minute window, so the order may be rejected. Follow-up to record: tell Receiving and the supplier about the delay, and log the dock reader fault with Facilities. An escort through the West Staff Entrance would have kept both the policy and the delivery." },
@@ -385,7 +413,7 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ORDER=['elena','marcus','jordan','daniel'];
 const LOCKED=[];
 const st={};
-function fresh(id){const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:E.clone(sc.doorStatus||{}),groupOverrides:{}},route:sc.routes?sc.routes[0].id:null,prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,open:{}};}
+function fresh(id){const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:E.clone(sc.doorStatus||{}),groupOverrides:{}},route:sc.routes?sc.routes[0].id:null,prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,record:null,open:{}};}
 ORDER.forEach(id=>st[id]=fresh(id));
 let cur='elena',level=1,lens=false,pane='badge',lensP=[143,88],timer=null;
 const T=()=>st[cur],SC=()=>S[cur];
@@ -449,6 +477,8 @@ function drawMap(){
   $('map').innerHTML=s;$('map').style.touchAction=lens?'none':'pan-y';
   document.body.dataset.pane=lens?'inspect':'badge';
   const mc=$('mapcard');document.documentElement.style.setProperty('--stick',(getComputedStyle(mc).position==='sticky'?mc.offsetHeight+12:0)+'px');
+  const l2lit=[...E.footprint(T().world,T().person).spaces].some(k=>E.SPACES[k].l===2)||(T().delta&&T().showDelta&&T().delta.addedSpaces.some(k=>E.SPACES[k].l===2));
+  $('lv2').innerHTML=`<span class="lvn">Topside · </span>L2${l2lit&&level!==2?'<i class="litdot"></i>':''}`;$('lv2').setAttribute('aria-label',`Topside, level 2${l2lit?', has lit areas':''}`);
   $('lv1').setAttribute('aria-pressed',level===1);$('lv2').setAttribute('aria-pressed',level===2);$('lensBtn').setAttribute('aria-pressed',lens);
   const w=T().walk;$('clock').textContent=`${SC().day} ${E.fmt(SC().time)}`;
   $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.'+(SC().hideVerdict?'':' Dashed gold ring: opens, but no active record covers it.'):w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted.':'Topside sits above the galleries. Cores connect the levels.';}
@@ -464,13 +494,15 @@ function renderTicket(){const sc=SC(),t=T(),p=sc.person;
   <div class="msg">${sc.message}</div>
   <div class="recs">${p.authorizations.map(a=>`<button class="chip" data-rec="${a.id}" aria-expanded="${!!t.open[a.id]}">${a.id}</button>`).join('')}${(sc.notes||[]).map(n=>`<button class="chip" data-rec="${n.id}" aria-expanded="${!!t.open[n.id]}">${n.id}</button>`).join('')}</div>
   ${(sc.notes||[]).filter(n=>t.open[n.id]).map(n=>`<div class="rec"><b>${n.id}</b><span>${n.text}</span></div>`).join('')}
-  ${p.authorizations.filter(a=>t.open[a.id]).map(a=>`<div class="rec"><b>${a.id} · ${a.purpose}</b><span>Covers: ${a.places}</span><span>When: ${a.window}</span><span>Approved by ${a.approver}</span>${E.authActive(t.world,a)?'':`<span class="warn">Ended ${a.ends}</span>`}</div>`).join('')}`;
+  ${p.authorizations.filter(a=>t.open[a.id]).map(a=>`<div class="rec"><b>${a.id} · ${a.purpose}</b><span>Covers: ${a.places}</span><span>When: ${a.window}</span><span>Approved by ${a.approver}</span></div>`).join('')}`;
   document.querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>{t.open[b.dataset.rec]=!t.open[b.dataset.rec];renderTicket();});}
 function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
   let h=`<span class="eyebrow">Badge · ${sc.person.name}</span><div class="groups" style="margin-top:10px">`;
   for(const g of sc.editable){const G=E.GROUPS[g],hr=E.groupHours(t.world,g),on=c.groups.includes(g);
     h+=`<button class="grp" data-g="${g}" aria-pressed="${on}"><span class="box">${on?'✓':''}</span><span><b>${G.n}</b><small>${G.note?G.note+' · ':''}${G.doors.length} doors · ${E.fmt(hr[0])}–${E.fmt(hr[1])} · ${G.members} badges</small></span></button>`;}
   h+='</div>';
+  {const fp=E.footprint(t.world,t.person),ds=[...fp.doors].map(d=>E.DOORS[d].n);
+   h+=`<p class="note fp">${ds.length?`Opens ${ds.length} door${ds.length>1?'s':''}: ${ds.join(', ')}. Lit areas: ${[...fp.spaces].map(k=>E.SPACES[k].n).join(', ')}.`:'This badge opens no doors.'}</p>`;}
   if(sc.groupScheduleEdit||t.person.authorizations.some(a=>a.exception)){
     h+=`<div class="sub"><span class="eyebrow">Schedules</span>`;
     for(const a of t.person.authorizations.filter(a=>a.exception)){const on=c.exceptions.some(x=>x.source===a.id);
@@ -479,10 +511,16 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
       h+=`<button class="grp" data-gs="${e.group}" aria-pressed="${on}"><span class="box">${on?'✓':''}</span><span><b>Change ${G.n} group hours to ${E.fmt(e.to[0])}–${E.fmt(e.to[1])}</b><small>Group setting · every day · ${G.members} badges</small></span></button>`;}
     h+='</div>';}
   if(sc.routes){h+=`<div class="sub"><span class="eyebrow">Response</span>`+sc.routes.map(r=>`<button class="grp" data-rt="${r.id}" aria-pressed="${t.route===r.id}"><span class="box">${t.route===r.id?'●':''}</span><span><b>${r.label}</b><small>${r.note}</small></span></button>`).join('')+`</div>`;}
-  if(sc.disposition){h+=`<div class="sub"><span class="eyebrow">Reason for decision</span>`+sc.disposition.options.map(o=>`<button class="grp" data-dp="${o.id}" aria-pressed="${t.disp===o.id}"><span class="box">${t.disp===o.id?'✓':''}</span><span><b>${o.text}</b></span></button>`).join('')+`<small class="note">Action recorded: ${c.active?(c.groups.length?'Access retained':'Groups removed'):'Credential deactivated'}</small></div>`;}
-  if(sc.revoke)h+=`<div class="sub"><span class="eyebrow">Credential</span><button class="grp" data-rv="1" aria-pressed="${!c.active}"><span class="box">${!c.active?'✓':''}</span><span><b>Deactivate badge</b><small>${c.active?'Badge is active':'Badge is inactive'} · reversible</small></span></button></div>`;
-  h+=`<div class="row2" style="margin-top:12px"><button class="btn primary" id="closeBtn">Close ticket</button><button class="btn" id="resetBtn">Reset</button></div>`;
-  if(t.result)h+=`<div class="result ${t.result.cls}" style="margin-top:10px"><b>${t.result.title}</b>${t.result.text}</div>`;
+  if(sc.disposition){const act=c.active?(c.groups.length?'Access retained':'Groups removed, credential still active'):'Credential deactivated',o=sc.disposition.options.find(o=>o.id===t.disp);
+    h+=`<div class="sub"><span class="eyebrow">Audit decision</span>`;
+    if(sc.revoke)h+=`<button class="grp" data-rv="1" aria-pressed="${!c.active}"><span class="box">${!c.active?'✓':''}</span><span><b>Deactivate badge</b><small>${c.active?'Badge is active':'Badge is inactive'} · reversible</small></span></button>`;
+    h+=`<small class="note">Reason for the decision</small>`+sc.disposition.options.map(o=>`<button class="grp" data-dp="${o.id}" aria-pressed="${t.disp===o.id}"><span class="box">${t.disp===o.id?'✓':''}</span><span><b>${o.text}</b></span></button>`).join('')+
+      `<div class="note decision">Recorded: <b>${act}</b> · ${o?o.text:'no reason chosen yet'}</div></div>`;}
+  else if(sc.revoke)h+=`<div class="sub"><span class="eyebrow">Credential</span><button class="grp" data-rv="1" aria-pressed="${!c.active}"><span class="box">${!c.active?'✓':''}</span><span><b>Deactivate badge</b><small>${c.active?'Badge is active':'Badge is inactive'} · reversible</small></span></button></div>`;
+  const rt=routeOf(t),needWalk=sc.verify&&!(rt&&rt.wait)&&!verified(t);
+  h+=`<div class="row2" style="margin-top:12px"><button class="btn primary" id="closeBtn">${sc.closeAction||'Close ticket'}</button><button class="btn" id="resetBtn">Reset</button></div>`;
+  if(needWalk&&!t.result)h+=`<small class="note">Walk ${sc.person.name.split(' ')[0]} in${rt?' by the chosen route':''} first to verify it works.</small>`;
+  if(t.result)h+=t.record?recordHTML(sc,t):`<div class="result ${t.result.cls}" style="margin-top:10px"><b>${t.result.title}</b>${t.result.text}</div>`;
   $('badge').innerHTML=h;
   const change=(fn,label)=>{if(timer)return;const wb=E.clone(t.world),pb=E.clone(t.person),before=E.footprint(t.world,t.person);fn();t.delta=E.delta(before,E.footprint(t.world,t.person));t.lastLabel=label();
     const tt=SC().time,gb=E.grants(wb,pb),ga=E.grants(t.world,t.person);
@@ -499,9 +537,46 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{if(timer)return;t.disp=t.disp===b.dataset.dp?null:b.dataset.dp;t.result=null;render();});
   document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>change(()=>{c.active=!c.active;},()=>c.active?'Reactivated the badge':'Deactivated the badge'));
   document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>change(()=>{const e=sc.groupScheduleEdit;t.world.groupOverrides[e.group]?delete t.world.groupOverrides[e.group]:t.world.groupOverrides[e.group]=e.to;},()=>{const e=sc.groupScheduleEdit,G=E.GROUPS[e.group],h=E.groupHours(t.world,e.group);return `${t.world.groupOverrides[e.group]?'Changed':'Restored'} ${G.n} group hours to ${E.fmt(h[0])}–${E.fmt(h[1])} (all ${G.members} badges)`;}));
-  $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();render();};
+  $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();t.record=t.result.cls==='badr'?null:buildRecord(sc,t);render();};
+  if($('compareBtn'))$('compareBtn').onclick=()=>{if(timer)return;const tp=E.clone(t.person);tp.credential.groups=[...sc.compare.groups];tp.credential.exceptions=[];
+    t.delta=E.delta(E.footprint(t.world,t.person),E.footprint(t.world,tp));t.tdelta=null;t.still=null;t.showDelta=true;
+    const up=t.delta.addedSpaces.some(k=>E.SPACES[k].l===2);t.lastLabel=`Comparison: ${sc.compare.label} would also open these${up?' (some on Topside · L2)':''}. Your badge is unchanged.`;render();};
   $('resetBtn').onclick=()=>{if(timer)return;st[cur]=fresh(cur);render();};}
 const names=ids=>ids.map(k=>E.SPACES[k].n);
+const verified=t=>{const r=routeOf(t);return !!(t.walk&&!t.walk.running&&!t.walk.res.stop&&t.walk.routeId===(r?r.id:null));};
+/* ---------- workflow landmarks (not a locked wizard: every control stays available) ---------- */
+function steps(sc,t){const g=sc.goal||'reach',r=routeOf(t),c=t.person.credential;
+  const seen=!!(t.delta||t.disp||t.walk||t.sel||Object.values(t.open).some(Boolean)||(sc.routes&&t.route!==sc.routes[0].id)),closed=!!(t.result&&t.result.cls==='good');
+  if(g==='audit')return[['review','Review',seen],['investigate','Investigate',!!t.sel],['decide','Decide',!!t.disp&&!c.active],['close','Submit',closed]];
+  if(g==='adapt')return[['review','Review',seen],['respond','Respond',!!(sc.routes&&t.route!==sc.routes[0].id)],['verify',r&&r.wait?'Verify (n/a)':'Verify',verified(t)||!!(r&&r.wait)],['close','Record',closed]];
+  return[['review','Review',seen],['configure','Configure',!!t.delta],['verify','Verify',verified(t)],['close','Close',closed]];}
+function renderFlow(){const sc=SC(),t=T(),s=steps(sc,t),now=s.findIndex(x=>!x[2]);
+  const failed=t.walk&&!t.walk.running&&t.walk.res.stop;
+  const tip=sc.coach?(failed&&sc.coach.afterFail)||(now>=0&&sc.coach[s[now][0]])||'':'';
+  $('flow').innerHTML=`<span class="eyebrow">Ticket · ${sc.kind}</span><ol class="flow">${s.map((x,i)=>`<li class="${x[2]?'done':i===now?'now':''}"${i===now?' aria-current="step"':''}>${x[1]}</li>`).join('')}</ol>${tip?`<p class="coach">${tip}</p>`:''}`;}
+/* ---------- completion record: one data structure, presentation can be swapped for designed artwork later ---------- */
+function buildRecord(sc,t){const c=t.person.credential,p=sc.person,fp=E.footprint(t.world,t.person),doors=[...fp.doors].map(d=>E.DOORS[d].n),r=routeOf(t),res=t.result;
+  const auths=p.authorizations.map(a=>a.id).join(', '),when=`${sc.day} ${E.fmt(sc.time)}`;
+  const rec={kind:sc.record,ref:auths,person:{name:p.name,role:p.role,initials:p.initials},outcome:res.cls,fields:[]};
+  if(sc.record==='issue'){rec.title='Credential issued';rec.status=res.cls==='good'?'Issued':'Issued · review';
+    rec.fields=[['Groups',c.groups.map(g=>E.GROUPS[g].n).join(', ')||'None'],['Opens',doors.join(', ')||'None'],['Hours',c.groups.map(g=>{const h=E.groupHours(t.world,g);return `${E.GROUPS[g].n} ${E.fmt(h[0])}–${E.fmt(h[1])}`;}).join(' · ')],['Authorization',auths],['Verified',`Walked in, ${when}`]];}
+  else if(sc.record==='update'){rec.title='Access updated';rec.status=res.cls==='good'?'Temporary access':'Group change';
+    rec.fields=[...c.exceptions.map(x=>['Exception',`${x.source}: ${x.day}${x.date?' '+x.date:''} ${E.fmt(x.window[0])}–${E.fmt(x.window[1])} · this badge only`]),
+      ...Object.entries(t.world.groupOverrides).map(([g,h])=>['Group hours',`${E.GROUPS[g].n} ${E.fmt(h[0])}–${E.fmt(h[1])} · every day · all ${E.GROUPS[g].members} badges`]),['Authorization',auths],['Verified',`Walked in, ${when}`]];}
+  else if(sc.record==='offboard'){const o=sc.disposition.options.find(o=>o.id===t.disp);rec.title='Audit recorded';rec.status=c.active?(doors.length?'Active':'Active · no access'):'Deactivated';
+    rec.fields=[['Action',c.active?(c.groups.length?'Access retained':'Groups removed'):'Credential deactivated'],['Reason',o?o.text:'None'],...p.authorizations.map(a=>[a.id,`${a.purpose} · ${a.window}`]),['Remaining access',doors.join(', ')||'None']];}
+  else if(sc.record==='response'){const esc=r.as==='escort'?sc.escort:null;rec.title=r.wait?'Delivery delayed':'Entry recorded';rec.status=r.wait?'Delayed':esc?'Escorted':'Unescorted';
+    rec.fields=[['Response',r.label],...(esc?[['Escort',`${esc.name}, ${esc.role} · ${esc.authorizations.map(a=>a.id).join(', ')}`]]:[]),['Authorization',auths],['Outcome',r.wait?'Waiting at the dock':`Reached Receiving, ${when}`]];}
+  return rec;}
+function recordHTML(sc,t){const r=t.record,res=t.result;
+  return `<div class="result ${res.cls} record" data-kind="${r.kind}" style="margin-top:10px"><div class="rhead"><span>${r.title}</span><b class="pill">${r.status}</b></div>
+    <div class="who"><div class="av">${r.person.initials}</div><div><b>${r.person.name}</b><span>${r.person.role}</span></div></div>
+    <dl class="kv">${r.fields.map(f=>`<dt>${f[0]}</dt><dd>${f[1]}</dd>`).join('')}</dl>
+    <b>${res.title}</b>${res.text}${sc.principle?`<p class="note" style="margin:8px 0 0">${sc.principle}</p>`:''}
+    ${sc.compare&&res.cls==='good'?`<div class="row2" style="margin-top:8px"><button class="btn" id="compareBtn">Compare with ${sc.compare.label.replace(/ \(.*\)/,'')}</button></div>`:''}</div>`;}
+function renderShift(){const done=ORDER.filter(id=>st[id].result&&st[id].result.cls!=='badr');
+  const el=$('shift');if(done.length<ORDER.length){el.hidden=true;return;}
+  el.hidden=false;el.innerHTML=`<span class="eyebrow">End of shift</span><ol class="walklog" style="margin-top:8px">${ORDER.map(id=>`<li><b>${S[id].person.name}</b> · ${st[id].result.title}. ${S[id].principle||''}</li>`).join('')}</ol>`;}
 function renderReview(){const t=T(),d=t.delta;
   let h=`<span class="eyebrow">Change review</span>`;
   const td=t.tdelta,hasT=td&&(td.opened.length||td.closed.length);
@@ -573,6 +648,7 @@ function grade(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.tar
       if(wr.stop)return{cls:'badr',title:'Not ready to close',text:`At ${sc.day} ${E.fmt(sc.time)}, ${escort?first+' and '+who:who} would be stopped at ${E.DOORS[wr.stop.door]?E.DOORS[wr.stop.door].n:'a door'}. Walk the route and inspect where it fails.`};}
     // 2. access compliance (applies to every route, including waiting)
     if(extra.length)return{cls:'warnr',title:'Works, but outside the approved scope',text:own?`${who} gets in on his own badge, but it now also opens ${extra.join(', ')}. The delivery record covers the dock only, and vendors are not given unescorted staff-side access.`:`${who}'s badge was also expanded to open ${extra.join(', ')}, which the delivery record does not cover. ${r.wait?'Waiting':'This route'} does not need it, so remove it before closing.`};
+    if(escort&&E.outOfScope(t.world,sc.escort).length)return{cls:'warnr',title:'Escort not designated',text:`${first}'s badge works, but no record designates them to escort vendors through ${E.outOfScope(t.world,sc.escort).map(d=>E.DOORS[d].n).join(', ')}. A working badge is not authority to escort.`};
     // 3. operational consequence
     return{cls:r.wait?'warnr':'good',title:r.wait?'Closed, delivery delayed':'Ticket closed',text:r.tradeoff||`${who} reaches every stop.`};}
   if(sc.goal==='audit'){
@@ -580,7 +656,8 @@ function grade(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.tar
     if(!t.disp)return{cls:'badr',title:'Record a reason',text:'Choose the reason for this decision before closing.'};
     const o=sc.disposition.options.find(o=>o.id===t.disp);
     if(!o.correct)return{cls:'warnr',title:'Reason does not match the records',text:o.why};
-    return{cls:'good',title:'Ticket closed',text:`${who}'s access now matches current authorization. Recorded: ${o.text}.`};}
+    if(t.person.credential.active)return{cls:'warnr',title:'Offboarding incomplete',text:`No doors remain on ${who}'s badge, but the vendor credential is still active. Under the offboarding policy, deactivate it when the work authorization ends.`};
+    return{cls:'good',title:'Ticket closed',text:`${who}'s credential is deactivated and the record shows why. Recorded: ${o.text}.`};}
   if(res.stop)return{cls:'badr',title:'Not ready to close',text:`At ${sc.day} ${E.fmt(sc.time)}, ${who} would be stopped at ${E.DOORS[res.stop.door]?E.DOORS[res.stop.door].n:'a door'}. Walk the route and inspect where it fails.`};
   const ov=Object.keys(t.world.groupOverrides);
   if(ov.length){const G=E.GROUPS[ov[0]];return{cls:'warnr',title:'Works, but too broad',text:`${who} gets in, but ${G.n} now opens at ${E.fmt(t.world.groupOverrides[ov[0]][0])} every day for all ${G.members} badges. The approved record covers one person on one morning.`};}
@@ -609,8 +686,10 @@ map.addEventListener('keydown',e=>{if(!lens)return;const k={ArrowLeft:[-12,0],Ar
 $('lv1').onclick=()=>{if(timer)return;level=1;drawMap();};$('lv2').onclick=()=>{if(timer)return;level=2;drawMap();};
 $('lensBtn').onclick=()=>{if(timer)return;lens=!lens;pane=lens?'inspect':'badge';drawMap();};
 $('walkBtn').onclick=startWalk;
+{let seen=false;try{seen=localStorage.getItem('nautilus-brief')==='1';}catch(_){}
+ $('brief').hidden=seen;$('briefBtn').onclick=()=>{$('brief').hidden=true;try{localStorage.setItem('nautilus-brief','1');}catch(_){}drawMap();};}
 window.addEventListener('resize',()=>drawMap());
-function render(){const rt=routeOf(T());$('walkBtn').disabled=!!(rt&&rt.wait);renderQueue();renderTicket();renderBadge();renderReview();renderInspect();drawMap();$('walkBtn').innerHTML=`Walk<span class="wn"> ${SC().person.name.split(' ')[0]} in</span>`;}
+function render(){const rt=routeOf(T());$('walkBtn').disabled=!!(rt&&rt.wait);renderShift();renderFlow();renderQueue();renderTicket();renderBadge();renderReview();renderInspect();drawMap();$('walkBtn').innerHTML=`Walk<span class="wn"> ${SC().person.name.split(' ')[0]} in</span>`;}
 render();
 })();
 </script>

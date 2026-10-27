@@ -55,7 +55,7 @@ const tests = {
   async 'phone portrait: Inspect switches to the inspection pane; badge pane returns'(pg, b) {
     const ctx = await b.newContext(devices['Pixel 7']), m = await ctx.newPage(); await m.goto(url); await m.click('[data-q="jordan"]');
     assert(await m.isVisible('#badge') && !(await m.isVisible('#inspect')));
-    await m.click('#lensBtn'); await m.click('#lv2'); const bx = await m.locator('#map').boundingBox();
+    await m.click('#lensBtn'); await m.click('#lv2'); await m.locator('#map').scrollIntoViewIfNeeded(); const bx = await m.locator('#map').boundingBox();
     await m.touchscreen.tap(bx.x + bx.width * 97 / 400, bx.y + bx.height * 122 / 300);
     assert(await m.isVisible('#inspect') && !(await m.isVisible('#badge')));
     assert(/Tank-top/.test(await text(m, '#inspect')), 'tap selected the door');
@@ -140,6 +140,63 @@ const tests = {
     assert(!/fault|repair/i.test(v), v.match(/.{0,40}(fault|repair).{0,40}/i)?.[0]);
     await pg.click('#lensBtn'); await clickMap(pg, 388, 250);
     assert(/Fault/.test(await text(pg, '#inspect')) && /about 90 minutes to repair/.test(await text(pg, '#inspect')));
+  },
+  async 'briefing shows on first visit and stays dismissed after Start shift'(pg) {
+    assert(await pg.isVisible('#brief')); await pg.click('#briefBtn'); assert(!(await pg.isVisible('#brief')));
+    await pg.reload(); assert(!(await pg.isVisible('#brief')));
+  },
+  async 'Elena: workflow landmarks, coaching, visible verify requirement, issued credential record, optional template comparison'(pg) {
+    assert(/Read what Elena needs/.test(await text(pg, '#flow')));
+    await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]');
+    assert(/Walk Elena in to check/.test(await text(pg, '#flow')));
+    assert(/Opens 4 doors/.test(await text(pg, '#badge')) && /Walk Elena in first/.test(await text(pg, '#badge')));
+    assert.equal((await text(pg, '#closeBtn')), 'Issue badge');
+    await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    await pg.click('#closeBtn'); const r = await text(pg, '.record');
+    assert(/Credential issued/.test(r) && /Issued/.test(r) && /Verified/.test(r) && /West Staff Entrance/.test(r) && /Least privilege/.test(r), r);
+    assert.equal(await pg.locator('#flow li.done').count(), 4, 'all four landmarks done after closing');
+    await pg.click('#compareBtn'); const rv = await text(pg, '#review');
+    assert(/Comparison/.test(rv) && /Quarantine/.test(rv) && /Topside/.test(rv), rv);
+    assert(/has lit areas/.test(await pg.getAttribute('#lv2', 'aria-label')));
+    assert(/Ticket closed/.test(await text(pg, '.result')), 'comparison did not change the closed result');
+  },
+  async 'Marcus: the inspect hint appears only after the walk fails'(pg) {
+    await pg.click('[data-q="marcus"]'); assert(!/Inspect that door/.test(await text(pg, '#flow')));
+    await pg.click('#walkBtn'); await pg.waitForFunction(() => /didn't open/.test(document.getElementById('review').textContent), null, { timeout: 15000 });
+    assert(/Inspect that door/.test(await text(pg, '#flow')));
+  },
+  async 'Jordan: ticket shows dates without a verdict; removing groups alone is partial offboarding'(pg) {
+    await pg.click('[data-q="jordan"]'); await pg.click('[data-rec="WO-1873"]');
+    assert(!/Ended/.test(await text(pg, '#ticket')) && /Jul 20, 2026/.test(await text(pg, '#ticket')));
+    await pg.click('[data-g="tempExhibitAV"]'); await pg.click('[data-dp="ended"]');
+    assert(/Recorded: Groups removed, credential still active · Work authorization ended/.test(await text(pg, '#badge')));
+    await pg.click('#closeBtn'); let r = await text(pg, '.result');
+    assert(/Offboarding incomplete/.test(r) && !/opens/i.test(r.split('Offboarding incomplete')[1].split('.')[0]), r);
+    await pg.click('[data-rv]'); await pg.click('#closeBtn'); r = await text(pg, '.record');
+    assert(/Audit recorded/.test(r) && /Deactivated/.test(r) && /Ticket closed/.test(r), r);
+  },
+  async 'Daniel: escort record names the designated escort'(pg) {
+    await pg.click('[data-q="daniel"]'); assert(/designated vendor escort/.test(await text(pg, '#badge')));
+    await pg.click('[data-rt="escortWest"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    await pg.click('#closeBtn'); const r = await text(pg, '.record'); assert(/Entry recorded/.test(r) && /ESC-07/.test(r), r);
+  },
+  async 'end-of-shift summary appears once all four tickets are closed'(pg) {
+    assert(!(await pg.isVisible('#shift')));
+    await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 }); await pg.click('#closeBtn');
+    await pg.click('[data-q="marcus"]'); await pg.click('[data-x]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 }); await pg.click('#closeBtn');
+    await pg.click('[data-q="jordan"]'); await pg.click('[data-rv]'); await pg.click('[data-dp="ended"]'); await pg.click('#closeBtn');
+    assert(!(await pg.isVisible('#shift')));
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="wait"]'); await pg.click('#closeBtn');
+    const sh = await text(pg, '#shift'); assert(/End of shift/.test(sh) && /Daniel Brooks · Closed, delivery delayed/.test(sh) && /Where vs. when/.test(sh), sh);
+  },
+  async 'small phone: map toolbar stays on one row with full accessible names'(pg, b) {
+    const ctx = await b.newContext(devices['iPhone SE']), m = await ctx.newPage(); await m.goto(url);
+    const r = await m.evaluate(() => ['lv1', 'lensBtn', 'walkBtn'].map(id => Math.round(document.getElementById(id).getBoundingClientRect().top)));
+    const name = await m.getAttribute('#lv1', 'aria-label'); await ctx.close();
+    assert(Math.max(...r) - Math.min(...r) <= 6, JSON.stringify(r)); assert.equal(name, 'Gallery, level 1');
   },
   async 'Elena: closing needs a verifying walk; a later badge change invalidates it'(pg) {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
