@@ -226,18 +226,18 @@ function drawMap(){
   s+=`<style>.lbl{fill:#e3f5f6;font:700 11.5px ${getComputedStyle(document.body).fontFamily};text-anchor:middle;letter-spacing:.04em;pointer-events:none}.lbl.sm{font-size:9.5px;fill:#bfe0e5}.lbl.nr{font-size:10px}.lbl.void{font-size:9px;fill:#7fa9b3;font-weight:600}.lbl.out{font-size:9px;fill:#a4ead0}</style>`;
   s+=levelSVG(level,'A');
   if(lens){const t=T(),oos=new Set(E.outOfScope(t.world,t.person));
-    const rings=SC().hideVerdict?'':Object.entries(E.DOORS).filter(([d])=>oos.has(d)&&E.doorLevel(d)===other).map(([d,o])=>`<circle cx="${o.p[0]}" cy="${o.p[1]}" r="9" fill="none" stroke="#f5d192" stroke-width="2" stroke-dasharray="3 2"/>`).join('');
+    const rings='';
     s+=`<g clip-path="url(#lensClip)"><rect width="400" height="300" fill="#061b29"/>${levelSVG(other,'B',{route:false})}${rings}</g>`;
     s+=`<circle cx="${lensP[0]}" cy="${lensP[1]}" r="56" fill="none" stroke="#e2ffff" stroke-width="3"/><text x="${lensP[0]}" y="${lensP[1]+68}" class="lbl sm" style="fill:#e2ffff">${other===2?'ABOVE · L2':'BELOW · L1'}</text>`;}
-  if(!lens)document.body.style.minHeight='';
+  if(!lens&&!timer)document.body.style.minHeight='';
   $('map').innerHTML=s;$('map').style.touchAction=lens?'none':'pan-y';
   document.body.dataset.pane=lens?'inspect':'badge';
   const mc=$('mapcard');document.documentElement.style.setProperty('--stick',(getComputedStyle(mc).position==='sticky'?mc.offsetHeight+12:0)+'px');
   const l2lit=[...E.footprint(T().world,T().person).spaces].some(k=>E.SPACES[k].l===2)||(T().delta&&T().showDelta&&T().delta.addedSpaces.some(k=>E.SPACES[k].l===2));
   $('lv2').innerHTML=`<span class="lvn">Topside · </span>L2${l2lit&&level!==2?'<i class="litdot"></i>':''}`;$('lv2').setAttribute('aria-label',`Topside, level 2${l2lit?', has lit areas':''}`);
   $('lv1').setAttribute('aria-pressed',level===1);$('lv2').setAttribute('aria-pressed',level===2);$('lensBtn').setAttribute('aria-pressed',lens);
-  const w=T().walk;$('clock').textContent=`${SC().day} ${E.fmt(SC().time)}`;
-  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.'+(SC().hideVerdict?'':' Dashed gold ring: opens, but no active record covers it.'):w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted. Hours and door status decide whether a door opens right now.':'Topside sits above the galleries. Cores connect the levels.';}
+  const w=T().walk;$('clock').textContent=`${SC().day} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+SC().date.slice(5,7)-1]} ${+SC().date.slice(8)} · ${E.fmt(SC().time)}`;
+  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.':w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted. Hours and door status decide whether a door opens right now.':'Topside sits above the galleries. Cores connect the levels.';}
 
 /* ---------- panels ---------- */
 function renderQueue(){
@@ -389,7 +389,7 @@ function buildWalk(){const sc=SC(),t=T(),r=routeOf(t),actor=actorOf(t),from=(r&&
     else if(s.p){pts.push({x:s.p[0],y:s.p[1],l:E.levelOf(s.from)});}
     const [cx,cy]=center(s.to),arr=sc.targets.includes(s.to)&&!pts.some(p=>p.arrive===s.to);pts.push({x:cx,y:cy,l:E.levelOf(s.to),...(arr?{arrive:s.to}:{})});}
   return{res,pts,i:0,running:true,routeId:r?r.id:null};}
-function startWalk(){if(timer)return;const t=T();lens=false;pane='badge';t.walk=buildWalk();level=1;render();
+function startWalk(){if(timer)return;const t=T(),h0=document.documentElement.scrollHeight,y0=scrollY;lens=false;pane='badge';t.walk=buildWalk();level=1;render();document.body.style.minHeight=h0+'px';scrollTo(0,y0);
   const tick=()=>{const w=t.walk;if(w.i>=w.pts.length-1){w.running=false;timer=null;render();return;}
     w.i++;level=w.pts[w.i].l;drawMap();timer=setTimeout(tick,RM?60:340);};timer=setTimeout(tick,RM?60:300);}
 
@@ -445,7 +445,10 @@ $('lv1').onclick=()=>{if(timer)return;level=1;drawMap();};$('lv2').onclick=()=>{
 function setLens(on){if(timer)return;const mc=$('mapcard'),y0=mc.getBoundingClientRect().top;
   document.body.style.minHeight=on?document.documentElement.scrollHeight+'px':'';
   lens=on;pane=on?'inspect':'badge';drawMap();renderInspect();
-  const y1=mc.getBoundingClientRect().top;if(Math.abs(y1-y0)>1)scrollBy(0,y1-y0);}
+  const y1=mc.getBoundingClientRect().top;if(Math.abs(y1-y0)>1)scrollBy(0,y1-y0);
+  if(on){lensY=scrollY;const mb=mc.getBoundingClientRect().bottom,it=$('inspect').getBoundingClientRect().top;if(getComputedStyle(mc).position==='sticky'&&it<mb+8)scrollBy(0,it-mb-8);}
+  else if(lensY!=null){scrollTo(0,lensY);lensY=null;}}
+let lensY=null;
 $('lensBtn').onclick=()=>setLens(!lens);
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='backBtn')setLens(false);});
 $('walkBtn').onclick=startWalk;

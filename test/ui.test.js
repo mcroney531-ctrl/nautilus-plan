@@ -204,6 +204,8 @@ const tests = {
     const top0 = await m.evaluate(() => document.getElementById('mapcard').getBoundingClientRect().top);
     const lb = await m.locator('#lensBtn').boundingBox(); await m.touchscreen.tap(lb.x + lb.width / 2, lb.y + lb.height / 2); await m.waitForTimeout(200); const top1 = await m.evaluate(() => document.getElementById('mapcard').getBoundingClientRect().top);
     assert(Math.abs(top1 - top0) <= 2, `map moved ${top0} -> ${top1}`);
+    const vis = await m.evaluate(() => document.getElementById('inspect').getBoundingClientRect().top >= document.getElementById('mapcard').getBoundingClientRect().bottom - 1);
+    assert(vis, 'inspection panel starts below the pinned map, so Back to badge is reachable');
     const bb = await m.locator('#backBtn').boundingBox(); await m.touchscreen.tap(bb.x + bb.width / 2, bb.y + bb.height / 2); await m.waitForTimeout(200); assert(await m.isVisible('#badge') && !(await m.isVisible('#inspect')));
     assert(Math.abs((await m.evaluate(() => scrollY)) - y0) <= 2); await ctx.close();
   },
