@@ -83,9 +83,9 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
    Badge/Review and Inspect share one pane at a time. */
 @media (max-width:860px),(orientation:landscape) and (max-height:520px){
   .grid,.col{display:contents}
-  .tabs{display:inline-flex;justify-self:start}
   .desk{display:none}
-  .tabs button{padding:9px 16px}
+  html{scroll-padding-top:var(--stick,0px)}
+  .queue{gap:4px}.qt{flex:1 1 0;min-width:0;justify-content:center;padding:9px 4px;gap:6px}.qt small{display:none}
   body[data-pane="badge"] #inspect,body[data-pane="inspect"] #badge,body[data-pane="inspect"] #review{display:none}
   #mapcard{position:sticky;top:6px;z-index:5;box-shadow:0 6px 18px rgba(2,12,18,.6)}
   #mapcard .maphead{padding:8px 10px;gap:6px}
@@ -101,6 +101,7 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
   .wrap>header,.wrap>nav,.wrap>.foot,#ticket,#badge,#review,#inspect,.tabs{grid-column:2}
   #mapcard{grid-column:1;grid-row:1/span 8;top:8px}
   .stage svg{max-height:calc(100vh - 118px)}
+  html{scroll-padding-top:0}
   #mapcard .wn{display:inline}
   header{padding-bottom:8px}.id svg{width:30px;height:30px}.id h1{font-size:20px}.id small{display:none}.desk{display:none}
 }
@@ -131,7 +132,6 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
     </section>
   </div>
   <div class="col">
-    <div class="seg tabs" role="group" aria-label="Panel"><button id="paneBadge" aria-pressed="true">Badge</button><button id="paneInspect" aria-pressed="false">Inspect</button></div>
     <section class="card pad" id="badge"></section>
     <section class="card pad" id="review"></section>
     <section class="card pad" id="inspect"></section>
@@ -211,7 +211,8 @@ function drawMap(){
     s+=`<g clip-path="url(#lensClip)"><rect width="400" height="300" fill="#061b29"/>${levelSVG(other,'B',{route:false})}${rings}</g>`;
     s+=`<circle cx="${lensP[0]}" cy="${lensP[1]}" r="56" fill="none" stroke="#e2ffff" stroke-width="3"/><text x="${lensP[0]}" y="${lensP[1]+68}" class="lbl sm" style="fill:#e2ffff">${other===2?'ABOVE · L2':'BELOW · L1'}</text>`;}
   $('map').innerHTML=s;$('map').style.touchAction=lens?'none':'pan-y';
-  document.body.dataset.pane=pane;$('paneBadge').setAttribute('aria-pressed',pane==='badge');$('paneInspect').setAttribute('aria-pressed',pane==='inspect');
+  document.body.dataset.pane=lens?'inspect':'badge';
+  const mc=$('mapcard');document.documentElement.style.setProperty('--stick',(getComputedStyle(mc).position==='sticky'?mc.offsetHeight+12:0)+'px');
   $('lv1').setAttribute('aria-pressed',level===1);$('lv2').setAttribute('aria-pressed',level===2);$('lensBtn').setAttribute('aria-pressed',lens);
   const w=T().walk;$('clock').textContent=`${SC().day} ${E.fmt(SC().time)}`;
   $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.'+(SC().hideVerdict?'':' Dashed gold ring: opens, but no active record covers it.'):w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted.':'Topside sits above the galleries. Cores connect the levels.';}
@@ -247,16 +248,21 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
   h+=`<div class="row2" style="margin-top:12px"><button class="btn primary" id="closeBtn">Close ticket</button><button class="btn" id="resetBtn">Reset</button></div>`;
   if(t.result)h+=`<div class="result ${t.result.cls}" style="margin-top:10px"><b>${t.result.title}</b>${t.result.text}</div>`;
   $('badge').innerHTML=h;
-  const change=fn=>{if(timer)return;const wb=E.clone(t.world),pb=E.clone(t.person),before=E.footprint(t.world,t.person);fn();t.delta=E.delta(before,E.footprint(t.world,t.person));
+  const change=(fn,label)=>{if(timer)return;const wb=E.clone(t.world),pb=E.clone(t.person),before=E.footprint(t.world,t.person);fn();t.delta=E.delta(before,E.footprint(t.world,t.person));t.lastLabel=label();
+    const tt=SC().time,gb=E.grants(wb,pb),ga=E.grants(t.world,t.person);
+    const touched=[...new Set([...Object.keys(gb),...Object.keys(ga)])].filter(d=>JSON.stringify(gb[d]||[])!==JSON.stringify(ga[d]||[]));
+    const live=touched.filter(d=>E.canEnter(t.world,t.person,d,tt).ok);
+    const src=x=>x.kind==='exception'?`the ${x.via.replace('Exception · ','')} exception (this badge only)`:`${x.via}${t.world.groupOverrides[x.group]?' with its changed group hours':''} (${E.fmt(x.window[0])}–${E.fmt(x.window[1])}, all ${E.GROUPS[x.group].members} badges)`;
+    t.still={doors:live,via:[...new Set(live.flatMap(d=>E.canEnter(t.world,t.person,d,tt).via.map(src)))]};
     t.tdelta=E.timeDelta(wb,pb,t.world,t.person,SC().time);
     const og=Object.keys({...wb.groupOverrides,...t.world.groupOverrides}).find(k=>JSON.stringify(wb.groupOverrides[k])!==JSON.stringify(t.world.groupOverrides[k]));
     t.tscope=og?`all ${E.GROUPS[og].members} ${E.GROUPS[og].n} badges`:'this badge only';t.showDelta=true;t.walk=null;t.result=null;render();};
-  document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>change(()=>{const g=b.dataset.g,i=c.groups.indexOf(g);i<0?c.groups.push(g):c.groups.splice(i,1);}));
-  document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>change(()=>{const a=t.person.authorizations.find(a=>a.id===b.dataset.x),i=c.exceptions.findIndex(x=>x.source===a.id);i<0?c.exceptions.push(E.clone(a.exception)):c.exceptions.splice(i,1);}));
+  document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>change(()=>{const g=b.dataset.g,i=c.groups.indexOf(g);i<0?c.groups.push(g):c.groups.splice(i,1);},()=>`${c.groups.includes(b.dataset.g)?'Added':'Removed'} ${E.GROUPS[b.dataset.g].n}`));
+  document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>change(()=>{const a=t.person.authorizations.find(a=>a.id===b.dataset.x),i=c.exceptions.findIndex(x=>x.source===a.id);i<0?c.exceptions.push(E.clone(a.exception)):c.exceptions.splice(i,1);},()=>`${c.exceptions.some(x=>x.source===b.dataset.x)?'Added':'Removed'} the time exception from ${b.dataset.x}`));
   document.querySelectorAll('[data-rt]').forEach(b=>b.onclick=()=>{if(timer)return;t.route=b.dataset.rt;t.walk=null;t.result=null;render();});
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{if(timer)return;t.disp=t.disp===b.dataset.dp?null:b.dataset.dp;t.result=null;render();});
-  document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>change(()=>{c.active=!c.active;}));
-  document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>change(()=>{const e=sc.groupScheduleEdit;t.world.groupOverrides[e.group]?delete t.world.groupOverrides[e.group]:t.world.groupOverrides[e.group]=e.to;}));
+  document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>change(()=>{c.active=!c.active;},()=>c.active?'Reactivated the badge':'Deactivated the badge'));
+  document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>change(()=>{const e=sc.groupScheduleEdit;t.world.groupOverrides[e.group]?delete t.world.groupOverrides[e.group]:t.world.groupOverrides[e.group]=e.to;},()=>{const e=sc.groupScheduleEdit,G=E.GROUPS[e.group],h=E.groupHours(t.world,e.group);return `${t.world.groupOverrides[e.group]?'Changed':'Restored'} ${G.n} group hours to ${E.fmt(h[0])}–${E.fmt(h[1])} (all ${G.members} badges)`;}));
   $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();render();};
   $('resetBtn').onclick=()=>{if(timer)return;st[cur]=fresh(cur);render();};}
 const names=ids=>ids.map(k=>E.SPACES[k].n);
@@ -265,8 +271,9 @@ function renderReview(){const t=T(),d=t.delta;
   const td=t.tdelta,hasT=td&&(td.opened.length||td.closed.length);
   if(!d){h+=`<p class="note" style="margin:8px 0 0">Each change to the badge shows here: what it opened and what it closed, computed from effective access.</p>`;}
   else{const none=!d.addedSpaces.length&&!d.removedSpaces.length&&!d.addedDoors.length&&!d.removedDoors.length&&!hasT;
-    h+=`<div class="delta" style="margin-top:8px">`;
-    if(none)h+=`<span class="note">Last change didn't alter effective access. Another group already covers the same doors.</span>`;
+    h+=`<div class="delta" style="margin-top:8px"><b>${t.lastLabel||'Last change'}</b>`;
+    if(none){const s=t.still,nm=s&&s.doors.map(x=>E.DOORS[x].n).join(', ');
+      h+=`<span class="note">${s&&s.doors.length&&s.via.length?`Access at ${SC().day} ${E.fmt(SC().time)} doesn't change: ${s.via.join(' and ')} still ${s.via.length>1?'open':'opens'} ${nm}.`:'Effective access doesn\'t change.'}</span>`;}
     if(d.addedSpaces.length)h+=`<span>Opened</span><div class="row">${d.addedSpaces.map(k=>`<span class="tag add ${E.SPACES[k].kind==='restricted'?'restricted':''}">+ ${E.SPACES[k].n}</span>`).join('')}</div>`;
     if(d.removedSpaces.length)h+=`<span>Closed</span><div class="row">${d.removedSpaces.map(k=>`<span class="tag rem">− ${E.SPACES[k].n}</span>`).join('')}</div>`;
     const extraDoors=d.addedDoors.filter(x=>!d.addedSpaces.includes(E.DOORS[x].into)),lostDoors=d.removedDoors.filter(x=>!d.removedSpaces.includes(E.DOORS[x].into));
@@ -287,7 +294,7 @@ function renderInspect(){const t=T(),sel=t.sel;let h=`<span class="eyebrow">Insp
     const req=Object.entries(E.GROUPS).filter(([k,G])=>G.doors.includes(sel.door)).map(([k,G])=>{const hr=E.groupHours(t.world,k);return `${G.n} ${E.fmt(hr[0])}–${E.fmt(hr[1])}`;});
     const WHY={OK:'<span class="ok">Opens</span>',NO_GRANT:'<span class="bad">Denied · badge has no group for this door</span>',OUTSIDE_SCHEDULE:'<span class="bad">Denied · outside every schedule on this badge</span>',HARDWARE_FAULT:'<span class="bad">Denied · reader fault</span>',CREDENTIAL_INACTIVE:'<span class="bad">Denied · credential inactive</span>'},why=WHY[r.code];
     h+=`<div class="ev" style="margin-top:8px"><h3>${d.n}</h3><dl class="kv">
-      <dt>Reader</dt><dd>${(t.world.doorStatus[sel.door]||'online')==='online'?'Online':'<span class="bad">Fault</span>'} · ${sel.door}</dd>
+      <dt>Reader</dt><dd>${(t.world.doorStatus[sel.door]||'online')==='online'?'Online':'<span class="bad">Fault</span>'} · ${sel.door}${t.world.doorStatus[sel.door]==='fault'&&SC().faultNotes&&SC().faultNotes[sel.door]?`<br>${SC().faultNotes[sel.door]}`:''}</dd>
       <dt>Entry</dt><dd>${from} → ${E.SPACES[d.into].n}</dd>
       <dt>Groups</dt><dd>${req.join('<br>')||'None'}</dd>
       <dt>This badge</dt><dd>${g.length?g.map(x=>`${x.via} · ${x.day?x.day+' ':''}${E.fmt(x.window[0])}–${E.fmt(x.window[1])}${x.inherited?`<br><span class="warn">Inherited: ${x.inherited}</span>`:''}`).join('<br>'):'<span class="note">Not granted</span>'}</dd>
@@ -365,8 +372,8 @@ map.addEventListener('keydown',e=>{if(!lens)return;const k={ArrowLeft:[-12,0],Ar
 
 $('lv1').onclick=()=>{if(timer)return;level=1;drawMap();};$('lv2').onclick=()=>{if(timer)return;level=2;drawMap();};
 $('lensBtn').onclick=()=>{if(timer)return;lens=!lens;pane=lens?'inspect':'badge';drawMap();};
-$('paneBadge').onclick=()=>{pane='badge';drawMap();};$('paneInspect').onclick=()=>{pane='inspect';drawMap();};
 $('walkBtn').onclick=startWalk;
+window.addEventListener('resize',()=>drawMap());
 function render(){const rt=routeOf(T());$('walkBtn').disabled=!!(rt&&rt.wait);renderQueue();renderTicket();renderBadge();renderReview();renderInspect();drawMap();$('walkBtn').innerHTML=`Walk<span class="wn"> ${SC().person.name.split(' ')[0]} in</span>`;}
 render();
 })();

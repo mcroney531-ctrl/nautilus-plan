@@ -3,7 +3,7 @@
 const assert = require('assert'), path = require('path'), { pathToFileURL } = require('url');
 let chromium, devices; try { ({ chromium, devices } = require('playwright')); } catch (_) { console.log('skip: playwright not installed'); process.exit(0); }
 const url = pathToFileURL(path.join(__dirname, '../dist/nautilus_access.html')).href;
-const clickMap = async (pg, x, y) => { const b = await pg.locator('#map').boundingBox(); await pg.mouse.click(b.x + b.width * x / 400, b.y + b.height * y / 300); };
+const clickMap = async (pg, x, y) => { await pg.locator('#map').scrollIntoViewIfNeeded(); const b = await pg.locator('#map').boundingBox(); await pg.mouse.click(b.x + b.width * x / 400, b.y + b.height * y / 300); };
 const text = async (pg, sel) => (await pg.textContent(sel)).replace(/\s+/g, ' ').trim();
 const tests = {
   async 'tapping a door without Inspect reveals nothing'(pg) {
@@ -97,6 +97,49 @@ const tests = {
   async 'Daniel: holding for repair is accepted as a costed choice, with no walk'(pg) {
     await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="wait"]');
     assert(await pg.isDisabled('#walkBtn')); await pg.click('#closeBtn'); const r = await text(pg, '.result'); assert(/Closed, delivery delayed/.test(r) && /missed|40-minute window/.test(r) && /Facilities/.test(r), r);
+  },
+  async 'Marcus: change review names the change and the grant that still supplies access'(pg) {
+    await pg.click('[data-q="marcus"]'); await pg.click('[data-x]'); await pg.click('[data-gs]'); await pg.click('[data-x]');
+    const r = await text(pg, '#review');
+    assert(/Removed the time exception from WO-2291/.test(r) && /Dive Crew with its changed group hours/.test(r) && /all 12 badges/.test(r) && !/Another group/.test(r), r);
+  },
+  async 'phone: Inspect is the only switch; turning it off returns the badge pane and normal map mode'(pg, b) {
+    const ctx = await b.newContext(devices['Pixel 7']), m = await ctx.newPage(); await m.goto(url);
+    assert.equal(await m.locator('#paneBadge, #paneInspect').count(), 0);
+    await m.click('#lensBtn'); assert(await m.isVisible('#inspect') && !(await m.isVisible('#badge')));
+    await m.click('#lv2'); const bx = await m.locator('#map').boundingBox(); await m.touchscreen.tap(bx.x + bx.width * 97 / 400, bx.y + bx.height * 122 / 300);
+    const sel = await text(m, '#inspect');
+    await m.click('#lensBtn'); assert(await m.isVisible('#badge') && !(await m.isVisible('#inspect')));
+    await m.touchscreen.tap(bx.x + bx.width * 97 / 400, bx.y + bx.height * 77 / 300);
+    await m.click('#lensBtn'); assert.equal(await text(m, '#inspect'), sel, 'selection kept; taps with Inspect off did nothing');
+    await ctx.close();
+  },
+  async 'phone: all four tickets are visible in the queue (Pixel 7 and iPhone SE)'(pg, b) {
+    for (const dev of ['Pixel 7', 'iPhone SE']) {
+      const ctx = await b.newContext(devices[dev]), m = await ctx.newPage(); await m.goto(url);
+      const r = await m.evaluate(() => [...document.querySelectorAll('.qt')].map(e => { const q = e.getBoundingClientRect(); return [e.textContent.trim(), q.left >= 0 && q.right <= innerWidth]; }));
+      await ctx.close(); assert(r.length === 4 && r.every(x => x[1]), dev + ' ' + JSON.stringify(r));
+    }
+  },
+  async 'phone: controls scrolled into view are not hidden under the pinned map (Jordan, two sizes)'(pg, b) {
+    for (const dev of ['Pixel 7', 'iPhone SE']) {
+      const ctx = await b.newContext(devices[dev]), m = await ctx.newPage(); await m.goto(url); await m.click('[data-q="jordan"]');
+      for (const sel of ['[data-dp="works"]', '[data-rv]', '#review']) {
+        await m.evaluate(s => document.querySelector(s).scrollIntoView({ block: 'start' }), sel);
+        const r = await m.evaluate(s => ({ top: document.querySelector(s).getBoundingClientRect().top, mapBottom: document.getElementById('mapcard').getBoundingClientRect().bottom }), sel);
+        assert(r.top >= r.mapBottom - 1, `${dev} ${sel} ${JSON.stringify(r)}`);
+      }
+      await m.locator('[data-dp="works"]').scrollIntoViewIfNeeded(); await m.click('[data-dp="works"]');
+      assert.equal(await m.getAttribute('[data-dp="works"]', 'aria-pressed'), 'true', dev + ' could click the last reason');
+      await ctx.close();
+    }
+  },
+  async 'Daniel: nothing before inspection names the fault or the repair'(pg) {
+    await pg.click('[data-q="daniel"]'); await pg.click('[data-rec="Facilities procedures"]');
+    const v = await text(pg, '#ticket') + ' ' + await text(pg, '#badge');
+    assert(!/fault|repair/i.test(v), v.match(/.{0,40}(fault|repair).{0,40}/i)?.[0]);
+    await pg.click('#lensBtn'); await clickMap(pg, 388, 250);
+    assert(/Fault/.test(await text(pg, '#inspect')) && /about 90 minutes to repair/.test(await text(pg, '#inspect')));
   },
   async 'Elena: closing needs a verifying walk; a later badge change invalidates it'(pg) {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');

@@ -1,6 +1,6 @@
 # Nautilus Access Desk: session handoff
 
-**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Marcus, Jordan, Daniel). 25 engine tests + 23 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
+**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Marcus, Jordan, Daniel). 25 engine tests + 28 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
 
 ---
 
@@ -110,7 +110,7 @@ Live: https://mcroney531-ctrl.github.io/nautilus-plan/ (push straight to main; R
 - `hideVerdict` (Jordan): no gold rings, neutral records row in the lens.
 - `notes`: extra chips on the ticket (Jordan's account history, Daniel's reader-fault procedure).
 
-**UI:** single-file HTML, vanilla JS, SVG map. On phones (<=860px) and short landscape the map card is sticky, Badge/Review and Inspect share one pane (switch under the map; Inspect on = Inspect pane), and short landscape puts the map in a full-height left column. Desktop layout unchanged. Taps and the lens only select while Inspect is on.
+**UI:** single-file HTML, vanilla JS, SVG map. On phones (<=860px) and short landscape the map card is sticky, Badge/Review and Inspect share one pane, driven only by the Inspect button (no separate switch; Inspect on = Inspect pane + lens), `scroll-padding-top` keeps scrolled-to controls below the pinned map, and all four queue tabs fit on a 375px phone, and short landscape puts the map in a full-height left column. Desktop layout unchanged. Taps and the lens only select while Inspect is on.
 
 ## 6. Acceptance status
 
@@ -126,6 +126,10 @@ Live: https://mcroney531-ctrl.github.io/nautilus-plan/ (push straight to main; R
 - [ ] SME review (security admin + aquarium facilities)
 
 ## 7. Backlog (prioritized)
+
+**Cold learner run (Oct 26) and the agreed two-stage revision.** Stage 1 (bugs and spoilers) is DONE: Inspect button is the single pane/lens control; pinned map no longer hides scrolled-to controls; four tabs fit on phones; Daniel's ticket, procedures doc (now "Facilities procedures", a general list) and route labels no longer name the fault, and the repair estimate shows only when inspecting the faulted reader (`scenario.faultNotes`); change review names the last change and, when access is unchanged, the grant that still supplies it.
+
+**Stage 2 (next, agreed with Rone and GPT):** one compact ticket workflow (Review, Configure, Verify, Close as landmarks, not a locked wizard; inspection always available; Jordan and Daniel's Wait variations kept) carrying orientation, the verification requirement and a job-specific closing moment (issue badge / apply change / submit audit / dispatch response) with a text list of granted doors; clearer L2 discovery and a doors-vs-connected-spaces explanation; Jordan offboarding states (deactivate + correct reason = complete; all groups removed but badge active = partial, per an explicit fictional offboarding policy; grants remaining = incomplete), with action and reason shown together; Priya as a designated vendor escort under SOP-12; Elena optional post-success comparison with Exhibit Operations (shows Quarantine on L2); fading support (Elena guided, Marcus post-failure hint, none for Jordan/Daniel); end-of-shift summary. Then a targeted learner check: finds all tickets, understands door vs space, uses L2, reaches Jordan's choices on a phone, investigates Daniel before knowing the cause.
 
 1. **Real-device phone check**, then a first-time-learner walkthrough of all four scenarios (does the learner know what they're doing, discover problems naturally, understand consequences).
 2. **Scaffolding:** guided prompts for Elena, a post-failure inspect prompt for Marcus (none for Jordan/Daniel). Shift framing: supervisor intro and end-of-shift summary.
