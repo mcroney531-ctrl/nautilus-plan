@@ -41,7 +41,7 @@ const SCENARIOS = {
     disposition: { options: [
       { id: 'ended', text: 'Work authorization ended; no new approval exists', correct: true },
       { id: 'followup', text: 'Future follow-up work may require access', why: 'Possible future work is not an approval. Access follows a current authorization, and a new request can be raised if the work is approved.' },
-      { id: 'works', text: 'The credential still works', why: 'A badge that opens doors shows what is granted, not what is authorized.' }] },
+      { id: 'works', text: 'No problems have been reported with this badge', why: 'No complaints is not an authorization. An audit checks whether access is still approved, not whether it has caused trouble.' }] },
     editable: ['tempExhibitAV', 'allStaff', 'education', 'exhibitOps'],
   },
   daniel: {

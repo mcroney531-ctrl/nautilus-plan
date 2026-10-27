@@ -67,6 +67,7 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
 .tag.add{border-color:var(--gold);color:var(--gold)}.tag.rem{border-color:var(--coral);color:var(--coral)}
 .tag.add.restricted{background:var(--gold);color:#241806}
 .walklog{display:grid;gap:4px;font-size:12.5px;color:#c6dfe3;margin:0;padding-left:18px}
+.walkdone{font-weight:700}.walkdone.ok{color:var(--glass)}.walkdone.bad{color:var(--coral)}
 .walklog .arr{color:var(--glass)}
 .walklog .no{color:var(--coral);font-weight:700}
 .ev{display:grid;gap:6px;font-size:13px;color:#c6dfe3}
@@ -133,7 +134,7 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
 <nav class="queue" id="queue" aria-label="Ticket queue"></nav>
 <section class="card pad brief" id="brief" aria-labelledby="briefH" hidden><span class="eyebrow" id="briefH">Supervisor · Ops desk</span>
   <p class="coach">Morning. Four access tickets today. For each one: read the request and its records, inspect anything that doesn't add up, and decide what to change. When you change someone's access, walk them in to check it works from their side before you close the ticket.</p>
-  <p class="note">On the map, lit areas are where a badge is granted and the dots are doors with readers. A door opens into an area, and open passages join areas, so one door can light several rooms. Topside (L2) sits above the galleries.</p>
+  <p class="note">On the map, lit areas are where a badge is granted (dotted ones are public galleries, striped ones restricted) and the small circles are doors with readers. A door opens into an area, and open passages join areas, so one door can light several rooms. Topside (L2) sits above the galleries.</p>
   <div class="row2"><button class="btn primary" id="briefBtn">Start shift</button></div></section>
 <section class="card pad" id="shift" hidden></section>
 
@@ -199,6 +200,7 @@ function levelSVG(l,sfx,{route=true}={}){
   s+=`<mask id="m${sfx}"><rect width="400" height="300" fill="#fff"/>${[...fp.spaces].filter(k=>E.SPACES[k].l===l).map(k=>shapes(k,'fill="#000"')).join('')}</mask>`;
   s+=`<rect width="400" height="300" fill="#021019" opacity=".72" mask="url(#m${sfx})"/>`;
   s+=`<g filter="url(#ring${sfx})">${[...fp.spaces].filter(k=>E.SPACES[k].l===l).map(k=>shapes(k,'fill="#a4ead0"')).join('')}</g>`;
+  for(const k of [...fp.spaces].filter(k=>E.SPACES[k].l===l)){const kd=E.SPACES[k].kind;if(kd==='public'||kd==='restricted')s+=shapes(k,`fill="url(#${kd==='public'?'dots':'strp'}${sfx})" pointer-events="none"`);}
   // change review overlay (effective-permission difference)
   if(t.delta&&t.showDelta){
     for(const k of t.delta.addedSpaces.filter(k=>E.SPACES[k].l===l))s+=shapes(k,`fill="#f5d192" fill-opacity=".22" stroke="#f5d192" stroke-width="2" stroke-dasharray="5 3" class="${RM?'':'pulse'}"`);
@@ -206,7 +208,7 @@ function levelSVG(l,sfx,{route=true}={}){
   // doors
   for(const [d,o] of Object.entries(E.DOORS)){if(E.doorLevel(d)!==l)continue;const g=fp.doors.has(d),sel=t.sel&&t.sel.door===d;
     s+=`<g class="door" data-door="${d}"><circle cx="${o.p[0]}" cy="${o.p[1]}" r="${sel?8:6}" fill="${g?'#a4ead0':'#0b2a39'}" stroke="${sel?'#ffde9f':'#a9cfd6'}" stroke-width="${sel?2.5:1.3}"/></g>`;}
-  if(l===1){s+=`<path d="M24 296h16M390 242v16" stroke="#a4ead0" stroke-width="3"/>`;s+=`<text x="44" y="296" class="lbl out" text-anchor="start">STAFF ENTRANCE</text><text x="386" y="236" class="lbl out" text-anchor="end">DOCK</text>`;}
+  if(l===1){s+=`<path d="M24 296h16M390 242v16" stroke="#a4ead0" stroke-width="3"/>`;s+=`<text x="44" y="297" class="lbl out" style="text-anchor:start">STAFF ENTRANCE</text><text x="383" y="236" class="lbl out" style="text-anchor:end">DOCK</text>`;}
   if(t.sel&&t.sel.space&&E.SPACES[t.sel.space].l===l)s+=shapes(t.sel.space,'fill="none" stroke="#ffde9f" stroke-width="2"');
   if(route&&t.walk)s+=routeSVG(l);
   return s;}
@@ -219,6 +221,8 @@ function routeSVG(l){const w=T().walk,pts=w.pts.slice(0,w.i+1);let s='';
   return s;}
 const DEFS=sfx=>`<linearGradient id="water${sfx}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#087b97"/><stop offset="1" stop-color="#0a4e6a"/></linearGradient>
   <pattern id="hatch${sfx}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#0a2a38"/><rect width="1.5" height="6" fill="#1d4d5e"/></pattern>
+  <pattern id="dots${sfx}" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="1.1" fill="#d9fff1" opacity=".6"/></pattern>
+  <pattern id="strp${sfx}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="6" fill="#ffe3b3" opacity=".45"/></pattern>
   <filter id="ring${sfx}" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceGraphic" operator="dilate" radius="1.8" result="d"/><feComposite in="d" in2="SourceAlpha" operator="out"/></filter>`;
 function drawMap(){
   const other=level===1?2:1;
@@ -237,7 +241,9 @@ function drawMap(){
   $('lv2').innerHTML=`<span class="lvn">Topside · </span>L2${l2lit&&level!==2?'<i class="litdot"></i>':''}`;$('lv2').setAttribute('aria-label',`Topside, level 2${l2lit?', has lit areas':''}`);
   $('lv1').setAttribute('aria-pressed',level===1);$('lv2').setAttribute('aria-pressed',level===2);$('lensBtn').setAttribute('aria-pressed',lens);
   const w=T().walk;$('clock').textContent=`${SC().day} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+SC().date.slice(5,7)-1]} ${+SC().date.slice(8)} · ${E.fmt(SC().time)}`;
-  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.':w&&w.running?'Walking…':level===1?'Lit areas: where the badge is granted. Hours and door status decide whether a door opens right now.':'Topside sits above the galleries. Cores connect the levels.';}
+  const done=w&&!w.running&&!lens,stop=done&&w.res.stop;
+  $('mapnote').className=done?(stop?'walkdone bad':'walkdone ok'):'';
+  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.':w&&w.running?'Walking…':done?(stop?`Walk stopped at ${E.DOORS[stop.door]?E.DOORS[stop.door].n:'a door'}.`:'Walk complete: reached every stop.'):'Lit: granted · dotted: public, joined by open passages · striped: restricted.'+(level===2?' Topside sits above the galleries.':'');}
 
 /* ---------- panels ---------- */
 function renderQueue(){
@@ -258,7 +264,8 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
     h+=`<button class="grp" data-g="${g}" aria-pressed="${on}"><span class="box">${on?'✓':''}</span><span><b>${G.n}</b><small>${G.note?G.note+' · ':''}${G.doors.length} doors · ${E.fmt(hr[0])}–${E.fmt(hr[1])} · ${G.members} badges</small></span></button>`;}
   h+='</div>';
   {const fp=E.footprint(t.world,t.person),ds=[...fp.doors].map(d=>E.DOORS[d].n);
-   h+=`<p class="note fp">${ds.length?`Opens ${ds.length} door${ds.length>1?'s':''}: ${ds.join(', ')}. Lit areas: ${[...fp.spaces].map(k=>E.SPACES[k].n).join(', ')}.`:'This badge opens no doors.'}</p>`;}
+   const by=kinds=>[...fp.spaces].filter(k=>kinds.includes(E.SPACES[k].kind)).map(k=>E.SPACES[k].n),grp=[['public',by(['public','program'])],['staff',by(['staff','core'])],['restricted',by(['restricted'])]].filter(x=>x[1].length);
+   h+=`<p class="note fp">${ds.length?`Opens ${ds.length} door${ds.length>1?'s':''}: ${ds.join(', ')}. Through those doors and open passages it reaches ${grp.map(x=>`${x[0]}: ${x[1].join(', ')}`).join('; ')}.`:'This badge opens no doors.'}</p>`;}
   if(sc.groupScheduleEdit||t.person.authorizations.some(a=>a.exception)){
     h+=`<div class="sub"><span class="eyebrow">Schedules</span>`;
     for(const a of t.person.authorizations.filter(a=>a.exception)){const on=c.exceptions.some(x=>x.source===a.id);
@@ -372,11 +379,15 @@ function renderInspect(){const t=T(),sel=t.sel;let h=`<div class="rhead" style="
     if(g.some(x=>x.inherited))h+=`<div class="row2"><button class="btn" id="flagBtn" aria-pressed="${t.flagged}">${t.flagged?'Template flagged for review':'Flag template for review'}</button></div>`;
     h+=`</div>`;}
   else{const s=E.SPACES[sel.space],fp=E.footprint(t.world,t.person),[x,y]=sel.pt;
+    const reach=from=>{const seen=new Set([from]),q=[from];while(q.length){const a=q.shift();for(const [p,r] of E.LINKS){const n=p===a?r:r===a?p:null;if(n&&!seen.has(n)){seen.add(n);q.push(n);}}}return seen;};
+    const doorsIn=Object.values(E.DOORS).filter(o=>o.into===sel.space).map(o=>o.n),links=E.LINKS.filter(k=>k[0]===sel.space||k[1]===sel.space).map(k=>E.SPACES[k[0]===sel.space?k[1]:k[0]].n);
+    const via=[...fp.doors].filter(d=>reach(E.DOORS[d].into).has(sel.space)).map(d=>E.DOORS[d].n);
     const other=Object.entries(E.SPACES).filter(([k,o])=>o.l!==s.l&&o.r.some(r=>x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3])).map(([k,o])=>o.n);
     const v=s.l===1?E.VOIDS.find(v=>x>=v.r[0]&&x<=v.r[0]+v.r[2]&&y>=v.r[1]&&y<=v.r[1]+v.r[3]):null;
     h+=`<div class="ev" style="margin-top:8px"><h3>${s.n}</h3><dl class="kv"><dt>Level</dt><dd>L${s.l} · ${s.kind}</dd>
       <dt>${s.l===1?'Above':'Below'}</dt><dd>${other.join(', ')||(v?v.n.replace('Open to','Open volume over'):'Nothing')}</dd>
-      <dt>Badge</dt><dd>${fp.spaces.has(sel.space)?'<span class="ok">Inside footprint</span>':'<span class="note">Outside footprint</span>'}</dd></dl></div>`;}
+      <dt>Entry</dt><dd>${doorsIn.length?`Reader: ${doorsIn.join(', ')}`:'No reader of its own'}${links.length?`<br>Open passage to ${links.join(', ')}`:''}</dd>
+      <dt>Badge</dt><dd>${fp.spaces.has(sel.space)?`<span class="ok">Inside footprint</span>, reached through ${via.join(', ')}${doorsIn.some(n=>via.includes(n))?'':' and open passages'}`:'<span class="note">Outside footprint</span>: no granted door leads here'}</dd></dl></div>`;}
   $('inspect').innerHTML=h;
   if($('flagBtn'))$('flagBtn').onclick=()=>{t.flagged=!t.flagged;renderInspect();};}
 
@@ -391,7 +402,7 @@ function buildWalk(){const sc=SC(),t=T(),r=routeOf(t),actor=actorOf(t),from=(r&&
   return{res,pts,i:0,running:true,routeId:r?r.id:null};}
 function startWalk(){if(timer)return;const t=T(),h0=document.documentElement.scrollHeight,y0=scrollY;lens=false;pane='badge';t.walk=buildWalk();level=1;render();document.body.style.minHeight=h0+'px';scrollTo(0,y0);
   const tick=()=>{const w=t.walk;if(w.i>=w.pts.length-1){w.running=false;timer=null;render();return;}
-    w.i++;level=w.pts[w.i].l;drawMap();timer=setTimeout(tick,RM?60:340);};timer=setTimeout(tick,RM?60:300);}
+    w.i++;level=w.pts[w.i].l;drawMap();timer=setTimeout(tick,RM?40:170);};timer=setTimeout(tick,RM?40:150);}
 
 /* ---------- grading (uses the same evaluator; no case branches in access logic) ---------- */
 function grade(){const sc=SC(),t=T(),res=E.walk(t.world,t.person,sc.start,sc.targets,sc.time),extra=E.outOfScope(t.world,t.person).map(d=>E.DOORS[d].n);

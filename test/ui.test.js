@@ -230,6 +230,23 @@ const tests = {
     await pg.click('[data-q="jordan"]'); await pg.click('[data-rec="WO-1873"]');
     const done = await pg.locator('#flow li.done').allInnerTexts(); assert(done.some(x => /Investigate/i.test(x)), JSON.stringify(done));
   },
+  async 'footprint reads as doors plus connected areas: grouped text, room entry explained, walk completion shown'(pg) {
+    await pg.click('[data-g="education"]');
+    const b = await text(pg, '#badge'); assert(/Opens 3 doors/.test(b) && /public: West gallery, Kelp Hall/.test(b) && !/restricted:/.test(b), b);
+    await pg.click('#lensBtn'); await clickMap(pg, 150, 70);
+    const i = await text(pg, '#inspect'); assert(/Kelp Hall/.test(i) && /No reader of its own/.test(i) && /Open passage to West gallery/.test(i) && /reached through Staff–gallery connector and open passages/.test(i), i);
+    await pg.click('#lensBtn'); await pg.click('[data-g="allStaff"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Walk complete: reached every stop/.test(document.getElementById('mapnote').textContent), null, { timeout: 15000 });
+    assert.equal(await pg.getAttribute('#mapnote', 'class'), 'walkdone ok');
+  },
+  async 'Jordan: distractor reasons are plausible misconceptions'(pg) {
+    await pg.click('[data-q="jordan"]'); const b = await text(pg, '#badge');
+    assert(/No problems have been reported with this badge/.test(b) && !/The credential still works/.test(b));
+  },
+  async 'STAFF ENTRANCE label starts right of its door marker'(pg) {
+    const r = await pg.evaluate(() => { const t = [...document.querySelectorAll('#map text')].find(e => e.textContent === 'STAFF ENTRANCE'); return t.getBBox().x; });
+    assert(r >= 40, 'label x ' + r);
+  },
   async 'Elena: closing needs a verifying walk; a later badge change invalidates it'(pg) {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
     assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'refused before walking');
