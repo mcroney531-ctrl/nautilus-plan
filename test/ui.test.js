@@ -134,6 +134,20 @@ const tests = {
       await ctx.close();
     }
   },
+  async 'phone: the L2 lit dot does not wrap the toolbar, and the pinned-map offset matches the card (iPhone SE, every ticket)'(pg, b) {
+    const ctx = await b.newContext(devices['iPhone SE']), m = await ctx.newPage(), heads = []; await m.goto(url);
+    for (const q of ['elena', 'marcus', 'jordan', 'daniel']) {
+      await m.click(`[data-q="${q}"]`);
+      const r = await m.evaluate(() => ({ l1: document.getElementById('lv1').offsetHeight, l2: document.getElementById('lv2').offsetHeight, dot: !!document.querySelector('#lv2 .litdot'),
+        head: document.querySelector('#mapcard .maphead').offsetHeight,
+        stick: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stick')), card: document.getElementById('mapcard').offsetHeight + 12,
+        overflow: document.documentElement.scrollWidth - innerWidth }));
+      assert(r.l2 === r.l1 && r.stick === r.card && r.overflow <= 0, `${q} ${JSON.stringify(r)}`);
+      heads.push(r.head);
+    }
+    assert(heads.every(h => h === heads[0]), 'toolbar height is the same with and without the L2 dot: ' + heads);
+    await ctx.close();
+  },
   async 'Daniel: nothing before inspection names the fault or the repair'(pg) {
     await pg.click('[data-q="daniel"]'); await pg.click('[data-rec="Facilities procedures"]');
     const v = await text(pg, '#ticket') + ' ' + await text(pg, '#badge');

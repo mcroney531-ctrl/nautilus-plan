@@ -1,6 +1,6 @@
 # Nautilus Access Desk: session handoff
 
-**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Marcus, Jordan, Daniel). 26 engine tests + 44 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
+**As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Marcus, Jordan, Daniel). 26 engine tests + 45 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
 
 ---
 
@@ -147,7 +147,7 @@ Live: https://mcroney531-ctrl.github.io/nautilus-plan/ (push straight to main; R
 1. **Real-device phone check**, then a first-time-learner walkthrough of all four scenarios (does the learner know what they're doing, discover problems naturally, understand consequences).
 2. **Scaffolding:** guided prompts for Elena, a post-failure inspect prompt for Marcus (none for Jordan/Daniel). Shift framing: supervisor intro and end-of-shift summary.
 3. **Map polish:** "W CORE" / "STAFF ENTRANCE" labels collide with door dots; lens caption can overlap labels; first change from an empty badge outlines everything in gold; desktop map is very large (cap it).
-4. **Pre-existing test failure (found Oct 28, not fixed; functional freeze):** `phone: controls scrolled into view are not hidden under the pinned map`, iPhone SE, Jordan (and Marcus). Root cause: `drawMap()` sets `--stick` (the scroll-padding for the pinned map) *before* it rewrites the L2 button. On a 320px screen, when L2 has lit areas (Marcus, Jordan) the L2 button's lit dot wraps it onto two lines (33px → 48px), so the toolbar grows 15px after the measurement. Two defects: (a) controls scrolled into view (focus, scrollIntoView) land up to 15px under the map, partly covered but still tappable; (b) the L2 button visibly wraps on 320px phones. Font-dependent, so it may not reproduce on Rone's devices. Fixes: move the `--stick` line to the end of `drawMap()`, and keep the L2 label and dot on one line (`white-space:nowrap`).
+4. **iPhone SE pinned-map defect: FIXED Oct 28 (authorized exception to the freeze).** The L2 lit dot wrapped the L2 button on 320px phones, and `--stick` was measured before the toolbar was redrawn, so scrolled-to controls landed up to 15px under the map. `--stick` is now measured last in `drawMap()`, and the phone toolbar buttons don't wrap. Regression test checks toolbar height, the `--stick` offset and horizontal overflow on iPhone SE for all four tickets.
 5. **Tests:** touch-target test uses SVG width, not the rendered scale under the 32vh cap; make browser tests mandatory in CI once CI exists.
 6. **Jordan:** no credential expiry date, only Deactivate / remove group.
 7. **Later:** real map art, avatars, ambient visuals per brand, case-study write-up using the Mock Lab as process evidence.

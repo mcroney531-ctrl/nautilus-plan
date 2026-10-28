@@ -42,7 +42,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
 .rec b{color:var(--ink)}
 .maphead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:12px 12px 10px}
 .seg{display:inline-flex;gap:3px;padding:3px;border-radius:9px;background:#051d29;border:1px solid #2b5462}
-.seg button{border:0;background:transparent;color:var(--ink);border-radius:7px;padding:8px 10px;font:600 12px var(--f-body);cursor:pointer}
+.seg button{border:0;background:transparent;color:var(--ink);border-radius:7px;padding:8px 10px;font:600 12px var(--f-body);cursor:pointer;white-space:nowrap}
 .seg button[aria-pressed="true"]{background:#2b7182}
 .btn{border:1px solid #3a7281;background:#173f4f;color:var(--ink);border-radius:9px;padding:9px 12px;font:650 13px var(--f-body);cursor:pointer}
 .btn:hover{background:#215366}
@@ -145,7 +145,7 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
 }
 @media (max-width:360px){
   #mapcard .maphead{flex-wrap:nowrap;gap:4px;padding:8px}#mapcard .row2{gap:4px;flex-wrap:nowrap}
-  #mapcard .seg button{padding:9px 8px}#mapcard .btn{padding:9px 8px}#sizeBtn{min-width:34px}
+  #mapcard .seg button{padding:9px 8px}#mapcard .btn{padding:9px 8px;white-space:nowrap}#mapcard .litdot{margin-left:4px}#sizeBtn{min-width:34px}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 @keyframes pulse{0%{opacity:.25}50%{opacity:.9}100%{opacity:.25}}
@@ -274,7 +274,6 @@ function drawMap(){
   if(!lens&&!timer)document.body.style.minHeight='';
   $('map').innerHTML=s;$('map').style.touchAction=lens?'none':'pan-y';
   document.body.dataset.pane=lens?'inspect':'badge';
-  const mc=$('mapcard');document.documentElement.style.setProperty('--stick',(getComputedStyle(mc).position==='sticky'?mc.offsetHeight+12:0)+'px');
   const l2lit=[...E.footprint(T().world,T().person).spaces].some(k=>E.SPACES[k].l===2)||(T().delta&&T().showDelta&&T().delta.addedSpaces.some(k=>E.SPACES[k].l===2));
   $('lv2').innerHTML=`<span class="lvn">Topside · </span>L2${l2lit&&level!==2?'<i class="litdot"></i>':''}`;$('lv2').setAttribute('aria-label',`Topside, level 2${l2lit?', has lit areas':''}`);
   $('sizeBtn').textContent=compact?'▾':'▴';$('sizeBtn').setAttribute('aria-pressed',compact);$('sizeBtn').setAttribute('aria-label',compact?'Expand map':'Collapse map');$('sizeBtn').title=compact?'Expand map':'Collapse map';
@@ -283,7 +282,9 @@ function drawMap(){
   if(compact)drawMini();
   const done=w&&!w.running&&!lens,stop=done&&w.res.stop;
   $('mapnote').className=done?(stop?'walkdone bad':'walkdone ok'):'';
-  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.':w&&w.running?'Walking…':done?(stop?`Walk stopped at ${E.DOORS[stop.door]?E.DOORS[stop.door].n:'a door'}.`:'Walk complete: reached every stop.'):'Lit: granted · dotted: public, joined by open passages · striped: restricted.'+(level===2?' Topside sits above the galleries.':'');}
+  $('mapnote').textContent=lens?'Drag the lens or tap a door or room to inspect it.':w&&w.running?'Walking…':done?(stop?`Walk stopped at ${E.DOORS[stop.door]?E.DOORS[stop.door].n:'a door'}.`:'Walk complete: reached every stop.'):'Lit: granted · dotted: public, joined by open passages · striped: restricted.'+(level===2?' Topside sits above the galleries.':'');
+  /* measure last: the toolbar, clock and note above can change the pinned card's height */
+  const mc=$('mapcard');document.documentElement.style.setProperty('--stick',(getComputedStyle(mc).position==='sticky'?mc.offsetHeight+12:0)+'px');}
 
 /* ---------- panels ---------- */
 function renderQueue(){
