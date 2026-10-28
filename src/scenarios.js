@@ -1,11 +1,11 @@
 /* Tickets: people, requests in their own voice, and the records that carry authority. */
 const SCENARIOS = {
   elena: {
-    tab: 'Elena', kind: 'Issue', verify: true, closeAction: 'Issue badge', record: 'issue',
+    tab: 'Elena', kind: 'Issue', verify: true, closeAction: 'Issue badge', record: 'issue', recordArt: 'issue_v1',
     principle: 'Least privilege: grant what the work needs, and check everything the badge lights, on both levels.',
     coach: { review: 'Read what Elena needs and when. Her approved record is WA-1041.', configure: 'Choose groups that cover her rooms and nothing else. Check the lit footprint on both levels.', verify: 'Walk Elena in to check the badge works from her side.', close: 'Issue the badge.' },
     compare: { groups: ['exhibitOps'], label: 'the standard onboarding template (Exhibit Operations)' }, time: 7.25, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['kelp', 'touch', 'classroom'],
-    person: { id: 'elena', name: 'Elena Park', initials: 'EP', role: 'Marine educator · starts Tuesday',
+    person: { id: 'elena', name: 'Elena Park', initials: 'EP', role: 'Marine educator · starts Tuesday', title: 'Marine Educator', department: 'Education',
       credential: { active: true, groups: [], exceptions: [] },
       authorizations: [{ id: 'WA-1041', status: 'approved', purpose: 'Education program staff', approver: 'J. Okoye, Education Manager',
         doors: ['D-WSE', 'D-WGC', 'D-LSG', 'D-CLS'], places: 'West Staff Entrance, galleries (pre-open), Living Shore, Classroom', window: 'Daily 06:30–18:00' }] },

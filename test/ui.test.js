@@ -154,6 +154,10 @@ const tests = {
     await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
     await pg.click('#closeBtn'); const r = await text(pg, '.record');
     assert(/Credential issued/.test(r) && /Issued/.test(r) && /Verified/.test(r) && /West Staff Entrance/.test(r) && /Least privilege/.test(r), r);
+    const slots = await pg.$$eval('.record .art .slot', s => s.map(x => x.textContent));
+    assert.deepEqual(slots.slice(0, 5), ['Elena Park', 'Marine Educator', 'Education', 'WA-1041', 'All Staff, Education'], 'issuance art carries live record values');
+    assert(/Walk test passed/.test(slots[6]) && /Hours: All Staff/.test(slots[7]), slots.join(' | '));
+    assert(await pg.$eval('.record .art img', i => i.complete && i.naturalWidth === 1025 && /fictional/.test(i.alt)), 'art loads with an alt text');
     assert.equal(await pg.locator('#flow li.done').count(), 4, 'all four landmarks done after closing');
     await pg.click('#compareBtn'); const rv = await text(pg, '#review');
     assert(/Comparison/.test(rv) && /Quarantine/.test(rv) && /Topside/.test(rv), rv);
