@@ -148,6 +148,15 @@ const tests = {
     assert(heads.every(h => h === heads[0]), 'toolbar height is the same with and without the L2 dot: ' + heads);
     await ctx.close();
   },
+  async 'Elena: the scanner plays out on its own, and reduced motion goes straight to the record'(pg, b) {
+    const walkClose = async m => { await m.click('[data-g="allStaff"]'); await m.click('[data-g="education"]'); await m.click('#walkBtn');
+      await m.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 }); await m.click('#closeBtn'); };
+    await walkClose(pg); await pg.waitForFunction(() => !document.querySelector('#artDlg .moment.scan'), null, { timeout: 3000 });
+    assert.equal(await pg.evaluate(() => document.activeElement.id), 'momentOk');
+    const ctx = await b.newContext({ reducedMotion: 'reduce' }), m = await ctx.newPage(); await m.goto(url); await walkClose(m);
+    assert(await m.$eval('#artDlg', d => d.open && !d.querySelector('.scanner')), 'reduced motion: no scanner');
+    assert.equal(await m.evaluate(() => document.activeElement.id), 'momentOk'); await ctx.close();
+  },
   async 'Daniel: nothing before inspection names the fault or the repair'(pg) {
     await pg.click('[data-q="daniel"]'); await pg.click('[data-rec="Facilities procedures"]');
     const v = await text(pg, '#ticket') + ' ' + await text(pg, '#badge');
@@ -168,9 +177,16 @@ const tests = {
     await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
     await pg.click('#closeBtn');
     assert(await pg.$eval('#artDlg', d => d.open), 'issuing opens the record moment');
-    assert.equal(await pg.evaluate(() => document.activeElement.id), 'momentOk', 'focus starts on the way to the details');
+    assert(await pg.$eval('#artDlg .moment', m => m.classList.contains('scan')), 'issuing starts with the scanner');
+    const sc = await text(pg, '#artDlg .scanner');
+    assert(/Issuing credential · Elena Park/.test(sc) && /Marine Educator/.test(sc) && /STAFF/.test(sc) && /Assigned groups · All Staff \+ Education/.test(sc), sc);
+    await pg.mouse.click(20, 20);
+    assert(await pg.$eval('#artDlg', d => d.open && !d.querySelector('.moment').classList.contains('scan')), 'a tap during the scan advances to the record without closing');
+    assert.equal(await pg.evaluate(() => document.activeElement.id), 'momentOk', 'focus moves to the way to the details');
     await pg.click('#momentOk'); assert(!(await pg.$eval('#artDlg', d => d.open)));
     assert.equal(await pg.evaluate(() => document.activeElement.textContent), 'Record details', 'closing the moment lands on the readable record');
+    await pg.click('#artBtn'); assert(await pg.$eval('#artDlg', d => d.open && !d.querySelector('.scanner')), 'reopening the record does not replay the scanner');
+    await pg.keyboard.press('Escape');
     const r = await text(pg, '.record');
     assert(/Credential issued/.test(r) && /Issued/.test(r) && /Verified/.test(r) && /West Staff Entrance/.test(r) && /Least privilege/.test(r), r);
     const slots = await pg.$$eval('.record .art .slot', s => s.map(x => x.textContent));
@@ -303,7 +319,7 @@ const tests = {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
     assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'refused before walking');
     await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
-    await pg.click('#closeBtn'); await pg.keyboard.press('Escape'); assert(/Ticket closed/.test(await text(pg, '.result')), 'closes after a successful walk');
+    await pg.click('#closeBtn'); await pg.keyboard.press('Escape'); await pg.keyboard.press('Escape'); assert(/Ticket closed/.test(await text(pg, '.result')), 'closes after a successful walk');
     await pg.click('[data-g="exhibitOps"]'); await pg.click('[data-g="exhibitOps"]'); await pg.click('#closeBtn');
     assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'a change after verification needs a new walk');
   },

@@ -133,7 +133,31 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
 @keyframes recIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
 #artDlg{padding:0;border:0;background:transparent;overflow:visible;width:min(94vw,1025px,calc((100dvh - 96px) * .667));max-width:none;max-height:none}
 #artDlg::backdrop{background:#020c12e6}
-#artDlg .moment{display:grid;gap:12px;animation:recIn .7s ease-out both}#artDlg .btn{justify-self:center}
+#artDlg .moment{display:grid;animation:recIn .5s ease-out both}#artDlg .moment>*{grid-area:1/1}
+#artDlg .recview{display:grid;gap:12px;transition:opacity .4s}#artDlg .recview .btn{justify-self:center}
+/* scanner: badge art + live text, pad and light built in CSS; the whole layer cross-fades into the record */
+.scanner{align-self:center;display:grid;justify-items:center;gap:12px;transition:opacity .4s;pointer-events:none}
+.moment.scan .recview{opacity:0;visibility:hidden}.moment:not(.scan) .scanner{opacity:0;visibility:hidden}
+.moment.scan{cursor:pointer}
+.scap{font:700 11px/1.3 var(--f-body);letter-spacing:.16em;text-transform:uppercase;color:#8acbd2;text-align:center;min-height:2.6em;display:grid;align-items:end}
+.scap .s2,.lit .scap .s1{display:none}.lit .scap .s2{display:inline}
+.spad{position:relative;width:100%;aspect-ratio:1/1.12;border-radius:28px;background:linear-gradient(160deg,#1b3442,#0a1a23 60%);box-shadow:inset 0 2px 0 #ffffff22,inset 0 -8px 20px #0008,0 24px 50px #000a;display:grid;place-items:center}
+.well{position:absolute;inset:7%;border-radius:20px;background:#06121a;border:2px solid #5fe0e6aa;box-shadow:inset 0 6px 18px #000c,0 0 22px #5fe0e688;transition:border-color .3s,box-shadow .3s}
+.lit .well{border-color:#7ef0c0;box-shadow:inset 0 6px 18px #000c,0 0 24px #7ef0c099,inset 0 0 30px #7ef0c044}
+.led{position:absolute;top:2.6%;right:9%;width:10px;height:10px;border-radius:50%;background:#5fe0e6;box-shadow:0 0 10px #5fe0e6}.lit .led{background:#7ef0c0;box-shadow:0 0 12px #7ef0c0}
+.cbadge{position:relative;width:62%;container-type:inline-size;-webkit-text-size-adjust:none;text-size-adjust:none;filter:drop-shadow(0 12px 18px #000b);animation:badgeIn .3s ease-out both}
+.cbadge img{display:block;width:100%;height:auto}
+.cbadge .ph{position:absolute;left:31.6%;top:22.2%;width:36.5%;height:26.9%;border-radius:2.4cqw;background-repeat:no-repeat}
+.cbadge .f{position:absolute;left:19.3%;background:#e4e7eb;border-radius:1cqw;display:flex;align-items:center;padding-left:1.5cqw;color:#0b2f55;font-weight:700;white-space:nowrap;overflow:hidden;font-family:var(--f-body)}
+.cbadge .n{top:53.1%;height:5.6%;width:63%;font-size:6.2cqw}.cbadge .r{top:61%;height:5%;width:51%;font-size:5cqw;font-weight:600}.cbadge .d{top:68.1%;height:5%;width:63%;font-size:5cqw;font-weight:600}
+.cbadge .t{left:70.6%;top:78%;width:20.5%;height:4.2%;padding-left:2cqw;font-size:3.8cqw;font-weight:800;letter-spacing:.08em;border-radius:0}
+.sline{position:absolute;left:-6%;right:-6%;top:0;height:3px;background:#bff8ff;box-shadow:0 0 10px 3px #5fe0e6,0 0 34px 10px #5fe0e688;border-radius:3px;opacity:0;animation:sweep .7s .3s ease-in-out both}
+.sline::after{content:"";position:absolute;left:0;right:0;bottom:3px;height:60px;background:linear-gradient(0deg,#5fe0e633,transparent)}
+.lit .sline{animation:none;opacity:0}
+.schip{border:1px solid #7ef0c0;color:#c9fbe6;border-radius:20px;padding:7px 14px;font:650 13px/1.3 var(--f-body);background:#0b2a2a;text-align:center;visibility:hidden}.lit .schip{visibility:visible}
+.sskip{position:fixed;right:14px;top:12px;z-index:2}.moment:not(.scan) .sskip{display:none}
+@keyframes sweep{0%{top:2%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:98%;opacity:0}}
+@keyframes badgeIn{from{opacity:0;transform:translateY(-24px) scale(1.04)}to{opacity:1;transform:none}}
 #sizeBtn,.mini{display:none}
 @media (max-width:860px) and (orientation:portrait){
   #sizeBtn{display:inline-flex;align-items:center;justify-content:center;min-width:40px;padding:9px 0}
@@ -341,7 +365,7 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{if(timer)return;t.disp=t.disp===b.dataset.dp?null:b.dataset.dp;t.result=null;render();});
   document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>change(()=>{c.active=!c.active;},()=>c.active?'Reactivated the badge':'Deactivated the badge'));
   document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>change(()=>{const e=sc.groupScheduleEdit;t.world.groupOverrides[e.group]?delete t.world.groupOverrides[e.group]:t.world.groupOverrides[e.group]=e.to;},()=>{const e=sc.groupScheduleEdit,G=E.GROUPS[e.group],h=E.groupHours(t.world,e.group);return `${t.world.groupOverrides[e.group]?'Changed':'Restored'} ${G.n} group hours to ${E.fmt(h[0])}–${E.fmt(h[1])} (all ${G.members} badges)`;}));
-  $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();t.record=finalized(t)?buildRecord(sc,t):null;render();if(hasArt(sc,t))showMoment(sc,t.record);};
+  $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();t.record=finalized(t)?buildRecord(sc,t):null;render();if(hasArt(sc,t))showMoment(sc,t.record,true);};
   if($('artBtn'))$('artBtn').onclick=()=>showMoment(sc,t.record);
   if($('compareBtn'))$('compareBtn').onclick=()=>{if(timer)return;const tp=E.clone(t.person);tp.credential.groups=[...sc.compare.groups];tp.credential.exceptions=[];
     t.delta=E.delta(E.footprint(t.world,t.person),E.footprint(t.world,tp));t.tdelta=null;t.still=null;t.showDelta=true;
@@ -363,7 +387,7 @@ function renderFlow(){const sc=SC(),t=T(),s=steps(sc,t),now=s.findIndex(x=>!x[2]
 /* ---------- completion record: one data structure, presentation can be swapped for designed artwork later ---------- */
 function buildRecord(sc,t){const c=t.person.credential,p=sc.person,fp=E.footprint(t.world,t.person),doors=[...fp.doors].map(d=>E.DOORS[d].n),r=routeOf(t),res=t.result;
   const auths=p.authorizations.map(a=>a.id).join(', '),when=`${sc.day} ${E.fmt(sc.time)}`;
-  const rec={kind:sc.record,ref:auths,person:{name:p.name,role:p.role,initials:p.initials,title:p.title,department:p.department},outcome:res.cls,fields:[]};
+  const rec={kind:sc.record,ref:auths,person:{name:p.name,role:p.role,initials:p.initials,title:p.title,department:p.department,credentialType:p.credentialType},outcome:res.cls,fields:[]};
   if(sc.record==='issue'){rec.title='Credential issued';rec.status=res.cls==='good'?'Issued':'Issued · review';
     rec.fields=[['Groups',c.groups.map(g=>E.GROUPS[g].n).join(', ')||'None'],['Opens',doors.join(', ')||'None'],['Hours',c.groups.map(g=>{const h=E.groupHours(t.world,g);return `${E.GROUPS[g].n} ${E.fmt(h[0])}–${E.fmt(h[1])}`;}).join(' · ')],['Authorization',auths],['Verified',`Walk test passed, ${when}`]];}
   else if(sc.record==='update'){rec.title='Access updated';rec.status=res.cls==='good'?'Temporary access':'Group change';
@@ -376,6 +400,7 @@ function buildRecord(sc,t){const c=t.person.credential,p=sc.person,fp=E.footprin
   return rec;}
 /* ---------- record artwork: fixed designed art, live text laid over measured slots (px in the art's own size) ---------- */
 const ART={issue_v1:{src:'__ART:record_issue_v1.webp__',w:1025,h:1536,x:113,sw:528,sh:35,
+  badge:'__ART:badge_front_v1.webp__',portrait:[688,372,302,364],
   alt:'Credential issuance simulation record, fictional training design. The record details follow as text.',
   slots:[[486,r=>r.person.name],[565,r=>r.person.title],[644,r=>r.person.department],[726,r=>val(r,'Authorization')],[808,r=>val(r,'Groups')],
     [892,r=>val(r,'Opens')],[986,r=>val(r,'Verified')],[1067,r=>'Hours: '+val(r,'Hours')]]}};
@@ -384,10 +409,25 @@ const hasArt=(sc,t)=>!!(t.record&&sc.recordArt&&ART[sc.recordArt]&&t.result.cls=
 function artHTML(sc,r){const a=ART[sc.recordArt];
   return `<div class="art"><img src="${a.src}" width="${a.w}" height="${a.h}" alt="${a.alt}"><div aria-hidden="true">${a.slots.map(([y,f])=>{const v=f(r)||'';
     return `<div class="slot${v.length>55?' long':''}" style="top:${(y/a.h*100).toFixed(2)}%;height:${(a.sh/a.h*100).toFixed(2)}%"><span>${v}</span></div>`;}).join('')}</div></div>`;}
-function showMoment(sc,r){let d=$('artDlg');if(!d){d=document.createElement('dialog');d.id='artDlg';document.body.appendChild(d);
-    d.onclick=e=>{if(e.target===d)d.close();};d.onclose=()=>{const h=document.querySelector('.record h3');if(h){h.scrollIntoView({block:'start'});h.focus({preventScroll:true});}};}
+function badgeHTML(sc,r){const a=ART[sc.recordArt],[px,py,pw,ph]=a.portrait,p=r.person;
+  const bg=`background-image:url(${a.src});background-size:${(a.w/pw*100).toFixed(2)}% auto;background-position:${(px/(a.w-pw)*100).toFixed(2)}% ${(py/(a.h-ph)*100).toFixed(2)}%`;
+  return `<div class="cbadge"><img src="${a.badge}" alt=""><div class="ph" style="${bg}"></div><div class="f n">${p.name}</div><div class="f r">${p.title}</div><div class="f d">${p.department}</div>${p.credentialType?`<div class="f t">${p.credentialType.toUpperCase()}</div>`:''}<div class="sline"></div></div>`;}
+/* the moment: scanner (≈1.8s, skippable, never on replay or reduced motion) cross-fades into the record art in one dialog */
+function showMoment(sc,r,scan){let d=$('artDlg');if(!d){d=document.createElement('dialog');d.id='artDlg';document.body.appendChild(d);
+    d.onclose=()=>{const h=document.querySelector('.record h3');if(h){h.scrollIntoView({block:'start'});h.focus({preventScroll:true});}};}
+  scan=scan&&!RM&&!!ART[sc.recordArt].badge;
   d.setAttribute('aria-label',`${r.title}: ${r.person.name}`);
-  d.innerHTML=`<div class="moment">${artHTML(sc,r)}<button class="btn primary" id="momentOk">See record details</button></div>`;$('momentOk').onclick=()=>d.close();d.showModal();$('momentOk').focus();}
+  d.innerHTML=`<div class="moment${scan?' scan':''}">${scan?`<div class="scanner" aria-hidden="true"><div class="scap"><span class="s1">Issuing credential · ${r.person.name}</span><span class="s2">Credential issued</span></div>
+      <div class="spad"><div class="well"></div><div class="led"></div>${badgeHTML(sc,r)}</div>
+      <div class="schip">Assigned groups · ${val(r,'Groups').split(', ').join(' + ')}</div></div><button class="btn sskip" id="scanSkip">Skip ›</button>`:''}
+    <div class="recview"${scan?' inert':''}>${artHTML(sc,r)}<button class="btn primary" id="momentOk">See record details</button></div></div>`;
+  const m=d.firstElementChild,timers=[];
+  const finish=()=>{if(!m.classList.contains('scan'))return;timers.forEach(clearTimeout);m.classList.remove('scan');m.querySelector('.recview').inert=false;$('momentOk').focus();};
+  d.onclick=e=>{if(m.classList.contains('scan'))finish();else if(e.target===d)d.close();};
+  d.oncancel=e=>{if(m.classList.contains('scan')){e.preventDefault();finish();}};
+  $('momentOk').onclick=e=>{e.stopPropagation();d.close();};
+  d.showModal();
+  if(scan){timers.push(setTimeout(()=>m.classList.add('lit'),1000),setTimeout(finish,1400));$('scanSkip').focus();}else $('momentOk').focus();}
 function recordHTML(sc,t){const r=t.record,res=t.result,art=hasArt(sc,t);
   const head=art?`<div class="rtop"><button class="artthumb" id="artBtn" aria-label="View the ${r.title.toLowerCase()} record artwork">${artHTML(sc,r)}</button>
       <div class="rsum"><span class="rlbl">${r.title}</span><b class="pill">${r.status}</b><b>${r.person.name}</b><span class="sub">${r.person.title} · ${r.person.department}</span></div></div>
