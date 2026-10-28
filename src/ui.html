@@ -119,16 +119,21 @@ button:focus-visible,svg:focus-visible{outline:2px solid #ffde9f;outline-offset:
 .pill{font:700 10.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:20px;padding:3px 8px;white-space:nowrap}
 .record .kv{margin:6px 0 10px;font-size:13px}.record .who{margin-bottom:4px}
 .decision{margin-top:4px}
-.art{position:relative;margin:2px 0 12px;container-type:inline-size;-webkit-text-size-adjust:none;text-size-adjust:none;border-radius:10px;overflow:hidden;box-shadow:0 10px 28px #0007;animation:recIn .7s ease-out both}
+.art{position:relative;container-type:inline-size;-webkit-text-size-adjust:none;text-size-adjust:none;border-radius:10px;overflow:hidden;box-shadow:0 10px 28px #0007}
 .art img{display:block;width:100%;height:auto}
 .art .slot{position:absolute;left:11.02%;width:51.5%;padding:0 1.2cqw;overflow:hidden;font:650 1.46cqw/3.41cqw var(--f-body);color:#0b2f55}
 .art .slot span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .art .slot.long{font-size:1.2cqw;line-height:1.6cqw;display:flex;align-items:center}.art .slot.long span{white-space:normal;max-height:3.2cqw}
-.artbtn{position:absolute;right:8px;top:8px;padding:6px 10px;font-size:12px}
-@media (max-width:600px){.artbtn{display:none}}
-@keyframes recIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
-#artDlg{padding:0;border:0;background:transparent;width:min(96vw,1025px);max-height:94vh;overflow:auto}
-#artDlg::backdrop{background:#000b}#artDlg .art{margin:0;animation:none}
+.rtop{display:grid;grid-template-columns:minmax(96px,38%) 1fr;gap:12px;align-items:start;margin-bottom:12px}
+.artthumb{padding:0;border:0;background:none;cursor:zoom-in;border-radius:10px;display:block;width:100%}
+.artthumb .art{border-radius:6px;box-shadow:0 4px 14px #0008}
+.rsum{display:grid;gap:3px;align-content:start}.rsum b{margin:0}.rsum .pill{justify-self:start;margin:2px 0 6px}.rsum span.sub{font-size:12.5px;color:var(--muted)}
+.rsum .rlbl{font:700 10.5px var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:#8acbd2}
+.record h3.eyebrow{margin:0 0 2px}
+@keyframes recIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+#artDlg{padding:0;border:0;background:transparent;overflow:visible;width:min(94vw,1025px,calc((100dvh - 96px) * .667));max-width:none;max-height:none}
+#artDlg::backdrop{background:#020c12e6}
+#artDlg .moment{display:grid;gap:12px;animation:recIn .7s ease-out both}#artDlg .btn{justify-self:center}
 #sizeBtn,.mini{display:none}
 @media (max-width:860px) and (orientation:portrait){
   #sizeBtn{display:inline-flex;align-items:center;justify-content:center;min-width:40px;padding:9px 0}
@@ -335,8 +340,8 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{if(timer)return;t.disp=t.disp===b.dataset.dp?null:b.dataset.dp;t.result=null;render();});
   document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>change(()=>{c.active=!c.active;},()=>c.active?'Reactivated the badge':'Deactivated the badge'));
   document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>change(()=>{const e=sc.groupScheduleEdit;t.world.groupOverrides[e.group]?delete t.world.groupOverrides[e.group]:t.world.groupOverrides[e.group]=e.to;},()=>{const e=sc.groupScheduleEdit,G=E.GROUPS[e.group],h=E.groupHours(t.world,e.group);return `${t.world.groupOverrides[e.group]?'Changed':'Restored'} ${G.n} group hours to ${E.fmt(h[0])}–${E.fmt(h[1])} (all ${G.members} badges)`;}));
-  $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();t.record=finalized(t)?buildRecord(sc,t):null;render();};
-  if($('artBtn'))$('artBtn').onclick=()=>showArt(artHTML(sc,t.record));
+  $('closeBtn').onclick=()=>{if(timer)return;t.result=grade();t.record=finalized(t)?buildRecord(sc,t):null;render();if(hasArt(sc,t))showMoment(sc,t.record);};
+  if($('artBtn'))$('artBtn').onclick=()=>showMoment(sc,t.record);
   if($('compareBtn'))$('compareBtn').onclick=()=>{if(timer)return;const tp=E.clone(t.person);tp.credential.groups=[...sc.compare.groups];tp.credential.exceptions=[];
     t.delta=E.delta(E.footprint(t.world,t.person),E.footprint(t.world,tp));t.tdelta=null;t.still=null;t.showDelta=true;
     const up=t.delta.addedSpaces.some(k=>E.SPACES[k].l===2);t.lastLabel=`Comparison: ${sc.compare.label} would also open these${up?' (some on Topside · L2)':''}. Your badge is unchanged.`;render();};
@@ -374,14 +379,21 @@ const ART={issue_v1:{src:'__ART:record_issue_v1.webp__',w:1025,h:1536,x:113,sw:5
   slots:[[486,r=>r.person.name],[565,r=>r.person.title],[644,r=>r.person.department],[726,r=>val(r,'Authorization')],[808,r=>val(r,'Groups')],
     [892,r=>val(r,'Opens')],[986,r=>val(r,'Verified')],[1067,r=>'Hours: '+val(r,'Hours')]]}};
 const val=(r,k)=>(r.fields.find(f=>f[0]===k)||[])[1]||'';
+const hasArt=(sc,t)=>!!(t.record&&sc.recordArt&&ART[sc.recordArt]&&t.result.cls==='good');
 function artHTML(sc,r){const a=ART[sc.recordArt];
   return `<div class="art"><img src="${a.src}" width="${a.w}" height="${a.h}" alt="${a.alt}"><div aria-hidden="true">${a.slots.map(([y,f])=>{const v=f(r)||'';
     return `<div class="slot${v.length>55?' long':''}" style="top:${(y/a.h*100).toFixed(2)}%;height:${(a.sh/a.h*100).toFixed(2)}%"><span>${v}</span></div>`;}).join('')}</div></div>`;}
-function showArt(html){let d=$('artDlg');if(!d){d=document.createElement('dialog');d.id='artDlg';d.onclick=()=>d.close();document.body.appendChild(d);}
-  d.innerHTML=html;d.setAttribute('aria-label','Issuance record, enlarged. Press Escape or tap to close.');d.showModal();}
-function recordHTML(sc,t){const r=t.record,res=t.result,art=sc.recordArt&&ART[sc.recordArt]&&res.cls==='good'?artHTML(sc,r):'';
-  return `<div class="result ${res.cls} record" data-kind="${r.kind}" style="margin-top:10px">${art?`<div style="position:relative">${art}<button class="btn artbtn" id="artBtn">Enlarge</button></div>`:''}<div class="rhead"><span>${r.title}</span><b class="pill">${r.status}</b></div>
-    <div class="who"><div class="av">${r.person.initials}</div><div><b>${r.person.name}</b><span>${r.person.title?`${r.person.title} · ${r.person.department}`:r.person.role}</span></div></div>
+function showMoment(sc,r){let d=$('artDlg');if(!d){d=document.createElement('dialog');d.id='artDlg';document.body.appendChild(d);
+    d.onclick=e=>{if(e.target===d)d.close();};d.onclose=()=>{const h=document.querySelector('.record h3');if(h){h.scrollIntoView({block:'start'});h.focus({preventScroll:true});}};}
+  d.setAttribute('aria-label',`${r.title}: ${r.person.name}`);
+  d.innerHTML=`<div class="moment">${artHTML(sc,r)}<button class="btn primary" id="momentOk">See record details</button></div>`;$('momentOk').onclick=()=>d.close();d.showModal();$('momentOk').focus();}
+function recordHTML(sc,t){const r=t.record,res=t.result,art=hasArt(sc,t);
+  const head=art?`<div class="rtop"><button class="artthumb" id="artBtn" aria-label="View the ${r.title.toLowerCase()} record artwork">${artHTML(sc,r)}</button>
+      <div class="rsum"><span class="rlbl">${r.title}</span><b class="pill">${r.status}</b><b>${r.person.name}</b><span class="sub">${r.person.title} · ${r.person.department}</span></div></div>
+    <h3 class="eyebrow" tabindex="-1">Record details</h3>`
+    :`<div class="rhead"><span>${r.title}</span><b class="pill">${r.status}</b></div>
+    <div class="who"><div class="av">${r.person.initials}</div><div><b>${r.person.name}</b><span>${r.person.role}</span></div></div>`;
+  return `<div class="result ${res.cls} record" data-kind="${r.kind}" style="margin-top:10px">${head}
     <dl class="kv">${r.fields.map(f=>`<dt>${f[0]}</dt><dd>${f[1]}</dd>`).join('')}</dl>
     <b>${res.title}</b>${res.text}${sc.principle?`<p class="note" style="margin:8px 0 0">${sc.principle}</p>`:''}
     ${sc.compare&&res.cls==='good'?`<div class="row2" style="margin-top:8px"><button class="btn" id="compareBtn">Compare with ${sc.compare.label.replace(/ \(.*\)/,'')}</button></div>`:''}</div>`;}

@@ -152,7 +152,12 @@ const tests = {
     assert(/Opens 4 doors/.test(await text(pg, '#badge')) && /Walk Elena in first/.test(await text(pg, '#badge')));
     assert.equal((await text(pg, '#closeBtn')), 'Issue badge');
     await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
-    await pg.click('#closeBtn'); const r = await text(pg, '.record');
+    await pg.click('#closeBtn');
+    assert(await pg.$eval('#artDlg', d => d.open), 'issuing opens the record moment');
+    assert.equal(await pg.evaluate(() => document.activeElement.id), 'momentOk', 'focus starts on the way to the details');
+    await pg.click('#momentOk'); assert(!(await pg.$eval('#artDlg', d => d.open)));
+    assert.equal(await pg.evaluate(() => document.activeElement.textContent), 'Record details', 'closing the moment lands on the readable record');
+    const r = await text(pg, '.record');
     assert(/Credential issued/.test(r) && /Issued/.test(r) && /Verified/.test(r) && /West Staff Entrance/.test(r) && /Least privilege/.test(r), r);
     const slots = await pg.$$eval('.record .art .slot', s => s.map(x => x.textContent));
     assert.deepEqual(slots.slice(0, 5), ['Elena Park', 'Marine Educator', 'Education', 'WA-1041', 'All Staff, Education'], 'issuance art carries live record values');
@@ -188,7 +193,7 @@ const tests = {
   async 'end-of-shift summary appears once all four tickets are closed'(pg) {
     assert(!(await pg.isVisible('#shift')));
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#walkBtn');
-    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 }); await pg.click('#closeBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 }); await pg.click('#closeBtn'); await pg.click('#momentOk');
     await pg.click('[data-q="marcus"]'); await pg.click('[data-x]'); await pg.click('#walkBtn');
     await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 }); await pg.click('#closeBtn');
     await pg.click('[data-q="jordan"]'); await pg.click('[data-rv]'); await pg.click('[data-dp="ended"]'); await pg.click('#closeBtn');
@@ -284,7 +289,7 @@ const tests = {
     await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#closeBtn');
     assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'refused before walking');
     await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
-    await pg.click('#closeBtn'); assert(/Ticket closed/.test(await text(pg, '.result')), 'closes after a successful walk');
+    await pg.click('#closeBtn'); await pg.keyboard.press('Escape'); assert(/Ticket closed/.test(await text(pg, '.result')), 'closes after a successful walk');
     await pg.click('[data-g="exhibitOps"]'); await pg.click('[data-g="exhibitOps"]'); await pg.click('#closeBtn');
     assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'a change after verification needs a new walk');
   },
