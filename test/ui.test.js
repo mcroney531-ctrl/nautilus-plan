@@ -10,26 +10,26 @@ const tests = {
     await pg.click('#lv2'); await clickMap(pg, 97, 122);
     assert(/Turn on Inspect/.test(await text(pg, '#inspect')));
   },
-  async 'Jordan: early close does not name the cause'(pg) {
+  async 'Jordyn: early close does not name the cause'(pg) {
     await pg.click('[data-q="jordan"]'); await pg.click('#closeBtn');
     const r = await text(pg, '.result'); assert(/Review incomplete/.test(r) && !/WO-1873|ended/.test(r), r);
   },
-  async 'Jordan: ticket is a routine assignment; the account note is discoverable'(pg) {
+  async 'Jordyn: ticket is a routine assignment; the account note is discoverable'(pg) {
     await pg.click('[data-q="jordan"]');
     assert(!/follow-up/.test(await text(pg, '#ticket .msg')));
     await pg.click('[data-rec="Account history"]'); assert(/follow-up work/.test(await text(pg, '#ticket')));
   },
-  async 'Jordan: lens shows ended record neutrally, no verdict'(pg) {
+  async 'Jordyn: lens shows ended record neutrally, no verdict'(pg) {
     await pg.click('[data-q="jordan"]'); await pg.click('#lensBtn'); await pg.click('#lv2'); await clickMap(pg, 97, 122);
     const i = await text(pg, '#inspect'); assert(/WO-1873 · ended 2026-07-20/.test(i) && !/No active record/.test(i), i);
   },
-  async 'Jordan: audit needs deactivation and a matching reason'(pg) {
+  async 'Jordyn: audit needs deactivation and a matching reason'(pg) {
     await pg.click('[data-q="jordan"]'); await pg.click('[data-rv]'); await pg.click('#closeBtn');
     assert(/Record a reason/.test(await text(pg, '.result')));
     await pg.click('[data-dp="followup"]'); await pg.click('#closeBtn'); assert(/does not match/.test(await text(pg, '.result')));
     await pg.click('[data-dp="ended"]'); await pg.click('#closeBtn'); assert(/Ticket closed/.test(await text(pg, '.result')));
   },
-  async 'Jordan: the walk before the fix succeeds'(pg) {
+  async 'Jordyn: the walk before the fix succeeds'(pg) {
     await pg.click('[data-q="jordan"]'); await pg.click('#walkBtn');
     await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 15000 });
   },
@@ -121,7 +121,7 @@ const tests = {
       await ctx.close(); assert(r.length === 4 && r.every(x => x[1]), dev + ' ' + JSON.stringify(r));
     }
   },
-  async 'phone: controls scrolled into view are not hidden under the pinned map (Jordan, two sizes)'(pg, b) {
+  async 'phone: controls scrolled into view are not hidden under the pinned map (Jordyn, two sizes)'(pg, b) {
     for (const dev of ['Pixel 7', 'iPhone SE']) {
       const ctx = await b.newContext(devices[dev]), m = await ctx.newPage(); await m.goto(url); await m.click('[data-q="jordan"]');
       for (const sel of ['[data-dp="works"]', '[data-rv]', '#review']) {
@@ -204,7 +204,7 @@ const tests = {
     await pg.click('#walkBtn'); await pg.waitForFunction(() => /didn't open/.test(document.getElementById('review').textContent), null, { timeout: 15000 });
     assert(/Inspect that door/.test(await text(pg, '#flow')));
   },
-  async 'Jordan: ticket shows dates without a verdict; removing groups alone is partial offboarding'(pg) {
+  async 'Jordyn: ticket shows dates without a verdict; removing groups alone is partial offboarding'(pg) {
     await pg.click('[data-q="jordan"]'); await pg.click('[data-rec="WO-1873"]');
     assert(!/Ended/.test(await text(pg, '#ticket')) && /Jul 20, 2026/.test(await text(pg, '#ticket')));
     await pg.click('[data-g="tempExhibitAV"]'); await pg.click('[data-dp="ended"]');
@@ -265,7 +265,7 @@ const tests = {
     assert.equal(await pg.locator('.record').count(), 1); assert.equal(await pg.locator('#flow li.done').count(), 4, 'Record landmark done for a finalized wait');
     assert.equal(await pg.locator('[data-q="daniel"] .dot.done').count(), 1); assert.equal(await pg.locator('[data-q="elena"] .dot.done').count(), 0);
   },
-  async 'Jordan: reading the records counts as investigating, no lens needed'(pg) {
+  async 'Jordyn: reading the records counts as investigating, no lens needed'(pg) {
     await pg.click('[data-q="jordan"]'); await pg.click('[data-rec="WO-1873"]');
     const done = await pg.locator('#flow li.done').allInnerTexts(); assert(done.some(x => /Investigate/i.test(x)), JSON.stringify(done));
   },
@@ -278,7 +278,7 @@ const tests = {
     await pg.waitForFunction(() => /Walk complete: reached every stop/.test(document.getElementById('mapnote').textContent), null, { timeout: 15000 });
     assert.equal(await pg.getAttribute('#mapnote', 'class'), 'walkdone ok');
   },
-  async 'Jordan: distractor reasons are plausible misconceptions'(pg) {
+  async 'Jordyn: distractor reasons are plausible misconceptions'(pg) {
     await pg.click('[data-q="jordan"]'); const b = await text(pg, '#badge');
     assert(/No problems have been reported with this badge/.test(b) && !/The credential still works/.test(b));
   },
@@ -329,7 +329,7 @@ const tests = {
     await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
     await pg.click('#closeBtn'); assert(/Ticket closed/.test(await text(pg, '.result')));
   },
-  async 'Jordan is not forced to walk (audit)'(pg) {
+  async 'Jordyn is not forced to walk (audit)'(pg) {
     await pg.click('[data-q="jordan"]'); await pg.click('[data-rv]'); await pg.click('[data-dp="ended"]'); await pg.click('#closeBtn');
     assert(/Ticket closed/.test(await text(pg, '.result')));
   },

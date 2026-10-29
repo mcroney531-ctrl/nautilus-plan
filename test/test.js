@@ -61,7 +61,7 @@ t('hardware fault denies even with a valid grant', () => {
   const p = P('marcus'), w = world(S.marcus); w.doorStatus['D-DOCK'] = 'fault';
   assert.equal(E.canEnter(w, p, 'D-DOCK', 9).code, 'HARDWARE_FAULT');
 });
-t('audit: active credential with expired authorization is out of scope (Jordan fixture)', () => {
+t('audit: active credential with expired authorization is out of scope (Jordyn fixture)', () => {
   const w = { day: 'Tue', date: '2026-10-27', doorStatus: {}, groupOverrides: {} };
   const jordan = { credential: { active: true, groups: ['exhibitOps'], exceptions: [] },
     authorizations: [{ id: 'WO-1873', status: 'approved', ends: '2026-07-20', doors: ['D-WSE', 'D-WC1', 'D-WM', 'D-TOPW'] }] };
@@ -72,7 +72,7 @@ t('inactive credential denies everything', () => {
   const p = P('marcus'), w = world(S.marcus); p.credential.active = false;
   assert.equal(E.canEnter(w, p, 'D-DOCK', 9).code, 'CREDENTIAL_INACTIVE');
 });
-t('Jordan scenario: badge works, walk succeeds, yet doors are out of scope (expired WO)', () => {
+t('Jordyn scenario: badge works, walk succeeds, yet doors are out of scope (expired WO)', () => {
   const p = P('jordan'), w = world(S.jordan);
   assert.equal(E.walk(w, p, 'outW', S.jordan.targets, S.jordan.time).stop, null);
   assert.equal(E.authActive(w, p.authorizations[0]), false);
@@ -80,13 +80,13 @@ t('Jordan scenario: badge works, walk succeeds, yet doors are out of scope (expi
   assert.deepEqual([...oos].sort(), ['D-TOPW', 'D-WC1', 'D-WM', 'D-WSE']);
   assert(!oos.includes('D-QUAR'), 'vendor profile is scoped, not the broad template');
 });
-t('Jordan: deactivating the badge resolves the audit and the walk then fails at the entrance', () => {
+t('Jordyn: deactivating the badge resolves the audit and the walk then fails at the entrance', () => {
   const p = P('jordan'), w = world(S.jordan); p.credential.active = false;
   assert.deepEqual(E.outOfScope(w, p), []);
   const r = E.walk(w, p, 'outW', S.jordan.targets, S.jordan.time);
   assert.equal(r.stop.door, 'D-WSE'); assert.equal(r.stop.code, 'CREDENTIAL_INACTIVE');
 });
-t('Jordan: removing the group also resolves the audit (effective access, not which control was used)', () => {
+t('Jordyn: removing the group also resolves the audit (effective access, not which control was used)', () => {
   const p = P('jordan'), w = world(S.jordan); p.credential.groups = [];
   assert.deepEqual(E.outOfScope(w, p), []);
 });

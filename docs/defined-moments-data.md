@@ -20,7 +20,7 @@ Reference for designing the completion artwork (the Dine-O end-card method: fixe
 | --- | --- | --- | --- | --- |
 | Elena | `issue` | Credential issued | Issued | Groups, Opens, Hours, Authorization, Verified |
 | Marcus | `update` | Access updated | Temporary access | Exception, Authorization, Verified |
-| Jordan | `offboard` | Audit recorded | Deactivated | Action, Reason, WO-1873, Remaining access |
+| Jordyn | `offboard` | Audit recorded | Deactivated | Action, Reason, WO-1873, Remaining access |
 | Daniel (escort) | `response` | Entry recorded | Escorted | Response, Escort, Authorization, Outcome |
 | Daniel (wait) | `response` | Delivery delayed | Delayed | Response, Authorization, Outcome |
 
@@ -38,7 +38,7 @@ The ticket's `principle` line and the feedback text (`t.result.title` / `.text`)
 | Authorization | WA-1041 | Short IDs (WA-1041, WO-2291, WO-1873, PO-4410, ESC-07) |
 | Verified | Walked in, Tue 07:15 | short |
 | Marcus exception | WO-2291: Tue 2026-10-27 05:00–08:00 · this badge only | about 55 chars |
-| Jordan reason | Work authorization ended; no new approval exists | about 50 chars |
+| Jordyn reason | Work authorization ended; no new approval exists | about 50 chars |
 | Daniel escort | Priya Nair, Receiving supervisor · ESC-07 | about 42 chars |
 
 ## Gaps the finished artwork will probably need
@@ -46,15 +46,15 @@ The ticket's `principle` line and the feedback text (`t.result.title` / `.text`)
 None of these exist yet. Listed so the compositions can decide which ones they use; each would be a small data addition, not new logic.
 
 1. **Portrait** per person, and for Priya: an image path. A consistent style across all five characters.
-2. **Badge title**, shorter than `role`: for example "Marine Educator" (Elena), "Dive Crew Lead" (Marcus), "Exhibit AV Vendor" (Jordan), "Vendor · Deliveries" (Daniel).
+2. **Badge title**, shorter than `role`: for example "Marine Educator" (Elena), "Dive Crew Lead" (Marcus), "Exhibit AV Vendor" (Jordyn), "Vendor · Deliveries" (Daniel).
 3. **Department** if the badge shows one: Education, Husbandry / Dive, Exhibits (vendor), Receiving (vendor).
 4. **Credential ID / employee number**: a fictional, consistent scheme (for example `NMC-` plus digits). Also seeds the decorative non-scannable code, so it is stable per person.
 5. **Credential type**: Staff / Vendor / Contractor. It drives badge colour bands and is instructionally useful, because vendor badges should look different from staff badges.
-6. **Dates: keep credential validity and work authorization separate.** These are two different things, and keeping them apart is the point of Jordan's ticket. The artwork must not merge them.
+6. **Dates: keep credential validity and work authorization separate.** These are two different things, and keeping them apart is the point of Jordyn's ticket. The artwork must not merge them.
    - *Credential validity*: is the badge itself active? This is a property of the badge (status, issue date, and an expiry only if the badge has one).
    - *Work authorization*: is there current approval for the access the badge provides? This is a property of the records (WA-1041, WO-2291, WO-1873, PO-4410, ESC-07), each with its own window.
-   - Jordan's problem is that WO-1873 ended on 2026-07-20 while his credential stayed active and kept granting access. Do not show a badge-level "No expiry set" as the cause; whether his badge had its own expiry is not established and should not be implied.
-   - Issue dates need deciding deliberately, not defaulting. Only Elena's badge is issued today (2026-10-27). Marcus, Jordan and Daniel hold existing credentials: Oct 27 is the date of the update, audit, or response record, not of their badges. Their original issue dates (and any badge expiry) are content decisions still to be made.
+   - Jordyn's problem is that WO-1873 ended on 2026-07-20 while her credential stayed active and kept granting access. Do not show a badge-level "No expiry set" as the cause; whether her badge had its own expiry is not established and should not be implied.
+   - Issue dates need deciding deliberately, not defaulting. Only Elena's badge is issued today (2026-10-27). Marcus, Jordyn and Daniel hold existing credentials: Oct 27 is the date of the update, audit, or response record, not of their badges. Their original issue dates (and any badge expiry) are content decisions still to be made.
 7. **Approver / signature line** for the record: the approver names already exist on the authorization records (for example "J. Okoye, Education Manager" on WA-1041).
 8. **Status stamp text** per outcome: ISSUED / TEMPORARY · EXPIRES 08:00 / DEACTIVATED (or VOID) / ESCORTED ENTRY / DELIVERY DELAYED.
 

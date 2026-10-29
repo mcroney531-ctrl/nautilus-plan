@@ -33,6 +33,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
 .ticket{display:grid;gap:10px}
 .who{display:flex;gap:11px;align-items:center}
 .av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:linear-gradient(155deg,#3d91a5,#0b435d);border:2px solid #7ed5dc;flex:0 0 auto}
+img.av{padding:0;object-fit:cover;background:#0b435d}
 .who b{display:block}.who span{font-size:12.5px;color:var(--muted)}
 .msg{background:#0d3a4c;border:1px solid #2c6676;border-radius:4px 14px 14px 14px;padding:10px 12px;color:#d6ecef;max-width:62ch}
 .recs{display:flex;gap:6px;flex-wrap:wrap}
@@ -317,7 +318,7 @@ function renderQueue(){
   document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{if(timer)return;cur=b.dataset.q;level=1;lens=false;pane='badge';render();});}
 function renderTicket(){const sc=SC(),t=T(),p=sc.person;
   $('ticket').innerHTML=`<span class="eyebrow">Ticket · ${sc.kind}</span>
-  <div class="who"><div class="av">${p.initials}</div><div><b>${p.name}</b><span>${p.role}</span></div></div>
+  <div class="who">${avHTML(p)}<div><b>${p.name}</b><span>${p.role}</span></div></div>
   <div class="msg">${sc.message}</div>
   <div class="recs">${p.authorizations.map(a=>`<button class="chip" data-rec="${a.id}" aria-expanded="${!!t.open[a.id]}">${a.id}</button>`).join('')}${(sc.notes||[]).map(n=>`<button class="chip" data-rec="${n.id}" aria-expanded="${!!t.open[n.id]}">${n.id}</button>`).join('')}</div>
   ${(sc.notes||[]).filter(n=>t.open[n.id]).map(n=>`<div class="rec"><b>${n.id}</b><span>${n.text}</span></div>`).join('')}
@@ -371,6 +372,8 @@ function renderBadge(){const sc=SC(),t=T(),c=t.person.credential;
     t.delta=E.delta(E.footprint(t.world,t.person),E.footprint(t.world,tp));t.tdelta=null;t.still=null;t.showDelta=true;
     const up=t.delta.addedSpaces.some(k=>E.SPACES[k].l===2);t.lastLabel=`Comparison: ${sc.compare.label} would also open these${up?' (some on Topside · L2)':''}. Your badge is unchanged.`;render();};
   $('resetBtn').onclick=()=>{if(timer)return;st[cur]=fresh(cur);render();};}
+/* portrait when the person has one, initials otherwise (the name is always shown beside it) */
+const avHTML=p=>p.avatar?`<img class="av" src="${p.avatar}" alt="" width="42" height="42">`:`<div class="av">${p.initials}</div>`;
 const names=ids=>ids.map(k=>E.SPACES[k].n);
 const finalized=t=>!!(t.result&&(t.result.cls==='good'||t.result.final));
 const verified=t=>{const r=routeOf(t);return !!(t.walk&&!t.walk.running&&!t.walk.res.stop&&t.walk.routeId===(r?r.id:null));};
@@ -387,7 +390,7 @@ function renderFlow(){const sc=SC(),t=T(),s=steps(sc,t),now=s.findIndex(x=>!x[2]
 /* ---------- completion record: one data structure, presentation can be swapped for designed artwork later ---------- */
 function buildRecord(sc,t){const c=t.person.credential,p=sc.person,fp=E.footprint(t.world,t.person),doors=[...fp.doors].map(d=>E.DOORS[d].n),r=routeOf(t),res=t.result;
   const auths=p.authorizations.map(a=>a.id).join(', '),when=`${sc.day} ${E.fmt(sc.time)}`;
-  const rec={kind:sc.record,ref:auths,person:{name:p.name,role:p.role,initials:p.initials,title:p.title,department:p.department,credentialType:p.credentialType},outcome:res.cls,fields:[]};
+  const rec={kind:sc.record,ref:auths,person:{name:p.name,role:p.role,initials:p.initials,avatar:p.avatar,title:p.title,department:p.department,credentialType:p.credentialType},outcome:res.cls,fields:[]};
   if(sc.record==='issue'){rec.title='Credential issued';rec.status=res.cls==='good'?'Issued':'Issued · review';
     rec.fields=[['Groups',c.groups.map(g=>E.GROUPS[g].n).join(', ')||'None'],['Opens',doors.join(', ')||'None'],['Hours',c.groups.map(g=>{const h=E.groupHours(t.world,g);return `${E.GROUPS[g].n} ${E.fmt(h[0])}–${E.fmt(h[1])}`;}).join(' · ')],['Authorization',auths],['Verified',`Walk test passed, ${when}`]];}
   else if(sc.record==='update'){rec.title='Access updated';rec.status=res.cls==='good'?'Temporary access':'Group change';
@@ -433,7 +436,7 @@ function recordHTML(sc,t){const r=t.record,res=t.result,art=hasArt(sc,t);
       <div class="rsum"><span class="rlbl">${r.title}</span><b class="pill">${r.status}</b><b>${r.person.name}</b><span class="sub">${r.person.title} · ${r.person.department}</span></div></div>
     <h3 class="eyebrow" tabindex="-1">Record details</h3>`
     :`<div class="rhead"><span>${r.title}</span><b class="pill">${r.status}</b></div>
-    <div class="who"><div class="av">${r.person.initials}</div><div><b>${r.person.name}</b><span>${r.person.role}</span></div></div>`;
+    <div class="who">${avHTML(r.person)}<div><b>${r.person.name}</b><span>${r.person.role}</span></div></div>`;
   return `<div class="result ${res.cls} record" data-kind="${r.kind}" style="margin-top:10px">${head}
     <dl class="kv">${r.fields.map(f=>`<dt>${f[0]}</dt><dd>${f[1]}</dd>`).join('')}</dl>
     <b>${res.title}</b>${res.text}${sc.principle?`<p class="note" style="margin:8px 0 0">${sc.principle}</p>`:''}
