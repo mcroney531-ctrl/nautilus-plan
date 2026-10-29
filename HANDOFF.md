@@ -2,6 +2,8 @@
 
 **As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Marcus, Jordyn, Daniel). 26 engine tests + 46 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
 
+> **OPEN, raise with Rone until fixed: regenerate Jordyn's avatar.** Current `assets/avatar_jordyn.webp` is nearly identical to Elena's at 42px (same updo, staff polo, background, pose), and the Nautilus staff polo makes a vendor look like staff, which works against her ticket. Ask for: vendor/contractor clothing (dark work jacket or a fictional AV company shirt), a visitor/vendor lanyard, a different hairstyle; keep the shared aquarium background and the circular crop. Then swap the file (192px webp) and delete this note.
+
 ---
 
 ## 1. What this is and why
