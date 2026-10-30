@@ -7,7 +7,7 @@
 ---
 
 > **V2 visual/UX migration in planning (Oct 30).** Phase 00 assessment and plan: `docs/v2-phase00-architecture.md`. No implementation until the Phase 00B design handoff is approved.
-> **Phase 01a done (Oct 30):** grading, workflow landmarks, walk construction and records now live in `src/flow.js` as pure `(sc, t)` functions; V1 calls them through thin wrappers. `test/flow.test.js` holds them to a golden baseline (`test/golden/flow-baseline.json`, 734 ticket states, generated from the original UI code at `b08e9fc` via `test/flow-original.js`). `npm test` runs engine + flow tests. If a future change is *meant* to alter an outcome, regenerate the baseline deliberately and say so in the commit.
+> **Phase 01a done (Oct 30):** grading, workflow landmarks, walk construction and records now live in `src/flow.js` as pure `(sc, t)` functions; V1 calls them through thin wrappers. `test/flow.test.js` holds them to a golden baseline (`test/golden/flow-baseline.json`, 734 ticket states, generated from the original UI code at `b08e9fc` via `test/flow-original.js`). `npm test` runs engine + flow tests. Phase 01a approved and closed (Rone + GPT). **Golden-baseline rule:** parity proves a refactor changed nothing, not that the behaviour is right. Never regenerate `flow-baseline.json` to make a failure go away. An intended behaviour change needs, in order: an approved, documented rationale; a targeted regression test for the new behaviour; then a deliberate baseline update in its own commit that cites both. **Phase 01 is on hold until the Phase 00B design handoff is approved.**
 
 ---
 
