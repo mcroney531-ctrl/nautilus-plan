@@ -6,19 +6,19 @@ Status key: **Approved** (cleared for use) · **Candidate** (production-quality 
 
 ## 1. Textures (header and Shift Inbox sidebar)
 
-Decision deferred (Rone + GPT, Oct 30): both directions are kept and will be judged in the real responsive shell during Phase 01. Whichever wins, it is applied with CSS `background-size: cover` plus a CSS gradient overlay, behind live HTML; no text, logo or control is ever baked into a texture.
+**Decision (Rone, Oct 30): Candidate 01 Subtle is the V2 texture.** Candidate 02 is closed and kept below only as a record. The texture is applied with CSS `background-size: cover` plus a CSS gradient overlay, behind live HTML; no text, logo or control is ever baked into a texture.
 
-### Candidate 01: Subtle Underwater (production-ready)
+### Candidate 01: Subtle Underwater (approved)
 
 | File | Size | Bytes | Status |
 | --- | --- | --- | --- |
-| `assets/v2/textures/subtle/nmc-texture-header.webp` | 2560×640 | 14 KB | Candidate |
-| `assets/v2/textures/subtle/nmc-texture-sidebar.webp` | 720×1600 | 7 KB | Candidate |
+| `assets/v2/textures/subtle/nmc-texture-header.webp` | 2560×640 | 14 KB | Approved |
+| `assets/v2/textures/subtle/nmc-texture-sidebar.webp` | 720×1600 | 7 KB | Approved |
 | `assets/v2/textures/subtle/source/make_textures.py` | generator | | Source (writes to `/mnt/data/...`; edit `out` to rerun) |
 
 Measured (white text, WCAG): header worst case 6.9:1 (bright light-ray area, right half), 14.9:1 in the left 36% text-safe zone; sidebar worst case 11.1:1. **Passes AA everywhere without an overlay.** Low detail, so it reads as "deep water" rather than "reef" and loses most of its light rays in a thin desktop header. Size cost is negligible (21 KB).
 
-### Candidate 02: Richer Underwater (reference only)
+### Candidate 02: Richer Underwater (not chosen)
 
 | File | Size | Status |
 | --- | --- | --- |
@@ -29,7 +29,7 @@ No standalone files exist yet; nothing may be cropped from the boards. Measured 
 
 **The Candidate 02 board is not a source of scenario data.** It shows names, roles, portraits and a logo that differ from the approved project: "Marcus Lee, Contractor", "Jordyn Kim, Researcher", "Daniel Brooks, Facilities", "Priya Shah, Operations". The scenarios are authoritative: Marcus Reyes (dive crew lead), Jordyn Kim (exhibit AV vendor), Daniel Brooks (frozen-feed driver, vendor), Priya Nair (receiving supervisor). Its portraits are also a different style from the approved circular avatars.
 
-### Responsive application (either candidate)
+### Responsive application
 
 | Surface | Phone (320–759 px) | Desktop |
 | --- | --- | --- |
@@ -40,11 +40,11 @@ Both need a solid fallback colour (the navy token) for loading, forced-colours m
 
 ### Requirements for the design handoff (00B)
 
-1. **Fix the header height** at each breakpoint before final header art is made. A 4:1 master is mostly wasted in a 20:1 desktop header. Either supply the header as 2560×320 (8:1) with the focal content in a stated horizontal band, or state the band (for example "focal detail in y = 35–65%") so CSS can position it.
+1. **Fix the header height** at each breakpoint in 00B. The Subtle header's light rays sit in its upper-middle band, so a thin desktop header shows little of them; CSS `background-position` will target that band, and the generator can be rerun at 2560×320 if the band needs to be denser.
 2. **Text-safe zones are part of the asset spec:** header left 40% (logo, wordmark, page title) and the sidebar's centre column (avatars, names, previews, status) must be calm. Detail belongs at the edges and toward the bottom.
 3. **Contrast is tested on the composed surface:** live white text over texture plus overlay must meet 4.5:1 (normal text) and 3:1 (large text, icons, selected-state indicators) at the brightest point under any text. A text shadow does not count.
 4. **Selected and inactive inbox states must not depend on the texture:** each inbox item gets its own solid or translucent backing so selection reads the same over any part of the art.
-5. **If Candidate 02 is chosen**, supply clean standalone files: header (2560×640, or 2560×320 per item 1) and sidebar (720×1600), WebP or high-quality PNG, with no text, logos, UI, people or credentials, with the calm zones from item 2, and without baked-in darkening (the overlay stays in CSS so it can be tuned against contrast measurements). The optional "light rays overlay" and "reef ambience" panels on the board are not needed for the locked layout; skip them unless 00B places them.
+5. ~~If Candidate 02 is chosen~~ (not chosen; no longer needed): supply clean standalone files: header (2560×640, or 2560×320 per item 1) and sidebar (720×1600), WebP or high-quality PNG, with no text, logos, UI, people or credentials, with the calm zones from item 2, and without baked-in darkening (the overlay stays in CSS so it can be tuned against contrast measurements). The optional "light rays overlay" and "reef ambience" panels on the board are not needed for the locked layout; skip them unless 00B places them.
 
 ## 2. Logo
 
@@ -80,8 +80,7 @@ Candidate 02 board shows wave divider, fish school, coral corner and kelp concep
 | --- | --- |
 | Elena record + badge | 229 |
 | Four avatars | 56 |
-| Textures, Candidate 01 | 21 |
-| Textures, Candidate 02 (estimate, q65–80) | 250–380 |
-| **Total with Candidate 01 / Candidate 02** | **about 306 / 535–665** |
+| Textures (Subtle) | 21 |
+| **Total** | **about 306** |
 
-Both fit under 1.2 MB, leaving room for the logo, Priya and later outcome artwork.
+About 900 KB remains for the logo, Priya, Jordyn's replacement and later outcome artwork.
