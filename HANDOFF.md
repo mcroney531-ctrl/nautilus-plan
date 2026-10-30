@@ -7,6 +7,7 @@
 ---
 
 > **V2 visual/UX migration in planning (Oct 30).** Phase 00 assessment and plan: `docs/v2-phase00-architecture.md`. No implementation until the Phase 00B design handoff is approved.
+> **Phase 01a done (Oct 30):** grading, workflow landmarks, walk construction and records now live in `src/flow.js` as pure `(sc, t)` functions; V1 calls them through thin wrappers. `test/flow.test.js` holds them to a golden baseline (`test/golden/flow-baseline.json`, 734 ticket states, generated from the original UI code at `b08e9fc` via `test/flow-original.js`). `npm test` runs engine + flow tests. If a future change is *meant* to alter an outcome, regenerate the baseline deliberately and say so in the commit.
 
 ---
 
@@ -94,6 +95,7 @@ Frame: an **operations-desk shift**, with a ticket queue, recurring characters, 
 
 ```
 src/engine.js     data model + evaluator (Engine global; module.exports for node)
+src/flow.js       grade, steps, finalized, verified, buildWalk, buildRecord: pure (sc, t), shared by V1 and V2
 src/scenarios.js  tickets: people, messages, records, notes, routes, editable groups (SCENARIOS global)
 src/ui.html       page shell + UI script with /*__ENGINE__*/ and /*__SCENARIOS__*/ placeholders
 build.py          inlines engine + scenarios -> dist/nautilus_access.html AND index.html (GitHub Pages serves index.html from main)
