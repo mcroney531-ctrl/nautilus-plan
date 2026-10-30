@@ -1,6 +1,6 @@
 # Nautilus V2: Phase 00 architecture and implementation plan
 
-**Status:** proposal for review (Oct 30, 2026). No application code changed in this phase.
+**Status:** architecture **approved** by Rone + GPT (Oct 30, 2026) with the decisions recorded in section G. Phase 01a authorized as a narrow exception to the 00B gate; Phase 01 not started.
 **Read-in covered:** `CLAUDE.md`, `HANDOFF.md`, `src/engine.js` (173 lines), `src/scenarios.js` (73), `src/ui.html` (576), `build.py`, `test/test.js` (26 engine tests), `test/ui.test.js` (46 browser tests), current build (467 KB single file).
 
 ---
@@ -203,3 +203,38 @@ Inbox (new, in progress, needs correction, closed, all closed); Review; Configur
 ### Can be decided later (styling)
 
 Exact colours and shadow depths, chevron geometry, texture opacity, icon set, message-card styling, animation easing, map palette in white mode, how many characters of preview text the inbox shows.
+
+---
+
+## G. Decisions (Rone + GPT, Oct 30, 2026)
+
+### Phase gates
+
+- **Phase 01a (behaviour lock) authorized before 00B.** Baseline expected results captured from the existing implementation first, then extraction to `src/flow.js` with exact parity. No interface, grading or scenario-content changes; separate commit; full suite plus independent flow tests; stop for review.
+- Phase 01 does not start until 00B is approved.
+- **Phase 00B scope:** the four locked main-screen references, key responsive and map states, and written specifications for the remaining states. Not a generated mockup per state.
+- **Asset budget** (under 1.2 MB) applies to the optimized assets embedded in the build, not the source masters.
+
+### Answers to F
+
+| # | Decision |
+| --- | --- |
+| 1 | Four shared tracker segments with scenario-specific labels and matching functional mappings. Elena keeps Review / Configure / Verify / Close. |
+| 2 | Map and inspection lens reachable from every stage. |
+| 3 | Route selection (Daniel) and the audit decision (Jordyn) live in the relevant decision-making stage, not Close. |
+| 4 | Explicit stage navigation. No automatic advancement, no new gating. |
+| 5 | Phone Configure keeps the live mini footprint plus on-demand full map. |
+| 6 | Never silently cancel an active walk. Navigating away offers an explicit **Cancel walk / Continue test** choice, with no elapsed-time threshold. |
+| 7 | V2 developed and tested at `v2.html`; deliberate cutover later. |
+| 8 | Supervisor brief is a pinned informational card in the inbox; the shift summary appears in the inbox on completion. Neither is presented as an employee message. |
+| 9 | System UI font stack plus the forthcoming canonical SVG logo. No embedded fonts initially. |
+| 10 | No reload persistence in V2. |
+| 11 | Priya's portrait appears in Daniel's escort and authorization context only, never as a message sender. |
+| 12 | Existing incorrect-outcome feedback is preserved; new cinematic failure artwork is deferred. |
+
+### Additional constraints
+
+- **Keyboard focus loss (A5) is a release blocker.** V2's rendering foundation must preserve focus through configuration changes; updating controls in place is preferred over rebuild-and-restore where practical.
+- Accessibility and control-state contrast are release requirements, not polish.
+- All four scenarios stay functional throughout the shared-component migration; Phase 07 is character-specific polish and artwork.
+- The audit character is **Jordyn Kim**.
