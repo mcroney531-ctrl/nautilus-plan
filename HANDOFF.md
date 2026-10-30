@@ -6,6 +6,10 @@
 
 ---
 
+> **V2 visual/UX migration in planning (Oct 30).** Phase 00 assessment and plan: `docs/v2-phase00-architecture.md`. No implementation until the Phase 00B design handoff is approved.
+
+---
+
 ## 1. What this is and why
 
 A portfolio piece for Rone's "functional portfolio candidates" direction: interactive training with a believable job story behind it, not a gimmick.
