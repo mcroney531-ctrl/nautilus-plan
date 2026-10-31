@@ -50,3 +50,14 @@ Breakpoints in the handoff (inbox + work area ≥760 px, map column ≥1180 px) 
 ## 6. Recommendation
 
 **HOLD.** The assets are valid, integrated and within budget, and the name change is proven name-only. Phase 01 should start once D1 and D2 are answered: without the main-screen references, Phase 01's tokens and shell would be invented rather than implemented. Both are quick to clear; nothing else blocks.
+
+## 7. Decisions received (Rone + GPT, Oct 31)
+
+| Item | Decision | Status |
+| --- | --- | --- |
+| D1 references | Four locked workflow references (Review, Configure, Verify, Close) supplied in `Nautilus_V2_Phase00B_Four_Locked_References.zip`, with `README_REFERENCE_PRECEDENCE.md`. The older Review image's Tools section is superseded. | **Waiting on the file**: the zip did not reach this session |
+| D2 tracker at 320 px | Four linked, interactive chevrons kept; stage numbers and done ticks inside them where labels cannot fit; the selected stage's full label directly below the tracker; accessible names carry the full scenario-specific labels; free navigation and stage semantics unchanged. No clipping, no tiny type. | Decided |
+| D3 reversed mark | A derived reversed mark-only SVG is in the references zip; validate and use for dark placements. | Waiting on the file |
+| D4 outfits | No swaps. Portraits, identities, outfits and names locked; accurate live role labels take priority (Jenni: Receiving Supervisor / Vendor Escort; Cameron: Dive Crew Lead). | Decided |
+| D5 V1 avatars | Left unchanged until V2 integration; no V1 visual changes just to synchronise faces. | Decided |
+| D7 V1 focus race | Authorized fix: commit `d4eb6ff`, with a regression test covering all three exits. Browser suite 47/47. | **Fixed** |
