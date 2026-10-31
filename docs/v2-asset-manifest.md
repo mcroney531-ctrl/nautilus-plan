@@ -53,7 +53,7 @@ Both need a solid fallback colour (the navy token) for loading, forced-colours m
 | `assets/v2/logo/nautilus-lockup-light.svg` (860×142) | **Approved**: light backgrounds |
 | `assets/v2/logo/nautilus-lockup-reversed.svg` (860×142) | **Approved**: navy header and inbox |
 | `assets/v2/logo/nautilus-mark.svg` (128×128) | **Approved**: light backgrounds only (dark arch disappears on navy) |
-| Reversed mark for navy | **Needed** (see `v2-phase00b-review.md` D3) |
+| `assets/v2/logo/nautilus-mark-reversed.svg` (128×128) | **Approved**: navy and dark placements (same geometry, reversed lockup colours) |
 
 Outlined paths, no fonts or external references. The raster logo preview and concept board are reference only.
 
@@ -70,6 +70,10 @@ Display names and roles come from scenario data as live HTML; text baked into th
 | Jordyn Kim (`jordan`) | External exhibit AV vendor | `assets/v2/avatars/jordyn.webp` | `assets/v2/portraits/jordyn.webp` | `assets/avatar_jordyn.webp` (old face) |
 
 Source masters, the five-person lineup and previews are held by Rone/GPT (reference only, not in the repo). Daniel and Jordyn are external: no Nautilus branding is added to their presentation.
+
+## 3b. Locked screen references
+
+`docs/v2-references/` holds the four locked workflow references (Review, Configure, Verify, Close), a contact sheet and `README_REFERENCE_PRECEDENCE.md`. **Reference only**: composition, hierarchy, spacing, material, tracker geometry and layout. Not embedded, not data; the precedence README and `v2-phase00b-review.md` §8 list what they do not authorise.
 
 ## 4. Decorative elements
 

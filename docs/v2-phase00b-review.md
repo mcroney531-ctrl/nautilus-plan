@@ -1,6 +1,6 @@
 # Nautilus V2: Phase 00B review (Oct 31, 2026)
 
-Review of `Nautilus_V2_Phase00B_Approved_Logo_Handoff.zip` against `CLAUDE.md`, `HANDOFF.md`, `v2-phase00-architecture.md` §G and `v2-asset-manifest.md`. **Recommendation: HOLD** (two blocking items, below). No V2 interface code written; Phase 01 not started.
+Review of `Nautilus_V2_Phase00B_Approved_Logo_Handoff.zip` against `CLAUDE.md`, `HANDOFF.md`, `v2-phase00-architecture.md` §G and `v2-asset-manifest.md`. **Final recommendation (section 8): PASS**, with the implementation rules and defaults in 8.3. The earlier HOLD (sections 1–6) was for the missing references and the tracker rule, both now resolved. No V2 interface code written; Phase 01 not started.
 
 ## 1. Asset validation and integration
 
@@ -55,9 +55,48 @@ Breakpoints in the handoff (inbox + work area ≥760 px, map column ≥1180 px) 
 
 | Item | Decision | Status |
 | --- | --- | --- |
-| D1 references | Four locked workflow references (Review, Configure, Verify, Close) supplied in `Nautilus_V2_Phase00B_Four_Locked_References.zip`, with `README_REFERENCE_PRECEDENCE.md`. The older Review image's Tools section is superseded. | **Waiting on the file**: the zip did not reach this session |
+| D1 references | Four locked workflow references (Review, Configure, Verify, Close) with `README_REFERENCE_PRECEDENCE.md`. The older Review image's Tools section is superseded. | **Received**, integrated in `docs/v2-references/` |
 | D2 tracker at 320 px | Four linked, interactive chevrons kept; stage numbers and done ticks inside them where labels cannot fit; the selected stage's full label directly below the tracker; accessible names carry the full scenario-specific labels; free navigation and stage semantics unchanged. No clipping, no tiny type. | Decided |
-| D3 reversed mark | A derived reversed mark-only SVG is in the references zip; validate and use for dark placements. | Waiting on the file |
+| D3 reversed mark | Derived reversed mark-only SVG; validate and use for dark placements. | **Validated**, `assets/v2/logo/nautilus-mark-reversed.svg` |
 | D4 outfits | No swaps. Portraits, identities, outfits and names locked; accurate live role labels take priority (Jenni: Receiving Supervisor / Vendor Escort; Cameron: Dive Crew Lead). | Decided |
 | D5 V1 avatars | Left unchanged until V2 integration; no V1 visual changes just to synchronise faces. | Decided |
 | D7 V1 focus race | Authorized fix: commit `d4eb6ff`, with a regression test covering all three exits. Browser suite 47/47. | **Fixed** |
+
+## 8. Crosscheck against the four locked references (Oct 31)
+
+### 8.1 Integration
+
+- `docs/v2-references/`: `locked-review.png`, `locked-configure.png`, `locked-verify.png`, `locked-close.png` (1536×1024 each, original pixels), `contact-sheet.png`, `README_REFERENCE_PRECEDENCE.md`, `checksums.json`. All seven checksums verified. Reference only: never embedded in the build, never used as data or test fixtures.
+- `assets/v2/logo/nautilus-mark-reversed.svg`: same paths and transform as the approved `nautilus-mark.svg`; only the four colours change, to exactly the reversed lockup's two colours (`#F9FCFD`, `#85D6DD`). No scripts, links, images or text. Renders cleanly on the Subtle header at 96, 40 and 24 px; the light mark disappears there, as expected. **Approved for dark placements.**
+
+### 8.2 What the references confirm (consistent with the written spec and §G)
+
+- Dark textured header and Shift Inbox; white or pale workspace; navy rounded tracker container with four linked chevrons, an icon in each, the label under each, a silver-blue selected segment, a "0N OF 04" counter, and a pale instruction card directly beneath.
+- Review: the person's card and their own message as a conversation, tracker below.
+- Configure: tactile group rows with a live door count and hours, an Access Impact panel, a map affordance ("View on Facility Map" on phone).
+- Verify: a large map with lens, walk controls, inspection panel and walk log; phone gets walk details plus Inspection Lens and map buttons.
+- Close: case summary plus verification results, then the issuing moment, success state and illustrated record; phone sequence matches the approved scanner-to-record flow.
+- Desktop: inbox, workspace and a right map column; in Verify the map moves into the workspace at large size and the right column holds walk controls, inspection and log. This fits the single-map-instance plan (the map node moves between containers).
+
+### 8.3 Discrepancies the precedence README does not already cover
+
+None blocks Phase 01. Items marked *default* are what I will implement unless you say otherwise.
+
+| # | Finding | Resolution |
+| --- | --- | --- |
+| R1 | **Map door markers in green/red** (Verify legend: "Granted access" / "Restricted access") before any walk. If red meant "won't open now", it would show reachability at a time on the map, revealing Cameron's 05:30 schedule problem and Daniel's reader fault before inspection. | **Rule:** door markers and lit areas show GRANTED only (time and reader status ignored), as V1 does. Time and hardware results appear only in the walk (opened / didn't open, no reason) and in inspection. |
+| R2 | **Close "Ready to issue: all required steps are complete"** before the learner presses Issue. Grading runs only on Issue, so a pre-press "ready" verdict either predicts the grade or claims success before evaluation, and would appear for an over-broad badge too. | *Default:* the Close stage shows factual items only (walk verified, with time; records reviewed) and the case summary; no readiness verdict. The result appears after Issue, as now, including the existing correction feedback. |
+| R3 | **Access Impact counts rooms as "doors"** ("Will be added: Kelp Hall, Living Shore, Classroom · 3 doors"). V1 deliberately separates doors (readers) from the areas they open (HANDOFF Stage 2). | **Rule:** Access Impact keeps doors and reachable areas as two lists, computed by the engine's change review (added and removed). |
+| R4 | **Header "Help" and "Settings", phone hamburger, sidebar "Facility Map" and "Resources"** have no defined function. | *Default:* no Settings, Resources or hamburger. Help reopens the supervisor brief. Facility Map is the global map button (needed anyway: with Tools gone, the phone Review stage needs a map entry point, §G 2). |
+| R5 | **Painted aquarium map** in Verify (illustrated habitats, numbered route pins). The engine's map is a schematic SVG with exact door and space geometry, and no aligned map artwork exists. | *Default:* V2 uses the engine's SVG map restyled to the V2 palette and materials, with numbered stop pins and a dashed route. A painted map would be a separate asset that must be drawn to the engine's coordinates; decide later (affects Phase 05 only). |
+| R6 | **Close "Download Record (PDF)"** option. | *Default:* out of V2 scope (new capability). "Next request" and "Return to Shift Inbox" are kept. |
+| R7 | **Issuing-animation reference** (hand-held badge at a photographic reader, steps "Creating credential / Applying access groups / Activating permissions"). | The approved Oct 28 scanner moment and wording stand (README rule 4 and the "assigned groups" copy rule). |
+| R8 | **Tracker icons** exist only for Review/Configure/Verify/Close; Jordyn's and Daniel's labels (Investigate, Decide, Submit, Respond, Record) need icons. | *Default:* simple inline-SVG icons in the same line style; numbers and done ticks replace icons below the narrow breakpoint (D2). |
+
+### 8.4 Responsive readiness, updated
+
+The references put each stage label under its chevron. At 320 px that label space is about 70 px, still too narrow for "Investigate" or "Verify (n/a)", so the approved D2 rule applies: number or tick inside each chevron, the selected stage's full label below the tracker, full names in the accessible names. Header, map overlay and overflow results in section 4 stand.
+
+### 8.5 Recommendation
+
+**PASS.** The approved assets are integrated and validated, the name change is proven name-only, the reversed mark is valid, the V1 focus defect is fixed, and the four references are consistent with the written spec and §G once the precedence README and the rules above are applied. Phase 01 can start on your approval. R2, R4, R5 and R6 are defaults you can override at any point before the phase that uses them (Phase 01 needs only R4).

@@ -2,7 +2,7 @@
 
 **As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Cameron, Jordyn, Daniel). 26 engine tests + 46 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
 
-> **Phase 00B review (Oct 31): HOLD pending two answers** — see `docs/v2-phase00b-review.md` (missing main-screen references; tracker labels clip at 320px). Locked cast: Elena Park, **Cameron Flynn** (key `marcus`, was Marcus Reyes), **Jenni Nair** (Daniel's escort, was Priya Nair), Daniel Brooks, Jordyn Kim (key `jordan`). The old Jordyn-avatar item is resolved by the locked portrait set.
+> **Phase 00B review (Oct 31): final recommendation PASS, awaiting Rone's approval; Phase 01 not started** — see `docs/v2-phase00b-review.md` (§8: crosscheck against the four locked references in `docs/v2-references/`, implementation rules R1–R8). Locked cast: Elena Park, **Cameron Flynn** (key `marcus`, was Marcus Reyes), **Jenni Nair** (Daniel's escort, was Priya Nair), Daniel Brooks, Jordyn Kim (key `jordan`). The old Jordyn-avatar item is resolved by the locked portrait set.
 
 ---
 
