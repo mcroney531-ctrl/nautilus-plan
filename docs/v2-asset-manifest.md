@@ -1,4 +1,4 @@
-# Nautilus V2: asset manifest (Phase 00A, in progress)
+# Nautilus V2: asset manifest (Phase 00B)
 
 Status of every V2 visual asset: what is **production-ready**, what is a **candidate**, and what is **reference only**. Production assets are embedded into the single-file build, so each has a size budget (total embedded under 1.2 MB, see `v2-phase00-architecture.md` E). Reference images are design direction only; they are never cropped, embedded or treated as scenario data.
 
@@ -46,25 +46,30 @@ Both need a solid fallback colour (the navy token) for loading, forced-colours m
 4. **Selected and inactive inbox states must not depend on the texture:** each inbox item gets its own solid or translucent backing so selection reads the same over any part of the art.
 5. ~~If Candidate 02 is chosen~~ (not chosen; no longer needed): supply clean standalone files: header (2560×640, or 2560×320 per item 1) and sidebar (720×1600), WebP or high-quality PNG, with no text, logos, UI, people or credentials, with the calm zones from item 2, and without baked-in darkening (the overlay stays in CSS so it can be tuned against contrast measurements). The optional "light rays overlay" and "reef ambience" panels on the board are not needed for the locked layout; skip them unless 00B places them.
 
-## 2. Logo
+## 2. Logo (approved Oct 31)
 
-| Asset | Status |
+| File | Status |
 | --- | --- |
-| Canonical circular-wave logo system: full lockup, reversed lockup for navy, mark only (must read at 24 px) | **Needed** (in production) |
+| `assets/v2/logo/nautilus-lockup-light.svg` (860×142) | **Approved**: light backgrounds |
+| `assets/v2/logo/nautilus-lockup-reversed.svg` (860×142) | **Approved**: navy header and inbox |
+| `assets/v2/logo/nautilus-mark.svg` (128×128) | **Approved**: light backgrounds only (dark arch disappears on navy) |
+| Reversed mark for navy | **Needed** (see `v2-phase00b-review.md` D3) |
 
-SVG, text outlined. The Candidate 02 board shows a logo concept; it is reference only until the canonical files arrive.
+Outlined paths, no fonts or external references. The raster logo preview and concept board are reference only.
 
-## 3. Character portraits
+## 3. Character portraits (locked Oct 31)
 
-| Person | File | Status |
-| --- | --- | --- |
-| Elena Park | `assets/avatar_elena.webp` (192 px) | Approved (V1 style) |
-| Marcus Reyes | `assets/avatar_marcus.webp` | Approved (V1 style) |
-| Daniel Brooks | `assets/avatar_daniel.webp` | Approved (V1 style) |
-| Jordyn Kim | `assets/avatar_jordyn.webp` | **Needs regeneration** (HANDOFF open item: too close to Elena; staff polo on a vendor) |
-| Priya Nair | none | **Needed** |
+Display names and roles come from scenario data as live HTML; text baked into the source masters is stale and never used.
 
-Master spec: 1024×1024 PNG with transparency, circle-cropped, same framing, lighting and background for all five; Claude produces the 192 px web sizes. **Open question:** the approved set is the circular stylized avatars; the Candidate 02 board shows a different, more photographic set with wrong names. Confirm the approved set remains canonical.
+| Person (scenario key) | Role (live text) | V2 avatar (192 px) | V2 portrait (512 px) | V1 avatar |
+| --- | --- | --- | --- | --- |
+| Elena Park (`elena`) | Marine Educator | `assets/v2/avatars/elena.webp` | `assets/v2/portraits/elena.webp` | `assets/avatar_elena.webp` |
+| Cameron Flynn (`marcus`) | Dive Crew Lead | `assets/v2/avatars/cameron.webp` | `assets/v2/portraits/cameron.webp` | `assets/avatar_marcus.webp` (old face, see review D5) |
+| Jenni Nair (`daniel.escort`) | Receiving Supervisor, vendor escort ESC-07 | `assets/v2/avatars/jenni.webp` | `assets/v2/portraits/jenni.webp` | none |
+| Daniel Brooks (`daniel`) | External frozen-feed driver | `assets/v2/avatars/daniel.webp` | `assets/v2/portraits/daniel.webp` | `assets/avatar_daniel.webp` |
+| Jordyn Kim (`jordan`) | External exhibit AV vendor | `assets/v2/avatars/jordyn.webp` | `assets/v2/portraits/jordyn.webp` | `assets/avatar_jordyn.webp` (old face) |
+
+Source masters, the five-person lineup and previews are held by Rone/GPT (reference only, not in the repo). Daniel and Jordyn are external: no Nautilus branding is added to their presentation.
 
 ## 4. Decorative elements
 
@@ -79,8 +84,8 @@ Candidate 02 board shows wave divider, fish school, coral corner and kelp concep
 | Item | KB |
 | --- | --- |
 | Elena record + badge | 229 |
-| Four avatars | 56 |
-| Textures (Subtle) | 21 |
-| **Total** | **about 306** |
+| V1 avatars (four) | 56 |
+| V2 avatars, portraits, logo SVGs, textures | 223 |
+| **Total raw** | **about 508** (about 680 in the file after base64) |
 
-About 900 KB remains for the logo, Priya, Jordyn's replacement and later outcome artwork.
+V1 and V2 are separate builds, so each embeds only its own set; V2 alone is about 452 KB raw.

@@ -53,7 +53,7 @@
 
 **1. Build V2 as a separate build target until cutover.** The live site serves `index.html` from `main`, and pushes go straight to `main`. If V2 replaces the UI phase by phase, the public portfolio shows a half-built app for weeks. Proposal: `build.py` also emits `dist/v2.html` (and `v2.html` at the root for Pages) from `src/v2/`. `index.html` stays V1 until the cutover phase. Both share `engine.js`, `scenarios.js` and the new `flow.js`.
 
-**2. All four tickets must keep working in V2 from Phase 03 on.** The stage components are shared, so Marcus, Jordyn and Daniel cannot be "left for Phase 07". Each phase builds the generic component, polishes it on Elena, and must pass the full behaviour suite for all four. Phase 07 then means scenario-specific polish and outcome artwork, not plumbing.
+**2. All four tickets must keep working in V2 from Phase 03 on.** The stage components are shared, so Cameron, Jordyn and Daniel cannot be "left for Phase 07". Each phase builds the generic component, polishes it on Elena, and must pass the full behaviour suite for all four. Phase 07 then means scenario-specific polish and outcome artwork, not plumbing.
 
 ### Phases
 
@@ -69,7 +69,7 @@
 | 04 Configure | Generic configure panel (groups, time exceptions, group-hours edit, routes, audit decision, deactivate) rendered from scenario data; change review; phone mini footprint | 03 | All V1 configure behaviours available for all four tickets; change review identical to V1; Elena polished |
 | 05 Verify | Walk in the map, event log, lens and inspection panel, tap alternative, keyboard lens | 03 | All V1 inspection and walk tests pass in V2; lens usable at 320 in the overlay; denial reasons only in inspection |
 | 06 Close | Resolution workspace, result feedback, records, moments, Elena's scanner and record, compare, shift summary | 04, 05 | Records and moments identical in data to V1; no art before a finalized result; reduced motion honoured |
-| 07 Scale | Marcus, Jordyn, Daniel and Priya polish; their outcome artwork; per-scenario copy | 06 | Each ticket meets its own visual spec; full suite green |
+| 07 Scale | Cameron, Jordyn, Daniel and Jenni polish; their outcome artwork; per-scenario copy | 06 | Each ticket meets its own visual spec; full suite green |
 | 08 Cutover (new) | `index.html` serves V2; remove V1 shell and pinned-map tests; update HANDOFF | 07 | Live site is V2; V1 removed; suite green |
 
 Phases 04 and 05 can run in either order once 03 is in.
@@ -161,7 +161,7 @@ Each panel re-renders from state, then restores focus to the element with the sa
 | Logo mark only | SVG | vector | `nmc-logo-mark.svg` | For favicon, inbox header and small sizes; must read at 24px |
 | Header texture | WebP or JPG | 2400×480 and 1200×480 | `nmc-texture-header@2x.webp`, `nmc-texture-header-sm@2x.webp` | No text, no logo baked in; safe area for live text noted |
 | Sidebar texture | WebP or JPG | 640×2000 (repeatable vertically or with a fade) | `nmc-texture-sidebar@2x.webp` | Dark enough for white text at 4.5:1 |
-| Portraits ×5 | PNG with transparency | 1024×1024 master, circle-cropped, face centred at the same scale | `portrait-elena-park.png` etc. | Same framing, lighting and background for all five; Jordyn regenerated (HANDOFF open item); Priya new. I produce the web sizes. |
+| Portraits ×5 | PNG with transparency | 1024×1024 master, circle-cropped, face centred at the same scale | `portrait-elena-park.png` etc. | Same framing, lighting and background for all five; Jordyn regenerated (HANDOFF open item); Jenni new. I produce the web sizes. |
 | Decorative marine elements | SVG preferred, else transparent PNG at 2× | as used | `deco-<name>.svg` | Must stay decorative (`aria-hidden`) |
 | Approved Elena assets | as delivered | | existing | Already in `assets/` |
 | Screen references | PNG | 320, 400 and 1440 wide | `ref-<screen>-<state>-<width>.png` | Design direction only |
@@ -197,7 +197,7 @@ Inbox (new, in progress, needs correction, closed, all closed); Review; Configur
 8. **Supervisor brief and shift summary.** As inbox items (brief pinned first, summary appended when all four close)? *Recommendation:* yes.
 9. **Fonts.** The build must stay self-contained (no external requests), so web fonts mean embedding WOFF2 (about 30–60 KB per weight). Embed a chosen family, or use a system stack plus Georgia for the wordmark?
 10. **Persistence.** Keep progress across a page reload (localStorage)? It changes the state model (serialise `st`). *Recommendation:* not in V2 scope.
-11. **Priya.** Where does her portrait appear: Daniel's escort option and inspection row only, or also as a message sender?
+11. **Jenni.** Where does her portrait appear: Daniel's escort option and inspection row only, or also as a message sender?
 12. **Incorrect-outcome visuals** (GPT's earlier point): in V2 scope or later? Affects Close's component inventory.
 
 ### Can be decided later (styling)
@@ -229,7 +229,7 @@ Exact colours and shadow depths, chevron geometry, texture opacity, icon set, me
 | 8 | Supervisor brief is a pinned informational card in the inbox; the shift summary appears in the inbox on completion. Neither is presented as an employee message. |
 | 9 | System UI font stack plus the forthcoming canonical SVG logo. No embedded fonts initially. |
 | 10 | No reload persistence in V2. |
-| 11 | Priya's portrait appears in Daniel's escort and authorization context only, never as a message sender. |
+| 11 | Jenni's portrait appears in Daniel's escort and authorization context only, never as a message sender. |
 | 12 | Existing incorrect-outcome feedback is preserved; new cinematic failure artwork is deferred. |
 
 ### Additional constraints
