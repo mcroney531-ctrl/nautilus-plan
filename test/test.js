@@ -38,7 +38,7 @@ t('time-based denial: same evaluator, no case branch', () => {
   assert.equal(r.stop.door, 'D-DOCK'); assert.equal(r.stop.code, 'OUTSIDE_SCHEDULE');
   assert(E.footprint(w, p).spaces.has('dive'), 'footprint correct even though unreachable');
 });
-t('scoped exception fixes Marcus without touching the group', () => {
+t('scoped exception fixes Cameron without touching the group', () => {
   const p = P('marcus'), w = world(S.marcus); p.credential.exceptions.push(p.authorizations[1].exception);
   assert.equal(E.walk(w, p, 'outD', S.marcus.targets, 5.5).stop, null);
   const other = { credential: { active: true, groups: ['diveCrew'], exceptions: [] } };
@@ -53,7 +53,7 @@ t('group schedule edit also works but changes access for others', () => {
   const other = { credential: { active: true, groups: ['diveCrew'], exceptions: [] } };
   assert.equal(E.canEnter(w, other, 'D-DOCK', 5.5).ok, true);
 });
-t('wrong fix: adding a broad group does not get Marcus past the dock', () => {
+t('wrong fix: adding a broad group does not get Cameron past the dock', () => {
   const p = P('marcus'), w = world(S.marcus); p.credential.groups.push('exhibitOps');
   assert.equal(E.walk(w, p, 'outD', S.marcus.targets, 5.5).stop.door, 'D-DOCK');
 });
@@ -94,14 +94,14 @@ t('authActive leaves other tickets unchanged (no end date means active)', () => 
   assert(S.marcus.person.authorizations.every(a => E.authActive(world(S.marcus), a)));
   assert(S.elena.person.authorizations.every(a => E.authActive(world(S.elena), a)));
 });
-t('timeDelta: group hours edit changes access with an identical footprint (Marcus)', () => {
+t('timeDelta: group hours edit changes access with an identical footprint (Cameron)', () => {
   const p = P('marcus'), wb = world(S.marcus), wa = world(S.marcus); wa.groupOverrides.diveCrew = [5, 19];
   const d = E.delta(E.footprint(wb, p), E.footprint(wa, p));
   assert.deepEqual([d.addedSpaces, d.removedSpaces, d.addedDoors, d.removedDoors], [[], [], [], []]);
   const td = E.timeDelta(wb, p, wa, p, 5.5);
   assert(td.opened.includes('D-DOCK') && td.closed.length === 0);
 });
-t('timeDelta: Marcus exception opens the same doors at 05:30 without changing the footprint', () => {
+t('timeDelta: Cameron exception opens the same doors at 05:30 without changing the footprint', () => {
   const pb = P('marcus'), pa = P('marcus'), w = world(S.marcus); pa.credential.exceptions.push(pa.authorizations[1].exception);
   const td = E.timeDelta(w, pb, w, pa, 5.5);
   assert(td.opened.includes('D-DOCK'));

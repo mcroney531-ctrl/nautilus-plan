@@ -5,11 +5,21 @@ const M = require('./flow-matrix.js'), golden = require('./golden/flow-baseline.
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('ok', name); };
 const impl = { ...F, verified: F.verified, routeOf: F.routeOf, actorOf: F.actorOf };
 
+// Oct 31 name-only change (Phase 00B, approved by Rone): Marcus Reyes -> Cameron Flynn, Priya Nair -> Jenni Nair.
+// Until the baseline is regenerated, compare with the scenario strings mapped back to the old names: any other
+// difference still fails.
+const OLD_NAMES = [['Cameron Flynn', 'Marcus Reyes'], ['Jenni Nair', 'Priya Nair'], ["Jenni's", "Priya's"], ['Cameron', 'Marcus'], ['Jenni', 'Priya'], ['CF', 'MR'], ['JN', 'PN']];
+function withOldNames(fn) {
+  const undo = [], walk = o => { for (const k of Object.keys(o)) { const v = o[k];
+    if (typeof v === 'string') { const w = OLD_NAMES.reduce((x, [a, b]) => x.split(a).join(b), v); if (w !== v) { undo.push([o, k, v]); o[k] = w; } }
+    else if (v && typeof v === 'object') walk(v); } };
+  walk(S); try { return fn(); } finally { for (const [o, k, v] of undo) o[k] = v; }
+}
 t(`parity: every one of the ${golden.cases.length} baseline ticket states gives the same walk, landmarks, grade and record`, () => {
   const cases = M.cases(); assert.equal(cases.length, golden.cases.length, 'same matrix');
   const diffs = [];
-  cases.forEach((c, i) => { const got = M.run(impl, c), want = golden.cases[i];
-    try { assert.deepStrictEqual(got, want); } catch (e) { diffs.push(JSON.stringify(c)); } });
+  withOldNames(() => cases.forEach((c, i) => { const got = M.run(impl, c), want = golden.cases[i];
+    try { assert.deepStrictEqual(got, want); } catch (e) { diffs.push(JSON.stringify(c)); } }));
   assert.deepEqual(diffs, [], `${diffs.length} states differ from the baseline`);
 });
 t('parity: the baseline reaches all 17 outcomes and all 5 record kinds', () => {
@@ -31,7 +41,7 @@ t('Elena: least privilege closes only after a walk; the onboarding template is o
   const u = fresh('elena'); u.person.credential.groups = ['allStaff', 'exhibitOps']; close(sc, walked(sc, u));
   assert.equal(u.result.title, 'Works, but outside the approved scope'); assert.equal(u.record, null, 'no record for a result that needs correction');
 });
-t('Marcus: the one-time exception closes; changing the whole group is too broad', () => {
+t('Cameron: the one-time exception closes; changing the whole group is too broad', () => {
   const sc = S.marcus, t = fresh('marcus'); t.person.credential.exceptions.push(E.clone(sc.person.authorizations[1].exception));
   close(sc, walked(sc, t)); assert.equal(t.result.cls, 'good'); assert.equal(t.record.status, 'Temporary access');
   const u = fresh('marcus'); u.world.groupOverrides.diveCrew = sc.groupScheduleEdit.to; close(sc, walked(sc, u)); assert.equal(u.result.title, 'Works, but too broad');
@@ -52,5 +62,15 @@ t('landmarks: audit and adapt tickets use their own step names', () => {
   assert.deepEqual(F.steps(S.jordan, fresh('jordan')).map(s => s[1]), ['Review', 'Investigate', 'Decide', 'Submit']);
   assert.deepEqual(F.steps(S.daniel, fresh('daniel')).map(s => s[1]), ['Review', 'Respond', 'Verify', 'Record']);
   assert.deepEqual(F.steps(S.elena, fresh('elena')).map(s => s[1]), ['Review', 'Configure', 'Verify', 'Close']);
+});
+t('names: Cameron Flynn and Jenni Nair appear in grading text, records and walks; the old names appear nowhere', () => {
+  const c = fresh('marcus'); assert.equal(F.grade(S.marcus, c).text.includes('Walk Cameron in'), true);
+  c.person.credential.exceptions.push(E.clone(S.marcus.person.authorizations[1].exception)); close(S.marcus, walked(S.marcus, c));
+  assert.equal(c.record.person.name, 'Cameron Flynn'); assert.equal(c.record.person.initials, 'CF');
+  const d = fresh('daniel'); d.route = 'escortWest'; close(S.daniel, walked(S.daniel, d));
+  assert(/^Jenni Nair, Receiving supervisor · ESC-07$/.test(d.record.fields.find(f => f[0] === 'Escort')[1]));
+  assert(d.walk.pts.some(p => p.who === 'Jenni')); assert(/Jenni's badge/.test(d.result.text));
+  assert(!/Marcus|Priya/.test(JSON.stringify(S)), 'no old display name left in scenario data');
+  assert.equal(S.marcus.person.id, 'marcus', 'stable internal key unchanged'); assert.equal(S.jordan.person.id, 'jordan');
 });
 console.log(`\n${n} flow tests passed`);

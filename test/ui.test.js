@@ -33,7 +33,7 @@ const tests = {
     await pg.click('[data-q="jordan"]'); await pg.click('#walkBtn');
     await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 15000 });
   },
-  async 'Marcus: schedule-only change is not reported as "no change"'(pg) {
+  async 'Cameron: schedule-only change is not reported as "no change"'(pg) {
     await pg.click('[data-q="marcus"]'); await pg.click('[data-gs]');
     const r = await text(pg, '#review');
     assert(/Same places, different hours/.test(r) && /all 12 Dive Crew badges/.test(r) && !/didn't alter/.test(r), r);
@@ -86,7 +86,7 @@ const tests = {
   async 'Daniel: escort route (transfer shown, escort badge evaluated) closes with the tradeoff'(pg) {
     await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="escortWest"]'); await pg.click('#walkBtn');
     await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
-    const log = await text(pg, '.walklog'); assert(/Loading dock to West staff entrance/.test(log) && /Priya's badge: opened/.test(log), log);
+    const log = await text(pg, '.walklog'); assert(/Loading dock to West staff entrance/.test(log) && /Jenni's badge: opened/.test(log), log);
     await pg.click('#closeBtn'); const r = await text(pg, '.result'); assert(/Ticket closed/.test(r) && /hand cart/.test(r), r);
   },
   async 'Daniel: unescorted shortcut works but is flagged as outside scope'(pg) {
@@ -98,7 +98,7 @@ const tests = {
     await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="wait"]');
     assert(await pg.isDisabled('#walkBtn')); await pg.click('#closeBtn'); const r = await text(pg, '.result'); assert(/Closed, delivery delayed/.test(r) && /missed|40-minute window/.test(r) && /Facilities/.test(r), r);
   },
-  async 'Marcus: change review names the change and the grant that still supplies access'(pg) {
+  async 'Cameron: change review names the change and the grant that still supplies access'(pg) {
     await pg.click('[data-q="marcus"]'); await pg.click('[data-x]'); await pg.click('[data-gs]'); await pg.click('[data-x]');
     const r = await text(pg, '#review');
     assert(/Removed the time exception from WO-2291/.test(r) && /Dive Crew with its changed group hours/.test(r) && /all 12 badges/.test(r) && !/Another group/.test(r), r);
@@ -199,7 +199,7 @@ const tests = {
     assert(/has lit areas/.test(await pg.getAttribute('#lv2', 'aria-label')));
     assert(/Ticket closed/.test(await text(pg, '.result')), 'comparison did not change the closed result');
   },
-  async 'Marcus: the inspect hint appears only after the walk fails'(pg) {
+  async 'Cameron: the inspect hint appears only after the walk fails'(pg) {
     await pg.click('[data-q="marcus"]'); assert(!/Inspect that door/.test(await text(pg, '#flow')));
     await pg.click('#walkBtn'); await pg.waitForFunction(() => /didn't open/.test(document.getElementById('review').textContent), null, { timeout: 15000 });
     assert(/Inspect that door/.test(await text(pg, '#flow')));
@@ -323,9 +323,9 @@ const tests = {
     await pg.click('[data-g="exhibitOps"]'); await pg.click('[data-g="exhibitOps"]'); await pg.click('#closeBtn');
     assert(/Walk Elena in to confirm/.test(await text(pg, '.result')), 'a change after verification needs a new walk');
   },
-  async 'Marcus: the fix closes only after he is walked in'(pg) {
+  async 'Cameron: the fix closes only after he is walked in'(pg) {
     await pg.click('[data-q="marcus"]'); await pg.click('[data-x]'); await pg.click('#closeBtn');
-    assert(/Walk Marcus in to confirm/.test(await text(pg, '.result')));
+    assert(/Walk Cameron in to confirm/.test(await text(pg, '.result')));
     await pg.click('#walkBtn'); await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
     await pg.click('#closeBtn'); assert(/Ticket closed/.test(await text(pg, '.result')));
   },
@@ -344,8 +344,8 @@ const tests = {
   },
   async 'Daniel: the dock denial stays inspectable on Daniel\'s own badge after choosing the escort route'(pg) {
     await pg.click('[data-q="daniel"]'); await pg.click('[data-rt="escortWest"]'); await pg.click('#lensBtn'); await clickMap(pg, 388, 250);
-    const i = await text(pg, '#inspect'); assert(/Fault/.test(i) && /Denied · reader fault/.test(i) && /Priya \(escort\)/.test(i), i);
-    assert(!/no group for this door/.test(i.split('Priya')[0]), 'Daniel row is the reader fault, not a missing grant');
+    const i = await text(pg, '#inspect'); assert(/Fault/.test(i) && /Denied · reader fault/.test(i) && /Jenni \(escort\)/.test(i), i);
+    assert(!/no group for this door/.test(i.split('Jenni')[0]), 'Daniel row is the reader fault, not a missing grant');
   },
 };
 (async () => {
