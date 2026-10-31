@@ -1,0 +1,30 @@
+{
+  "README_REFERENCE_PRECEDENCE.md": {
+    "bytes": 5761,
+    "sha256": "855d789b2e0cf13dd85daa40eeb77fe2236424ce9259da10aaaff76e24476959"
+  },
+  "contact-sheet.png": {
+    "bytes": 1348690,
+    "sha256": "56f0411099281a93c5759e38239417513773161b61d376ee39a6d371f913ea4b"
+  },
+  "locked-close.png": {
+    "bytes": 2116728,
+    "sha256": "ec5f47fb668e43b1eb255fe0d7b45f22112efb6529a84c8e241ad81165480ae3"
+  },
+  "locked-configure.png": {
+    "bytes": 1790643,
+    "sha256": "095319d8b217d9fb5d67d13ecbfea6b58c3e798381c3b29616044f2436afb9b4"
+  },
+  "locked-review.png": {
+    "bytes": 1745611,
+    "sha256": "7ca1d4850e2bfbbbb4d1dd7fca8cc44c71d5c561f044060da660545f7f6874f7"
+  },
+  "locked-verify.png": {
+    "bytes": 2051263,
+    "sha256": "57366c0b751bec3dde75e16f25979c8dedc12d3e27abba4b4bbcf1e215798fc5"
+  },
+  "nautilus-mark-reversed.svg": {
+    "bytes": 661,
+    "sha256": "cc65613f6f5748ef59406bf90b5c5a5431f59ac9affd16ed85e7c8599cfb9e19"
+  }
+}
