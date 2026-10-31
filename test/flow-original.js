@@ -1,4 +1,5 @@
-// The golden baseline was generated from revision b08e9fc (the last commit with these functions inside src/ui.html).
+// The golden baseline is generated from revision b08e9fc (the last commit with these functions inside src/ui.html),
+// run on the current scenario data. Regenerated once, deliberately, for the Oct 31 name-only change (see ddd020e).
 // Loads the ORIGINAL workflow functions, unmodified, from a pre-extraction src/ui.html (by git revision) and
 // adapts their SC()/T() globals to (sc, t) so the behaviour-lock matrix can run against them.
 const vm = require('vm'), { execSync } = require('child_process'), E = require('../src/engine.js'), S = require('../src/scenarios.js');

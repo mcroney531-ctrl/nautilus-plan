@@ -5,21 +5,11 @@ const M = require('./flow-matrix.js'), golden = require('./golden/flow-baseline.
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('ok', name); };
 const impl = { ...F, verified: F.verified, routeOf: F.routeOf, actorOf: F.actorOf };
 
-// Oct 31 name-only change (Phase 00B, approved by Rone): Marcus Reyes -> Cameron Flynn, Priya Nair -> Jenni Nair.
-// Until the baseline is regenerated, compare with the scenario strings mapped back to the old names: any other
-// difference still fails.
-const OLD_NAMES = [['Cameron Flynn', 'Marcus Reyes'], ['Jenni Nair', 'Priya Nair'], ["Jenni's", "Priya's"], ['Cameron', 'Marcus'], ['Jenni', 'Priya'], ['CF', 'MR'], ['JN', 'PN']];
-function withOldNames(fn) {
-  const undo = [], walk = o => { for (const k of Object.keys(o)) { const v = o[k];
-    if (typeof v === 'string') { const w = OLD_NAMES.reduce((x, [a, b]) => x.split(a).join(b), v); if (w !== v) { undo.push([o, k, v]); o[k] = w; } }
-    else if (v && typeof v === 'object') walk(v); } };
-  walk(S); try { return fn(); } finally { for (const [o, k, v] of undo) o[k] = v; }
-}
 t(`parity: every one of the ${golden.cases.length} baseline ticket states gives the same walk, landmarks, grade and record`, () => {
   const cases = M.cases(); assert.equal(cases.length, golden.cases.length, 'same matrix');
   const diffs = [];
-  withOldNames(() => cases.forEach((c, i) => { const got = M.run(impl, c), want = golden.cases[i];
-    try { assert.deepStrictEqual(got, want); } catch (e) { diffs.push(JSON.stringify(c)); } }));
+  cases.forEach((c, i) => { const got = M.run(impl, c), want = golden.cases[i];
+    try { assert.deepStrictEqual(got, want); } catch (e) { diffs.push(JSON.stringify(c)); } });
   assert.deepEqual(diffs, [], `${diffs.length} states differ from the baseline`);
 });
 t('parity: the baseline reaches all 17 outcomes and all 5 record kinds', () => {
