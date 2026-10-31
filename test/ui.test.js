@@ -157,6 +157,18 @@ const tests = {
     assert(await m.$eval('#artDlg', d => d.open && !d.querySelector('.scanner')), 'reduced motion: no scanner');
     assert.equal(await m.evaluate(() => document.activeElement.id), 'momentOk'); await ctx.close();
   },
+  async 'Elena: every way out of the record moment puts focus on the readable record at once (button, Esc, backdrop; repeated)'(pg) {
+    await pg.click('[data-g="allStaff"]'); await pg.click('[data-g="education"]'); await pg.click('#walkBtn');
+    await pg.waitForFunction(() => /Reached every stop/.test(document.getElementById('review').textContent), null, { timeout: 20000 });
+    await pg.click('#closeBtn'); await pg.mouse.click(20, 20);
+    const onRecord = () => pg.evaluate(() => document.activeElement.textContent === 'Record details' && !document.getElementById('artDlg').open);
+    await pg.click('#momentOk'); assert(await onRecord(), 'See record details');
+    for (let i = 0; i < 3; i++) {
+      await pg.click('#artBtn'); await pg.keyboard.press('Escape'); assert(await onRecord(), 'Esc, round ' + i);
+      await pg.click('#artBtn'); await pg.mouse.click(5, 5); assert(await onRecord(), 'backdrop, round ' + i);
+      await pg.click('#artBtn'); await pg.click('#momentOk'); assert(await onRecord(), 'button, round ' + i);
+    }
+  },
   async 'Daniel: nothing before inspection names the fault or the repair'(pg) {
     await pg.click('[data-q="daniel"]'); await pg.click('[data-rec="Facilities procedures"]');
     const v = await text(pg, '#ticket') + ' ' + await text(pg, '#badge');

@@ -401,8 +401,11 @@ function badgeHTML(sc,r){const a=ART[sc.recordArt],[px,py,pw,ph]=a.portrait,p=r.
   const bg=`background-image:url(${a.src});background-size:${(a.w/pw*100).toFixed(2)}% auto;background-position:${(px/(a.w-pw)*100).toFixed(2)}% ${(py/(a.h-ph)*100).toFixed(2)}%`;
   return `<div class="cbadge"><img src="${a.badge}" alt=""><div class="ph" style="${bg}"></div><div class="f n">${p.name}</div><div class="f r">${p.title}</div><div class="f d">${p.department}</div>${p.credentialType?`<div class="f t">${p.credentialType.toUpperCase()}</div>`:''}<div class="sline"></div></div>`;}
 /* the moment: scanner (≈1.8s, skippable, never on replay or reduced motion) cross-fades into the record art in one dialog */
+/* after the moment, focus moves to the readable record. Called directly when closing (the dialog's close event fires a
+   task later, which left focus on the closed dialog's button in between) and again from the close event for Esc. */
+function focusRecord(){const h=document.querySelector('.record h3');if(h&&document.activeElement!==h){h.scrollIntoView({block:'start'});h.focus({preventScroll:true});}}
 function showMoment(sc,r,scan){let d=$('artDlg');if(!d){d=document.createElement('dialog');d.id='artDlg';document.body.appendChild(d);
-    d.onclose=()=>{const h=document.querySelector('.record h3');if(h){h.scrollIntoView({block:'start'});h.focus({preventScroll:true});}};}
+    d.onclose=focusRecord;}
   scan=scan&&!RM&&!!ART[sc.recordArt].badge;
   d.setAttribute('aria-label',`${r.title}: ${r.person.name}`);
   d.innerHTML=`<div class="moment${scan?' scan':''}">${scan?`<div class="scanner" aria-hidden="true"><div class="scap"><span class="s1">Issuing credential · ${r.person.name}</span><span class="s2">Credential issued</span></div>
@@ -411,9 +414,9 @@ function showMoment(sc,r,scan){let d=$('artDlg');if(!d){d=document.createElement
     <div class="recview"${scan?' inert':''}>${artHTML(sc,r)}<button class="btn primary" id="momentOk">See record details</button></div></div>`;
   const m=d.firstElementChild,timers=[];
   const finish=()=>{if(!m.classList.contains('scan'))return;timers.forEach(clearTimeout);m.classList.remove('scan');m.querySelector('.recview').inert=false;$('momentOk').focus();};
-  d.onclick=e=>{if(m.classList.contains('scan'))finish();else if(e.target===d)d.close();};
-  d.oncancel=e=>{if(m.classList.contains('scan')){e.preventDefault();finish();}};
-  $('momentOk').onclick=e=>{e.stopPropagation();d.close();};
+  d.onclick=e=>{if(m.classList.contains('scan'))finish();else if(e.target===d){d.close();focusRecord();}};
+  d.oncancel=e=>{e.preventDefault();if(m.classList.contains('scan'))finish();else{d.close();focusRecord();}};
+  $('momentOk').onclick=e=>{e.stopPropagation();d.close();focusRecord();};
   d.showModal();
   if(scan){timers.push(setTimeout(()=>m.classList.add('lit'),1000),setTimeout(finish,1400));$('scanSkip').focus();}else $('momentOk').focus();}
 function recordHTML(sc,t){const r=t.record,res=t.result,art=hasArt(sc,t);
