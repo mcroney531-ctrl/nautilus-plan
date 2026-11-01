@@ -4,8 +4,8 @@
   "private": true,
   "description": "Nautilus Access Desk: badge-access training prototype (fictional aquarium).",
   "scripts": {
-    "test": "node test/test.js && node test/flow.test.js",
+    "test": "node test/test.js && node test/flow.test.js && node test/v2.css.test.js",
     "build": "python build.py",
-    "test:ui": "python build.py && node test/ui.test.js"
+    "test:ui": "python build.py && node test/ui.test.js && node test/v2.test.js"
   }
 }
