@@ -100,3 +100,7 @@ The references put each stage label under its chevron. At 320 px that label spac
 ### 8.5 Recommendation
 
 **PASS.** The approved assets are integrated and validated, the name change is proven name-only, the reversed mark is valid, the V1 focus defect is fixed, and the four references are consistent with the written spec and §G once the precedence README and the rules above are applied. Phase 01 can start on your approval. R2, R4, R5 and R6 are defaults you can override at any point before the phase that uses them (Phase 01 needs only R4).
+
+## 9. Approval (Rone + GPT, Nov 1)
+
+**Phase 00B PASS approved; Phase 01 authorized.** All eight findings accepted. Final R4: header actions are **Shift Brief** (opens the supervisor brief; not labelled "Help") and **Facility Map** (global, every stage; full-screen overlay with focus management and Back on phones). Settings, Resources and the phone hamburger are removed; an explicit, accessible "Shift Inbox" back link stays. R1–R3 and R5–R8 as proposed (engine SVG map; PDF export deferred).

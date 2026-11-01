@@ -2,7 +2,7 @@
 
 **As of:** Mon Oct 26, 2026 · **Owner:** Rone · **Status:** All four scenarios built (Elena, Cameron, Jordyn, Daniel). 26 engine tests + 46 browser tests (`npm run test:ui`, needs Playwright) green. Mobile pass done (pinned map, Badge/Inspect panes, map-first landscape). NOT yet done: real-device phone check, SME review, four-scenario learner walkthrough, cinematic visuals.
 
-> **Phase 00B review (Oct 31): final recommendation PASS, awaiting Rone's approval; Phase 01 not started** — see `docs/v2-phase00b-review.md` (§8: crosscheck against the four locked references in `docs/v2-references/`, implementation rules R1–R8). Locked cast: Elena Park, **Cameron Flynn** (key `marcus`, was Marcus Reyes), **Jenni Nair** (Daniel's escort, was Priya Nair), Daniel Brooks, Jordyn Kim (key `jordan`). The old Jordyn-avatar item is resolved by the locked portrait set.
+> **V2 Phase 01 (foundation) done Nov 1, awaiting review; Phase 02 not started.** `src/v2/{shell.html,styles.css,app.js}` build to `dist/v2.html` + `v2.html` (separate from V1; V1 output byte-identical). Shell: textured header (logo, Shift Brief, Facility Map), Shift Inbox, hash routing with Back, the four-stage tracker as navigation (compact numbers below about 390px), one map region (desktop column at 1180px+, full-screen dialog otherwise), focus restored by `data-nx-key` after every render. Stage workspaces are placeholders until Phases 02–06. Tests: `test/v2.css.test.js` (nx- prefix lint, token contrast) in `npm test`; `test/v2.test.js` in `npm run test:ui`. Review screenshots: `docs/v2-review-shots/phase01/`. Phase 00B PASS (Nov 1): `docs/v2-phase00b-review.md` §8–9.
 
 ---
 
@@ -97,6 +97,7 @@ Frame: an **operations-desk shift**, with a ticket queue, recurring characters, 
 ```
 src/engine.js     data model + evaluator (Engine global; module.exports for node)
 src/flow.js       grade, steps, finalized, verified, buildWalk, buildRecord: pure (sc, t), shared by V1 and V2
+src/v2/           V2 shell (shell.html, styles.css with nx- classes and tokens, app.js); built to dist/v2.html + v2.html
 src/scenarios.js  tickets: people, messages, records, notes, routes, editable groups (SCENARIOS global)
 src/ui.html       page shell + UI script with /*__ENGINE__*/ and /*__SCENARIOS__*/ placeholders
 build.py          inlines engine + scenarios -> dist/nautilus_access.html AND index.html (GitHub Pages serves index.html from main)
