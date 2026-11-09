@@ -19,7 +19,7 @@ const ICON={review:'M5 3h9l4 4v6 M5 3v18h7 M8 9h6 M8 13h3 M16.5 16.5m-3 0a3 3 0 
   decide:'M12 3v18 M5 7h14 M5 7l-3 6h6z M19 7l-3 6h6z M8 21h8',respond:'M4 12h12 M12 6l6 6-6 6 M20 5v14'};
 const icon=(k,cls='nx-icon')=>`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]||ICON.close}"/></svg>`;
 const fresh=id=>{const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:E.clone(sc.doorStatus||{}),groupOverrides:{}},route:sc.routes?sc.routes[0].id:null,
-  prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,record:null,open:{}};};
+  prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,record:null,open:{},read:{}};};
 const st={},view={};ORDER.forEach(id=>{st[id]=fresh(id);view[id]={stage:null};});
 const isWide=()=>matchMedia('(min-width:1180px)').matches;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -131,7 +131,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-nx-open],[
   else if(a.dataset.nxNext){go({...route,stage:a.dataset.nxNext},{replace:true});const h=document.querySelector('.nx-instr h2');
     document.querySelector('.nx-tracker').scrollIntoView({block:'start'});h.focus({preventScroll:true});}
   /* reading a record is a domain action (as in V1): it is recorded on the ticket and counts toward Review/Investigate */
-  else if(a.dataset.nxRec){const t=st[route.id],k=a.dataset.nxRec;t.open[k]=!t.open[k];render();}
+  else if(a.dataset.nxRec){const t=st[route.id],k=a.dataset.nxRec;t.open[k]=!t.open[k];if(t.open[k])t.read[k]=true;render();}
   else if(a.dataset.nxAct==='inbox'){e.preventDefault();backToInbox();}
   else if(a.dataset.nxAct==='brief')openBrief();});
 /* arrow keys move between the four stages; Enter or Space selects */

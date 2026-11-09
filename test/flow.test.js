@@ -63,17 +63,29 @@ t('names: Cameron Flynn and Jenni Nair appear in grading text, records and walks
   assert(!/Marcus|Priya/.test(JSON.stringify(S)), 'no old display name left in scenario data');
   assert.equal(S.marcus.person.id, 'marcus', 'stable internal key unchanged'); assert.equal(S.jordan.person.id, 'jordan');
 });
-t('status: new until real work; navigation-only fields never count; record reading, changes and walks do; close attempts and finals', () => {
+t('status: new until real work; navigation never counts; reading, changes, walks and close attempts do; only evaluated outcomes needing revision are corrections', () => {
+  // every result title the grader can produce is classified: incomplete attempts (badr) vs revisions (warnr, non-final) vs finals
+  const titles = {}; for (const r of require('./golden/flow-baseline.json').cases) { const t = r.grade; const k = t.cls === 'good' || t.final ? 'closed' : t.cls === 'warnr' ? 'correction' : 'progress'; (titles[k] = titles[k] || new Set()).add(t.title); }
+  assert.deepEqual([...titles.progress].sort(), ['Not ready to close', 'Record a reason', 'Review incomplete']);
+  assert.deepEqual([...titles.correction].sort(), ['Escort not designated', 'Offboarding incomplete', 'Reason does not match the records', 'Works, but outside the approved scope', 'Works, but too broad']);
   for (const id of Object.keys(S)) { const x = fresh(id); assert.equal(F.status(S[id], x), 'new', id); }
   const e = fresh('elena'); e.person.credential.groups = ['allStaff']; assert.equal(F.status(S.elena, e), 'progress', 'badge change');
   e.person.credential.groups = []; assert.equal(F.status(S.elena, e), 'new', 'undoing the change returns to new');
-  const r = fresh('elena'); r.open['WA-1041'] = true; assert.equal(F.status(S.elena, r), 'progress', 'record read');
-  r.open['WA-1041'] = false; assert.equal(F.status(S.elena, r), 'new', 'closing the record again leaves nothing done');
+  const r = fresh('elena'); r.open['WA-1041'] = true; r.read = { 'WA-1041': true }; assert.equal(F.status(S.elena, r), 'progress', 'record read');
+  r.open['WA-1041'] = false; assert.equal(F.status(S.elena, r), 'progress', 'a record read stays read after it is collapsed');
+  const o = fresh('elena'); o.open['WA-1041'] = true; assert.equal(F.status(S.elena, o), 'progress', 'an open record (V1 state, no read log) still counts');
   const c = fresh('marcus'); c.world.groupOverrides.diveCrew = S.marcus.groupScheduleEdit.to; assert.equal(F.status(S.marcus, c), 'progress', 'group hours');
   const d = fresh('daniel'); d.route = 'wait'; assert.equal(F.status(S.daniel, d), 'progress', 'route choice');
   const j = fresh('jordan'); j.disp = 'ended'; assert.equal(F.status(S.jordan, j), 'progress', 'audit reason');
   const w = walked(S.elena, fresh('elena')); assert.equal(F.status(S.elena, w), 'progress', 'walk');
-  const q = fresh('jordan'); q.result = F.grade(S.jordan, q); assert.equal(F.status(S.jordan, q), 'correction', 'early close');
+  const q = fresh('jordan'); q.result = F.grade(S.jordan, q); assert.equal(q.result.title, 'Review incomplete');
+  assert.equal(F.status(S.jordan, q), 'progress', 'an incomplete close attempt is in progress, not a correction');
+  const nr = fresh('elena'); nr.person.credential.groups = ['allStaff', 'education']; nr.result = F.grade(S.elena, nr); assert.equal(nr.result.title, 'Not ready to close');
+  assert.equal(F.status(S.elena, nr), 'progress', 'not ready to close (no walk yet)');
+  const rr = fresh('jordan'); rr.person.credential.active = false; rr.result = F.grade(S.jordan, rr); assert.equal(rr.result.title, 'Record a reason'); assert.equal(F.status(S.jordan, rr), 'progress');
+  const wb = fresh('elena'); wb.person.credential.groups = ['allStaff', 'exhibitOps']; close(S.elena, walked(S.elena, wb));
+  assert.equal(wb.result.title, 'Works, but outside the approved scope'); assert.equal(F.status(S.elena, wb), 'correction', 'an evaluated outcome that needs revision');
+  const wr = fresh('jordan'); wr.person.credential.active = false; wr.disp = 'followup'; close(S.jordan, wr); assert.equal(F.status(S.jordan, wr), 'correction', 'wrong reason');
   const g = fresh('jordan'); g.person.credential.active = false; g.disp = 'ended'; close(S.jordan, g); assert.equal(F.status(S.jordan, g), 'closed');
   const k = fresh('daniel'); k.route = 'wait'; close(S.daniel, k); assert.equal(F.status(S.daniel, k), 'closed', 'a costed final result is closed');
 });

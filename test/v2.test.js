@@ -109,7 +109,7 @@ const tests = {
     assert.deepEqual(items.map(i => i.cur), [null, 'page', null, null]); assert(items.every(i => i.img === 192), 'V2 192px avatars');
     assert(!/Jenni/.test(await pg.textContent('#nxInbox')), 'Jenni is not a ticket');
   },
-  async 'status: New until real work; opening tickets, stages, Next, the map and the brief change nothing; a record read is In progress'(b) {
+  async 'status: New until real work; opening tickets, stages, Next, the map and the brief change nothing; a record read is In progress and stays so'(b) {
     const pg = await page(b, 'phone'); const statuses = () => pg.$$eval('.nx-status', s => s.map(x => x.textContent));
     assert.deepEqual(await statuses(), ['New', 'New', 'New', 'New']); assert.equal(await pg.textContent('.nx-count'), '4');
     for (const id of TICKETS) { await openTicket(pg, id); for (let i = 1; i < 4; i++) await goStage(pg, i); await pg.click('#nxMapBtn'); await pg.keyboard.press('Escape');
@@ -119,7 +119,7 @@ const tests = {
     assert.deepEqual(await statuses(), ['New', 'New', 'In progress', 'New']);
     assert(/Jordyn Kim[\s\S]*In progress/.test(await pg.textContent('[data-nx-open="jordan"]')), 'status is part of the link text');
     await openTicket(pg, 'jordan'); await pg.click('[data-nx-rec="WO-1873"]'); await pg.click('[data-nx-act="inbox"]');
-    assert.deepEqual(await statuses(), ['New', 'New', 'New', 'New'], 'derived, not stored: closing the only record read returns to New');
+    assert.deepEqual(await statuses(), ['New', 'New', 'In progress', 'New'], 'a record read stays read after it is collapsed');
   },
   async 'Review, all four: the request in its sender\'s words; Jordyn\'s ticket opens with the ops desk assignment, not a message from Jordyn'(b) {
     const pg = await page(b, 'desk'); const S = await pg.evaluate(() => SCENARIOS);
@@ -159,6 +159,11 @@ const tests = {
     assert.equal(r.tag, 'H2'); assert.equal(r.focus, 'Investigate'); assert.equal(r.hash, '#/t/jordan/investigate');
     assert(r.top >= r.header - 1 && r.top < r.header + 40, JSON.stringify(r));
     await pg.click('.nx-step >> nth=2'); assert.equal(await active(pg), 'step-2', 'tracker click keeps focus on the chevron');
+    for (const size of ['phone400', 'desk']) { const d = await page(b, size, '#/t/elena/review'); await d.setViewportSize({ ...SIZES[size], height: 520 });
+      await d.evaluate(() => scrollTo(0, document.body.scrollHeight)); await d.click('[data-nx-key="next"]');
+      const q = await d.evaluate(() => ({ top: document.querySelector('.nx-tracker').getBoundingClientRect().top, header: document.querySelector('.nx-header').getBoundingClientRect().bottom,
+        heading: document.querySelector('.nx-instr h2').getBoundingClientRect().bottom, focus: document.activeElement.textContent }));
+      assert(q.top >= q.header - 1 && q.heading < 520, `${size} ${JSON.stringify(q)}`); assert.equal(q.focus, 'Configure'); await d.close(); }
   },
   async 'Configure, Verify and Close stay labelled placeholders; Review is the only built stage'(b) {
     const pg = await page(b, 'desk');
