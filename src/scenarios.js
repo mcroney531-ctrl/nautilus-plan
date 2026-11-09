@@ -3,7 +3,7 @@ const SCENARIOS = {
   elena: {
     tab: 'Elena', kind: 'Issue', verify: true, closeAction: 'Issue badge', record: 'issue', recordArt: 'issue_v1',
     principle: 'Least privilege: grant what the work needs, and check everything the badge lights, on both levels.',
-    coach: { review: 'Read what Elena needs and when. Her approved record is WA-1041.', configure: 'Choose groups that cover her rooms and nothing else. Check the lit footprint on both levels.', verify: 'Walk Elena in to check the badge works from her side.', close: 'Issue the badge.' },
+    coach: { review: 'Read what Elena needs and when. Her approved record is WA-1041.', configure: 'Choose groups that cover her rooms and nothing else. Check the granted footprint on both levels.', verify: 'Walk Elena in to check the badge works from her side.', close: 'Issue the badge.' },
     compare: { groups: ['exhibitOps'], label: 'the standard onboarding template (Exhibit Operations)' }, time: 7.25, day: 'Tue', date: '2026-10-27', start: 'outW', targets: ['kelp', 'touch', 'classroom'],
     person: { id: 'elena', avatar: '__ART:avatar_elena.webp__', name: 'Elena Park', initials: 'EP', role: 'Marine educator · starts Tuesday', title: 'Marine Educator', department: 'Education', credentialType: 'Staff',
       credential: { active: true, groups: [], exceptions: [] },

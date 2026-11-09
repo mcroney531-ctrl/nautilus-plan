@@ -236,6 +236,26 @@ const tests = {
     const pg = await page(b, 'desk', '#/t/jordan/investigate'); await pg.click('[data-nx-rec="WO-1873"]'); await pg.click('[data-nx-rec="WO-1873"]');
     assert(/Investigate, done/.test(await pg.getAttribute('.nx-step >> nth=1', 'aria-label')), 'tick kept after collapsing'); assert.equal(await pg.evaluate(() => __nx.status('jordan')), 'progress');
   },
+  async 'phone: Badge permissions collapsed by default with a compact summary; Change Review and the mini footprint stay visible; desktop starts open'(b) {
+    const pg = await page(b, 'phone', '#/t/elena/configure'); await pg.check('[data-nx-key="g-exhibitOps"]');
+    assert.equal(await pg.getAttribute('[data-nx-key="perms"]', 'aria-expanded'), 'false'); assert(!(await pg.isVisible('#nxPerms')));
+    assert(/^9 doors · \d+ areas in the granted footprint · includes restricted: Quarantine$/.test(await pg.textContent('.nx-badge-sum')), await pg.textContent('.nx-badge-sum'));
+    assert(await pg.isVisible('.nx-impact h3') && await pg.isVisible('.nx-mini'));
+    await pg.click('[data-nx-key="perms"]'); assert(await pg.isVisible('#nxPerms')); assert.equal(await active(pg), 'perms'); assert.equal(await pg.getAttribute('[data-nx-key="perms"]', 'aria-expanded'), 'true');
+    await pg.uncheck('[data-nx-key="g-exhibitOps"]'); assert(await pg.isVisible('#nxPerms'), 'the choice survives re-renders');
+    const d = await page(b, 'desk', '#/t/elena/configure'); assert(await d.isVisible('#nxPerms'), 'desktop starts open');
+  },
+  async 'change review lists every changed door and every changed area, separately (engine delta, nothing suppressed)'(b) {
+    const pg = await page(b, 'desk', '#/t/elena/configure'); await pg.check('[data-nx-key="g-exhibitOps"]');
+    const want = await pg.evaluate(() => __nx.state('elena').delta);
+    const got = await pg.evaluate(() => ({ doors: [...document.querySelectorAll('.nx-impact [data-door]')].map(e => e.dataset.door), spaces: [...document.querySelectorAll('.nx-impact [data-space]')].map(e => e.dataset.space) }));
+    assert.deepEqual(got.doors.sort(), [...want.addedDoors, ...want.removedDoors].sort()); assert.deepEqual(got.spaces.sort(), [...want.addedSpaces, ...want.removedSpaces].sort());
+    assert.equal(want.addedDoors.length, 9, 'all nine Exhibit Operations doors, including ones whose areas are listed');
+  },
+  async 'Review and Investigate ticks stay after records are read and collapsed'(b) {
+    const pg = await page(b, 'desk', '#/t/elena/review'); await pg.click('[data-nx-rec="WA-1041"]'); await pg.click('[data-nx-rec="WA-1041"]');
+    assert(/Review, done/.test(await pg.getAttribute('.nx-step >> nth=0', 'aria-label')));
+  },
   async 'semantics: banner, labelled inbox navigation, main; one h1 per ticket; stage and section headings; the message is a quotation with its sender; noindex'(b) {
     const pg = await page(b, 'desk', '#/t/elena/review');
     const r = await pg.evaluate(() => ({ banner: !!document.querySelector('header.nx-header'), nav: document.querySelector('nav#nxInbox').getAttribute('aria-labelledby'), main: !!document.querySelector('main#nxWork'),

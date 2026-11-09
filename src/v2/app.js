@@ -22,9 +22,9 @@ const ICON={review:'M5 3h9l4 4v6 M5 3v18h7 M8 9h6 M8 13h3 M16.5 16.5m-3 0a3 3 0 
 const icon=(k,cls='nx-icon')=>`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]||ICON.close}"/></svg>`;
 const fresh=id=>{const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:E.clone(sc.doorStatus||{}),groupOverrides:{}},route:sc.routes?sc.routes[0].id:null,
   prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,record:null,open:{},read:{}};};
-const st={},view={};ORDER.forEach(id=>{st[id]=fresh(id);view[id]={stage:null,level:1};});
+const st={},view={};ORDER.forEach(id=>{st[id]=fresh(id);view[id]={stage:null,level:1,perms:null};});
 let inboxLevel=1;
-const isWide=()=>matchMedia('(min-width:1180px)').matches;
+const isWide=()=>matchMedia('(min-width:1180px)').matches,narrow=()=>!matchMedia('(min-width:760px)').matches;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let route={screen:'inbox',id:null,stage:null,map:false},invoker=null,invokerKey=null;
 
@@ -131,7 +131,11 @@ function decisionHTML(id,key){const sc=S[id],t=st[id],c=t.person.credential;let 
 /* the granted footprint as text: doors included in badge permissions, and the areas they give access to */
 function badgeHTML(id){const t=st[id],fp=E.footprint(t.world,t.person),ds=[...fp.doors].map(d=>E.DOORS[d].n);
   const by=k=>[...fp.spaces].filter(x=>k.includes(E.SPACES[x].kind)).map(x=>E.SPACES[x].n),grp=[['public',by(['public','program'])],['staff',by(['staff','core'])],['restricted',by(['restricted'])]].filter(x=>x[1].length);
-  return `<section class="nx-card nx-badge" aria-labelledby="nxBadgeH"><h2 id="nxBadgeH" class="nx-h">Badge permissions</h2><p>${!t.person.credential.active?'The credential is deactivated: the badge has no permissions.':ds.length?`Grants access to ${ds.length} door${ds.length>1?'s':''}: ${ds.map(esc).join(', ')}. Areas in the granted footprint (through those doors and open passages): ${grp.map(x=>`${x[0]}: ${x[1].map(esc).join(', ')}`).join('; ')}.`:'No doors are in this badge\'s permissions yet.'}</p></section>`;}
+  const rs=by(['restricted']),open=view[id].perms??!narrow();
+  const sum=!t.person.credential.active?'Credential deactivated: no permissions':`${ds.length} door${ds.length===1?'':'s'} · ${fp.spaces.size} area${fp.spaces.size===1?'':'s'} in the granted footprint${rs.length?` · includes restricted: ${rs.map(esc).join(', ')}`:''}`;
+  return `<section class="nx-card nx-badge" aria-labelledby="nxBadgeH"><h2 id="nxBadgeH" class="nx-h">Badge permissions</h2><p class="nx-badge-sum">${sum}</p>
+    <button class="nx-btn nx-btn-quiet" type="button" data-nx-key="perms" data-nx-act="perms" aria-expanded="${open}" aria-controls="nxPerms">${open?'Hide':'Show'} doors and areas</button>
+    <div id="nxPerms"${open?'':' hidden'}><p>${!t.person.credential.active?'The credential is deactivated: the badge has no permissions.':ds.length?`Grants access to ${ds.length} door${ds.length>1?'s':''}: ${ds.map(esc).join(', ')}. Areas in the granted footprint (through those doors and open passages): ${grp.map(x=>`${x[0]}: ${x[1].map(esc).join(', ')}`).join('; ')}.`:'No doors are in this badge\'s permissions yet.'}</p></div></section>`;}
 /* change review: the effective-permission difference of the last change (V1 semantics), never "which box changed" */
 function impactHTML(id){const sc=S[id],t=st[id],d=t.delta,td=t.tdelta,hasT=td&&(td.opened.length||td.closed.length);
   let h=`<section class="nx-card nx-impact" aria-labelledby="nxImpH"><h2 id="nxImpH" class="nx-h">Change review</h2>`;
@@ -139,11 +143,10 @@ function impactHTML(id){const sc=S[id],t=st[id],d=t.delta,td=t.tdelta,hasT=td&&(
   const none=!d.addedSpaces.length&&!d.removedSpaces.length&&!d.addedDoors.length&&!d.removedDoors.length&&!hasT,dn=a=>a.map(x=>esc(E.DOORS[x].n)).join(', ');
   h+=`<p class="nx-last">${esc(t.lastLabel||'Last change')}</p>`;
   if(none){const s=t.still;h+=`<p class="nx-note">${s&&s.doors.length&&s.via.length?`Access at ${sc.day} ${E.fmt(sc.time)} doesn't change: ${s.via.map(esc).join(' and ')} still ${s.via.length>1?'grant':'grants'} ${dn(s.doors)}.`:'Effective permissions don\'t change.'}</p>`;}
-  if(d.addedSpaces.length)h+=`<h3>Added to the granted footprint</h3><ul class="nx-tags">${d.addedSpaces.map(k=>`<li class="nx-tag nx-tag-add">+ ${esc(E.SPACES[k].n)}${E.SPACES[k].kind==='restricted'?' <em>restricted</em>':''}${E.SPACES[k].l===2&&!/L2/.test(E.SPACES[k].n)?' <em>L2</em>':''}</li>`).join('')}</ul>`;
-  if(d.removedSpaces.length)h+=`<h3>Removed from the granted footprint</h3><ul class="nx-tags">${d.removedSpaces.map(k=>`<li class="nx-tag nx-tag-rem">− ${esc(E.SPACES[k].n)}${E.SPACES[k].l===2&&!/L2/.test(E.SPACES[k].n)?' <em>L2</em>':''}</li>`).join('')}</ul>`;
-  const extra=d.addedDoors.filter(x=>!d.addedSpaces.includes(E.DOORS[x].into)),lost=d.removedDoors.filter(x=>!d.removedSpaces.includes(E.DOORS[x].into));
-  if(extra.length)h+=`<h3>Doors added to badge permissions</h3><p>${dn(extra)}</p>`;
-  if(lost.length)h+=`<h3>Doors removed from badge permissions</h3><p>${dn(lost)}</p>`;
+  if(d.addedSpaces.length)h+=`<h3>Added to the granted footprint</h3><ul class="nx-tags">${d.addedSpaces.map(k=>`<li class="nx-tag nx-tag-add" data-space="${k}">+ ${esc(E.SPACES[k].n)}${E.SPACES[k].kind==='restricted'?' <em>restricted</em>':''}${E.SPACES[k].l===2&&!/L2/.test(E.SPACES[k].n)?' <em>L2</em>':''}</li>`).join('')}</ul>`;
+  if(d.removedSpaces.length)h+=`<h3>Removed from the granted footprint</h3><ul class="nx-tags">${d.removedSpaces.map(k=>`<li class="nx-tag nx-tag-rem" data-space="${k}">− ${esc(E.SPACES[k].n)}${E.SPACES[k].l===2&&!/L2/.test(E.SPACES[k].n)?' <em>L2</em>':''}</li>`).join('')}</ul>`;
+  if(d.addedDoors.length)h+=`<h3>Doors added to badge permissions</h3><ul class="nx-tags">${d.addedDoors.map(x=>`<li class="nx-tag nx-tag-add" data-door="${x}">+ ${esc(E.DOORS[x].n)}</li>`).join('')}</ul>`;
+  if(d.removedDoors.length)h+=`<h3>Doors removed from badge permissions</h3><ul class="nx-tags">${d.removedDoors.map(x=>`<li class="nx-tag nx-tag-rem" data-door="${x}">− ${esc(E.DOORS[x].n)}</li>`).join('')}</ul>`;
   if(hasT)h+=`<h3>Same places, different hours</h3><p>At ${sc.day} ${E.fmt(sc.time)}: ${td.opened.length?`newly opens ${dn(td.opened)}`:''}${td.opened.length&&td.closed.length?'; ':''}${td.closed.length?`no longer opens ${dn(td.closed)}`:''}. Applies to ${esc(t.tscope)}.</p>`;
   if(d.addedSpaces.length||d.removedSpaces.length)h+=`<button class="nx-btn nx-btn-quiet" type="button" data-nx-key="delta" data-nx-act="delta" aria-pressed="${t.showDelta}">${t.showDelta?'Showing':'Show'} changes on the map</button>`;
   return h+'</section>';}
@@ -244,6 +247,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-nx-open],[
   else if(a.dataset.nxAct==='inbox'){e.preventDefault();backToInbox();}
   else if(a.dataset.nxAct==='brief')openBrief();
   else if(a.dataset.nxAct==='map')openMap();
+  else if(a.dataset.nxAct==='perms'){view[route.id].perms=a.getAttribute('aria-expanded')!=='true';render();}
   else if(a.dataset.nxAct==='delta'){const t=st[route.id];t.showDelta=!t.showDelta;render();}});
 /* arrow keys move between the four stages; Enter or Space selects */
 document.addEventListener('keydown',e=>{const b=e.target.closest&&e.target.closest('.nx-step');if(!b)return;

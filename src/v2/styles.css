@@ -108,6 +108,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-recorded{margin:4px 0 0;font-size:14px}
 .nx-badge p,.nx-impact p{margin:0 0 8px;font-size:14px}
 .nx-last{font-weight:700}
+.nx-badge-sum{font-weight:650}
+.nx-badge #nxPerms{margin-top:8px}
 .nx-impact h3{margin:10px 0 6px;font:700 14px var(--nx-font)}
 .nx-tags{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 .nx-tag{padding:3px 10px;border-radius:14px;font-size:13px;font-weight:600;border:1px solid var(--nx-control-line);background:var(--nx-surface)}

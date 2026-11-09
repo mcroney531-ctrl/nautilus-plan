@@ -54,6 +54,9 @@ t('Investigate stays done after a read record is collapsed (t.read); without t.r
   const v = fresh('jordan'); v.open['WO-1873'] = true; assert.equal(F.steps(S.jordan, v)[1][2], true); v.open['WO-1873'] = false;
   assert.equal(F.steps(S.jordan, v)[1][2], false, 'no read log (V1 state): unchanged behaviour');
   assert.equal(F.steps(S.jordan, fresh('jordan'))[1][2], false);
+  for (const id of Object.keys(S)) { const r = fresh(id), k = S[id].person.authorizations[0].id; r.open[k] = true; r.read = { [k]: true }; r.open[k] = false;
+    assert.equal(F.steps(S[id], r)[0][2], true, id + ': Review stays done after a read record is collapsed'); }
+  const n = fresh('elena'); n.open['WA-1041'] = true; n.open['WA-1041'] = false; assert.equal(F.steps(S.elena, n)[0][2], false, 'no read log: unchanged');
 });
 t('landmarks: audit and adapt tickets use their own step names', () => {
   assert.deepEqual(F.steps(S.jordan, fresh('jordan')).map(s => s[1]), ['Review', 'Investigate', 'Decide', 'Submit']);
