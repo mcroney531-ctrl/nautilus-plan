@@ -1,11 +1,18 @@
-/* Nautilus V2 shell (Phase 01): routing, inbox-to-ticket navigation, the four-stage tracker, the global map region and
-   dialogs. Three layers: domain state (st, same shape as V1; only domain actions may change it), derived state (Flow),
-   view state (route + per-ticket stage; never read by evaluation). Stage workspaces and the map drawing arrive in 02-05. */
+/* Nautilus V2 (Phases 01-02): routing, the Shift Inbox, the four-stage tracker, the Review workspace, the global map region
+   and dialogs. Three layers: domain state (st, same shape as V1; only domain actions may change it), derived state (Flow),
+   view state (route + per-ticket stage; never read by evaluation). Configure, Verify, Close and the map drawing arrive in 03-06. */
 (()=>{
 const E=Engine,S=SCENARIOS,F=Flow,$=id=>document.getElementById(id);
 const ORDER=['elena','marcus','jordan','daniel'];
-/* presentation only: V2 portraits for each ticket (V1 keeps its own avatars) */
+/* presentation only (scenario data and generated records are untouched): V2 portraits, the locked display roles, and who
+   sent the opening message. Jordyn's ticket opens with the review assignment, not a message from Jordyn. */
 const AVATAR={elena:'__ART:v2/avatars/elena.webp__',marcus:'__ART:v2/avatars/cameron.webp__',jordan:'__ART:v2/avatars/jordyn.webp__',daniel:'__ART:v2/avatars/daniel.webp__'};
+const ROLE={elena:'Marine Educator',marcus:'Dive Crew Lead',jordan:'External Exhibit AV Vendor',daniel:'External Frozen-Feed Driver'};
+const SENDER={jordan:{name:'Ops desk',note:'Quarterly contractor access review'}};
+const STATUS={new:'New',progress:'In progress',correction:'Needs correction',closed:'Closed'};
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+/* extra context the scenario keeps in its role line (Elena: "starts Tuesday") */
+const contextOf=id=>{const c=S[id].person.role.split(' · ')[1];return c?cap(c):'';};
 const ICON={review:'M5 3h9l4 4v6 M5 3v18h7 M8 9h6 M8 13h3 M16.5 16.5m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0 M18.7 18.7L21 21',
   configure:'M3 6h18v12H3z M7 10h4 M7 14h2 M14 10h3 M14 14h3',verify:'M8 3c2 0 3 2 3 5s-1 5-3 5-3-2-3-5 1-5 3-5z M7 15h3v3H7z M16 8c2 0 3 2 3 5s-1 5-3 5-3-2-3-5 1-5 3-5z M15 20h3v1h-3z',
   close:'M5 3h9l4 4v14H5z M8.5 13.5l2.5 2.5 4.5-5',investigate:'M10.5 10.5m-6.5 0a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0 M15.5 15.5L21 21',
@@ -22,7 +29,7 @@ let route={screen:'inbox',id:null,stage:null,map:false},invoker=null;
 const stagesOf=id=>F.steps(S[id],st[id]).map(([key,label,done])=>({key,label:label.replace(' (n/a)',''),na:/\(n\/a\)/.test(label),done}));
 const stageOf=id=>{const ss=stagesOf(id),k=view[id].stage;return ss.find(s=>s.key===k)||ss[0];};
 const refOf=sc=>(sc.person.authorizations.find(a=>/^[A-Z]{2,4}-\d+$/.test(a.id))||sc.person.authorizations[0]).id;
-const statusOf=id=>F.finalized(st[id])?'Closed':st[id].result?'Needs correction':'Open';
+const statusOf=id=>F.status(S[id],st[id]);
 
 /* ---------- routing: #/inbox, #/t/<id>/<stage>, either with /map ---------- */
 function parse(h){const p=h.replace(/^#\/?/,'').split('/').filter(Boolean),map=p[p.length-1]==='map';if(map)p.pop();
@@ -49,30 +56,45 @@ function closeMap(){history.state&&history.state.map?history.back():go({...route
 function render(){const k=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.nxKey:null;
   $('nxApp').dataset.screen=route.screen;renderInbox();renderWork();
   if(k){const el=document.querySelector(`[data-nx-key="${k}"]`);if(el&&el!==document.activeElement)el.focus({preventScroll:true});}}
-function renderInbox(){const open=ORDER.filter(id=>!F.finalized(st[id])).length;
+function renderInbox(){const open=ORDER.filter(id=>statusOf(id)!=='closed').length;
   $('nxInbox').innerHTML=`<div class="nx-inbox-inner"><h2 class="nx-inbox-h" id="nxInboxH">Shift Inbox <span class="nx-count" aria-label="${open} open">${open}</span></h2>
     <button class="nx-briefcard" type="button" data-nx-key="briefcard" data-nx-act="brief">${icon('review')}<span><b>Shift brief</b> <span>From the ops desk supervisor · how today's tickets work</span></span></button>
-    <ul class="nx-list">${ORDER.map(id=>{const sc=S[id],p=sc.person,cur=route.screen==='ticket'&&route.id===id;
+    <ul class="nx-list">${ORDER.map(id=>{const sc=S[id],p=sc.person,cur=route.screen==='ticket'&&route.id===id,stt=statusOf(id);
       return `<li><a class="nx-item" href="${hashOf({screen:'ticket',id,stage:stageOf(id).key})}" data-nx-key="inbox-${id}" data-nx-open="${id}"${cur?' aria-current="page"':''}>
-        <img class="nx-av" src="${AVATAR[id]}" alt="" width="48" height="48"><span class="nx-item-txt"><b>${esc(p.name)}</b> <span>${esc(p.title||p.role)}</span> <span>${esc(refOf(sc))} · ${esc(sc.day)} ${E.fmt(sc.time)} · ${statusOf(id)}</span></span></a></li>`;}).join('')}</ul></div>`;}
+        <img class="nx-av" src="${AVATAR[id]}" alt="" width="48" height="48"><span class="nx-item-txt"><b>${esc(p.name)}</b> <span>${ROLE[id]}</span> <span class="nx-preview">${esc(sc.message)}</span>
+        <span class="nx-meta">${esc(refOf(sc))} · ${esc(sc.day)} ${E.fmt(sc.time)} <span class="nx-status nx-status-${stt}">${STATUS[stt]}</span></span></span></a></li>`;}).join('')}</ul></div>`;}
 function renderWork(){const w=$('nxWork');
   if(route.screen!=='ticket'){w.innerHTML=`<div class="nx-empty"><p>Select a request from the Shift Inbox.</p></div>`;return;}
   const id=route.id,sc=S[id],p=sc.person,ss=stagesOf(id),i=Math.max(0,ss.findIndex(s=>s.key===view[id].stage)),cur=ss[i],next=ss[i+1],sug=ss.find(s=>!s.done);
-  const PH={0:'Phase 02',1:'Phase 04',2:'Phase 05',3:'Phase 06'};
+  const PH={1:'Phase 04',2:'Phase 05',3:'Phase 06'};
   w.innerHTML=`<div class="nx-ticket">
     <a class="nx-back" href="#/inbox" data-nx-key="back" data-nx-act="inbox"><span aria-hidden="true">‹</span> Shift Inbox</a>
-    <div class="nx-person"><img class="nx-av" src="${AVATAR[id]}" alt="" width="64" height="64"><div><h1 tabindex="-1">${esc(p.name)}</h1><p>${esc(p.title||p.role)} · ${esc(refOf(sc))}</p></div></div>
+    <div class="nx-person"><img class="nx-av" src="${AVATAR[id]}" alt="" width="64" height="64"><div><h1 tabindex="-1">${esc(p.name)}</h1><p>${ROLE[id]} · ${esc(refOf(sc))}${contextOf(id)?` · ${esc(contextOf(id))}`:''}</p></div></div>
     <section class="nx-tracker" aria-labelledby="nxTrackerH">
       <div class="nx-tracker-h"><span id="nxTrackerH">Request progress</span><b aria-hidden="true">${String(i+1).padStart(2,'0')} of 04</b></div>
       <ol class="nx-steps">${ss.map((s,j)=>`<li><button class="nx-step" type="button" data-nx-key="step-${j}" data-nx-step="${s.key}"${s===cur?' aria-current="step"':''}
           aria-label="Step ${j+1} of 4: ${esc(s.label)}${s.na?', not applicable':''}${s.done?', done':''}${s===sug&&s!==cur?', suggested next':''}">
           <span class="nx-chev">${icon(s.key)}<span class="nx-step-num" aria-hidden="true">${j+1}</span>${s.done?`<span class="nx-step-done" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.2 2.2 4.8-5"/></svg></span>`:''}</span>
           <span class="nx-step-label" aria-hidden="true">${esc(s.label)}</span></button></li>`).join('')}</ol>
-      <div class="nx-instr">${icon(cur.key)}<div><h2>${esc(cur.label)}${cur.na?' <span class="nx-instr-na">(not applicable on this route)</span>':''}</h2>${sc.coach&&sc.coach[cur.key]?`<p>${esc(sc.coach[cur.key])}</p>`:''}</div></div>
+      <div class="nx-instr">${icon(cur.key)}<div><h2 tabindex="-1">${esc(cur.label)}${cur.na?' <span class="nx-instr-na">(not applicable on this route)</span>':''}</h2>${sc.coach&&sc.coach[cur.key]?`<p>${esc(sc.coach[cur.key])}</p>`:''}</div></div>
     </section>
-    <section class="nx-card nx-placeholder" aria-label="${esc(cur.label)} workspace"><h2>${esc(cur.label)} workspace</h2><p>This stage's workspace arrives in ${PH[i]}. Navigation, the tracker and the map region are live.</p></section>
-    ${next?`<button class="nx-btn" type="button" data-nx-key="next" data-nx-step="${next.key}">Next: ${esc(next.label)}</button>`:''}
+    ${i===0?reviewHTML(id):`<section class="nx-card nx-placeholder" aria-labelledby="nxPhH"><h2 id="nxPhH">${esc(cur.label)} workspace</h2><p>Not built yet: this stage's workspace arrives in ${PH[i]}. The Review stage, the tracker and the map region are live.</p></section>`}
+    ${next?`<button class="nx-btn" type="button" data-nx-key="next" data-nx-next="${next.key}">Next: ${esc(next.label)}</button>`:''}
   </div>`;}
+/* Review: the request in its sender's words, then the records and notes the ticket links (disclosures; reading one is work
+   recorded on the ticket, as in V1). Only legitimate records appear here: denial causes stay with inspection. */
+function reviewHTML(id){const sc=S[id],p=sc.person,t=st[id],snd=SENDER[id];
+  const recs=[...p.authorizations.map(a=>({id:a.id,title:`${a.id} · ${a.purpose}`,rows:[['Covers',a.places],['When',a.window],['Approved by',a.approver]]})),
+    ...(sc.notes||[]).map(n=>({id:n.id,title:n.id,text:n.text}))];
+  const key=r=>r.id.replace(/[^A-Za-z0-9]+/g,'-');
+  return `<section class="nx-card nx-request" aria-labelledby="nxReqH"><h2 id="nxReqH" class="nx-h">Request</h2>
+      <figure class="nx-msg"><figcaption class="nx-msg-from">${snd?`<span class="nx-msg-desk" aria-hidden="true">${icon('review')}</span><span><b>${esc(snd.name)}</b> <span>${esc(snd.note)} · about ${esc(p.name)}</span></span>`
+        :`<img class="nx-av" src="${AVATAR[id]}" alt="" width="40" height="40"><span><b>${esc(p.name)}</b> <span>${ROLE[id]}</span></span>`}</figcaption>
+        <blockquote class="nx-bubble"><p>${esc(sc.message)}</p></blockquote></figure></section>
+    <section class="nx-card nx-records" aria-labelledby="nxRecH"><h2 id="nxRecH" class="nx-h">Records</h2><p class="nx-note">Open a record to read it.</p>
+      <ul class="nx-chips">${recs.map(r=>`<li><button class="nx-chip" type="button" data-nx-key="rec-${key(r)}" data-nx-rec="${esc(r.id)}" aria-expanded="${!!t.open[r.id]}" aria-controls="nxRec-${key(r)}">${esc(r.id)}</button></li>`).join('')}</ul>
+      ${recs.map(r=>`<div class="nx-rec" id="nxRec-${key(r)}" role="region" aria-label="${esc(r.title)}"${t.open[r.id]?'':' hidden'}><h3>${esc(r.title)}</h3>${r.text?`<p>${esc(r.text)}</p>`
+        :`<dl>${r.rows.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`}</div>`).join('')}</section>`;}
 function announce(t){const l=$('nxLive');l.textContent='';setTimeout(()=>l.textContent=t,30);}
 
 /* ---------- map region: one element, column on wide screens, full-screen dialog otherwise ---------- */
@@ -102,9 +124,14 @@ $('nxBrief').addEventListener('click',e=>{if(e.target.id==='nxBriefClose'||e.tar
 /* ---------- events ---------- */
 $('nxBriefBtn').onclick=openBrief;$('nxMapBtn').onclick=openMap;
 document.querySelector('.nx-brand').addEventListener('click',e=>{e.preventDefault();if(route.screen!=='inbox')backToInbox();});
-document.addEventListener('click',e=>{const a=e.target.closest('[data-nx-open],[data-nx-step],[data-nx-act]');if(!a)return;
+document.addEventListener('click',e=>{const a=e.target.closest('[data-nx-open],[data-nx-step],[data-nx-next],[data-nx-act],[data-nx-rec]');if(!a)return;
   if(a.dataset.nxOpen){e.preventDefault();if(!leaveOK())return;const id=a.dataset.nxOpen;go({screen:'ticket',id,stage:stageOf(id).key,map:false});}
   else if(a.dataset.nxStep){go({...route,stage:a.dataset.nxStep},{replace:true});}
+  /* Next starts the learner at the top of the new stage: focus its heading, bring the tracker into view (chevrons keep focus) */
+  else if(a.dataset.nxNext){go({...route,stage:a.dataset.nxNext},{replace:true});const h=document.querySelector('.nx-instr h2');
+    document.querySelector('.nx-tracker').scrollIntoView({block:'start'});h.focus({preventScroll:true});}
+  /* reading a record is a domain action (as in V1): it is recorded on the ticket and counts toward Review/Investigate */
+  else if(a.dataset.nxRec){const t=st[route.id],k=a.dataset.nxRec;t.open[k]=!t.open[k];render();}
   else if(a.dataset.nxAct==='inbox'){e.preventDefault();backToInbox();}
   else if(a.dataset.nxAct==='brief')openBrief();});
 /* arrow keys move between the four stages; Enter or Space selects */
@@ -113,6 +140,6 @@ document.addEventListener('keydown',e=>{const b=e.target.closest&&e.target.close
   if(j==null||j<0||j>=all.length)return;e.preventDefault();all[j].focus();});
 addEventListener('popstate',onRoute);addEventListener('hashchange',()=>{if(hashOf(parse(location.hash))!==hashOf(route))onRoute();});
 /* read-only hook for the browser tests: evaluation results must not change with navigation */
-window.__nx={grade:id=>F.grade(S[id],st[id]),steps:id=>F.steps(S[id],st[id]),view:()=>JSON.parse(JSON.stringify({route,view}))};
+window.__nx={grade:id=>F.grade(S[id],st[id]),steps:id=>F.steps(S[id],st[id]),status:id=>F.status(S[id],st[id]),view:()=>JSON.parse(JSON.stringify({route,view}))};
 history.replaceState({nx:true,from:null},'',location.hash||'#/inbox');onRoute();
 })();

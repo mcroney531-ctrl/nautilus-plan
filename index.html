@@ -531,7 +531,14 @@ function buildRecord(sc,t){const c=t.person.credential,p=sc.person,fp=E.footprin
   else if(sc.record==='response'){const esc=r.as==='escort'?sc.escort:null;rec.title=r.wait?'Delivery delayed':'Entry recorded';rec.status=r.wait?'Delayed':esc?'Escorted':'Unescorted';
     rec.fields=[['Response',r.label],...(esc?[['Escort',`${esc.name}, ${esc.role} · ${esc.authorizations.map(a=>a.id).join(', ')}`]]:[]),['Authorization',auths],['Outcome',r.wait?'Waiting at the dock':`Reached Receiving, ${when}`]];}
   return rec;}
-return { routeOf, actorOf, center, outP, finalized, verified, steps, buildWalk, grade, buildRecord };
+/* inbox status, derived only from work recorded on the ticket: opening it or moving between stages is navigation, not work.
+   closed = a finalized result; correction = a close attempt that came back for correction; progress = any change to the
+   badge, group hours, route or audit decision, a walk, an inspection, a flagged template or a record read; else new. */
+function status(sc,t){if(finalized(t))return'closed';if(t.result)return'correction';
+  const worked=JSON.stringify(t.person.credential)!==JSON.stringify(sc.person.credential)||Object.keys(t.world.groupOverrides).length>0||
+    !!(sc.routes&&t.route!==sc.routes[0].id)||!!t.disp||!!t.walk||!!t.sel||!!t.flagged||Object.values(t.open).some(Boolean);
+  return worked?'progress':'new';}
+return { routeOf, actorOf, center, outP, finalized, verified, steps, buildWalk, grade, buildRecord, status };
 })();
 if (typeof module !== 'undefined') module.exports = Flow;
 

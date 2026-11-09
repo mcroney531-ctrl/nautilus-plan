@@ -11,6 +11,7 @@ const steps = pg => pg.$$eval('.nx-step', bs => bs.map(b => ({ name: b.getAttrib
 const goStage = (pg, i) => pg.click(`.nx-step >> nth=${i}`);
 const active = pg => pg.evaluate(() => { const a = document.activeElement; return a.dataset.nxKey || a.id || a.tagName; });
 const overflow = pg => pg.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+const openAllRecords = async pg => { const n = await pg.locator('.nx-chip').count(); for (let i = 0; i < n; i++) await pg.locator('.nx-chip').nth(i).click(); };
 
 const tests = {
   async 'no errors and no sideways scrolling: inbox, every stage of every ticket, map overlay (320, 400, 900, 1366)'(b) {
@@ -99,11 +100,79 @@ const tests = {
     assert(/Four access tickets today/.test(await pg.textContent('#nxBrief'))); await pg.keyboard.press('Escape'); assert.equal(await active(pg), 'brief');
     await pg.click('[data-nx-act="brief"]'); await pg.click('#nxBriefClose'); assert.equal(await active(pg), 'briefcard');
   },
-  async 'inbox: four tickets with V2 portraits, live names and roles from scenario data, the ticket in view marked current'(b) {
+  async 'inbox: four tickets with V2 portraits, names, locked display roles and a preview; the ticket in view marked current'(b) {
     const pg = await page(b, 'desk', '#/t/marcus/review');
-    const items = await pg.$$eval('.nx-item', a => a.map(x => ({ t: x.textContent.replace(/\s+/g, ' ').trim(), cur: x.getAttribute('aria-current'), img: x.querySelector('img').naturalWidth })));
-    assert.deepEqual(items.map(i => i.t.split(' · ')[0].replace(/ (WO|WA|PO)-.*/, '')), ['Elena Park Marine Educator', 'Cameron Flynn Dive crew lead', 'Jordyn Kim Exhibit AV vendor', 'Daniel Brooks Frozen-feed driver']);
+    const items = await pg.$$eval('.nx-item', a => a.map(x => ({ name: x.querySelector('b').textContent, role: x.querySelector('.nx-item-txt > span').textContent,
+      preview: x.querySelector('.nx-preview').textContent, cur: x.getAttribute('aria-current'), img: x.querySelector('img').naturalWidth })));
+    assert.deepEqual(items.map(i => `${i.name} | ${i.role}`), ['Elena Park | Marine Educator', 'Cameron Flynn | Dive Crew Lead', 'Jordyn Kim | External Exhibit AV Vendor', 'Daniel Brooks | External Frozen-Feed Driver']);
+    assert(/^Hi! I start Tuesday/.test(items[0].preview) && /^We're completing the quarterly/.test(items[2].preview));
     assert.deepEqual(items.map(i => i.cur), [null, 'page', null, null]); assert(items.every(i => i.img === 192), 'V2 192px avatars');
+    assert(!/Jenni/.test(await pg.textContent('#nxInbox')), 'Jenni is not a ticket');
+  },
+  async 'status: New until real work; opening tickets, stages, Next, the map and the brief change nothing; a record read is In progress'(b) {
+    const pg = await page(b, 'phone'); const statuses = () => pg.$$eval('.nx-status', s => s.map(x => x.textContent));
+    assert.deepEqual(await statuses(), ['New', 'New', 'New', 'New']); assert.equal(await pg.textContent('.nx-count'), '4');
+    for (const id of TICKETS) { await openTicket(pg, id); for (let i = 1; i < 4; i++) await goStage(pg, i); await pg.click('#nxMapBtn'); await pg.keyboard.press('Escape');
+      await goStage(pg, 0); await pg.click('[data-nx-key="next"]'); await pg.click('#nxBriefBtn'); await pg.keyboard.press('Escape'); await pg.click('[data-nx-act="inbox"]'); }
+    assert.deepEqual(await statuses(), ['New', 'New', 'New', 'New'], 'navigation is not work');
+    await openTicket(pg, 'jordan'); await goStage(pg, 0); await pg.click('[data-nx-rec="WO-1873"]'); await pg.click('[data-nx-act="inbox"]');
+    assert.deepEqual(await statuses(), ['New', 'New', 'In progress', 'New']);
+    assert(/Jordyn Kim[\s\S]*In progress/.test(await pg.textContent('[data-nx-open="jordan"]')), 'status is part of the link text');
+    await openTicket(pg, 'jordan'); await pg.click('[data-nx-rec="WO-1873"]'); await pg.click('[data-nx-act="inbox"]');
+    assert.deepEqual(await statuses(), ['New', 'New', 'New', 'New'], 'derived, not stored: closing the only record read returns to New');
+  },
+  async 'Review, all four: the request in its sender\'s words; Jordyn\'s ticket opens with the ops desk assignment, not a message from Jordyn'(b) {
+    const pg = await page(b, 'desk'); const S = await pg.evaluate(() => SCENARIOS);
+    for (const id of TICKETS) { await pg.goto(`${url}#/t/${id}/review`);
+      const r = await pg.evaluate(() => ({ msg: document.querySelector('.nx-request blockquote').textContent.trim(), from: document.querySelector('.nx-request figcaption').textContent.replace(/\s+/g, ' ').trim(),
+        img: !!document.querySelector('.nx-request figcaption img'), h1: document.querySelector('h1').textContent }));
+      assert.equal(r.msg, S[id].message, id); assert.equal(r.h1, S[id].person.name);
+      if (id === 'jordan') { assert.equal(r.from, 'Ops desk Quarterly contractor access review · about Jordyn Kim'); assert(!r.img, 'no Jordyn portrait as sender'); }
+      else { assert(r.from.startsWith(S[id].person.name), r.from); assert(r.img); } }
+  },
+  async 'Review records: every authorization and note as a disclosure with aria-expanded and aria-controls; opening shows the record, focus stays put'(b) {
+    const pg = await page(b, 'phone400'); const S = await pg.evaluate(() => SCENARIOS);
+    for (const id of TICKETS) { await pg.goto(`${url}#/t/${id}/review`);
+      const want = [...S[id].person.authorizations.map(a => a.id), ...(S[id].notes || []).map(n => n.id)];
+      assert.deepEqual(await pg.$$eval('.nx-chip', c => c.map(x => x.textContent)), want, id);
+      for (const rid of want) { const chip = `[data-nx-rec="${rid}"]`, panel = '#' + await pg.getAttribute(chip, 'aria-controls');
+        assert.equal(await pg.getAttribute(chip, 'aria-expanded'), 'false'); assert(!(await pg.isVisible(panel)));
+        await pg.click(chip); assert.equal(await pg.getAttribute(chip, 'aria-expanded'), 'true'); assert(await pg.isVisible(panel), rid);
+        assert.equal(await pg.evaluate(() => document.activeElement.dataset.nxRec), rid, 'focus stays on the chip');
+        const a = S[id].person.authorizations.find(x => x.id === rid);
+        if (a) { const txt = await pg.textContent(panel); assert(txt.includes(a.places) && txt.includes(a.window) && txt.includes(a.approver), rid); }
+        else assert((await pg.textContent(panel)).includes(S[id].notes.find(n => n.id === rid).text));
+        assert.equal(await overflow(pg), 0, `${id} ${rid} open`); } }
+  },
+  async 'Review never names a denial cause, an engine verdict or Jenni (inspection keeps those)'(b) {
+    const pg = await page(b, 'phone');
+    for (const id of TICKETS) { await pg.goto(`${url}#/t/${id}/review`); await openAllRecords(pg);
+      const txt = await pg.textContent('#nxWork');
+      const bad = txt.match(/.{0,40}(didn't open|denied|fault|repair|outside (its|the) schedule|no group|NO_GRANT|OUTSIDE_SCHEDULE|HARDWARE|out of scope|no active record).{0,40}/i);
+      assert(!bad, id + ': ' + (bad && bad[0])); assert(!/Jenni/.test(txt), id); }
+  },
+  async 'Next starts the learner at the new stage: focus on its heading, tracker scrolled into view below the header; chevron clicks keep focus'(b) {
+    const pg = await page(b, 'phone', '#/t/jordan/review'); await openAllRecords(pg);
+    await pg.evaluate(() => scrollTo(0, document.body.scrollHeight)); await pg.click('[data-nx-key="next"]');
+    const r = await pg.evaluate(() => ({ focus: document.activeElement.textContent, tag: document.activeElement.tagName, top: document.querySelector('.nx-tracker').getBoundingClientRect().top,
+      header: document.querySelector('.nx-header').getBoundingClientRect().bottom, hash: location.hash }));
+    assert.equal(r.tag, 'H2'); assert.equal(r.focus, 'Investigate'); assert.equal(r.hash, '#/t/jordan/investigate');
+    assert(r.top >= r.header - 1 && r.top < r.header + 40, JSON.stringify(r));
+    await pg.click('.nx-step >> nth=2'); assert.equal(await active(pg), 'step-2', 'tracker click keeps focus on the chevron');
+  },
+  async 'Configure, Verify and Close stay labelled placeholders; Review is the only built stage'(b) {
+    const pg = await page(b, 'desk');
+    for (const id of TICKETS) { const ss = await pg.evaluate(id => __nx.steps(id), id);
+      for (let i = 1; i < 4; i++) { await pg.goto(`${url}#/t/${id}/${ss[i][0]}`); const t = await pg.textContent('#nxWork');
+        assert(/Not built yet: this stage's workspace arrives in Phase 0[456]/.test(t), `${id} ${ss[i][0]}`); assert(!(await pg.$('.nx-request')), 'no Review content on other stages'); } }
+  },
+  async 'semantics: banner, labelled inbox navigation, main; one h1 per ticket; stage and section headings; the message is a quotation with its sender; noindex'(b) {
+    const pg = await page(b, 'desk', '#/t/elena/review');
+    const r = await pg.evaluate(() => ({ banner: !!document.querySelector('header.nx-header'), nav: document.querySelector('nav#nxInbox').getAttribute('aria-labelledby'), main: !!document.querySelector('main#nxWork'),
+      h1: document.querySelectorAll('#nxWork h1').length, h2: [...document.querySelectorAll('#nxWork h2')].map(h => h.textContent), quote: !!document.querySelector('figure figcaption + blockquote'),
+      robots: document.querySelector('meta[name=robots]').content }));
+    assert(r.banner && r.main && r.nav === 'nxInboxH'); assert.equal(r.h1, 1); assert.deepEqual(r.h2, ['Review', 'Request', 'Records']); assert(r.quote);
+    assert.equal(r.robots, 'noindex, nofollow', 'development preview is kept out of search indexes');
   },
   async 'header and inbox text over the textures stays above 4.5:1 at the brightest point'(b) {
     const pg = await page(b, 'desk', '#/t/elena/review'); await pg.addStyleTag({ content: '.nx-header *,.nx-inbox *{visibility:hidden!important}' });

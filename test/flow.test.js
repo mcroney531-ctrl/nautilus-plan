@@ -63,4 +63,18 @@ t('names: Cameron Flynn and Jenni Nair appear in grading text, records and walks
   assert(!/Marcus|Priya/.test(JSON.stringify(S)), 'no old display name left in scenario data');
   assert.equal(S.marcus.person.id, 'marcus', 'stable internal key unchanged'); assert.equal(S.jordan.person.id, 'jordan');
 });
+t('status: new until real work; navigation-only fields never count; record reading, changes and walks do; close attempts and finals', () => {
+  for (const id of Object.keys(S)) { const x = fresh(id); assert.equal(F.status(S[id], x), 'new', id); }
+  const e = fresh('elena'); e.person.credential.groups = ['allStaff']; assert.equal(F.status(S.elena, e), 'progress', 'badge change');
+  e.person.credential.groups = []; assert.equal(F.status(S.elena, e), 'new', 'undoing the change returns to new');
+  const r = fresh('elena'); r.open['WA-1041'] = true; assert.equal(F.status(S.elena, r), 'progress', 'record read');
+  r.open['WA-1041'] = false; assert.equal(F.status(S.elena, r), 'new', 'closing the record again leaves nothing done');
+  const c = fresh('marcus'); c.world.groupOverrides.diveCrew = S.marcus.groupScheduleEdit.to; assert.equal(F.status(S.marcus, c), 'progress', 'group hours');
+  const d = fresh('daniel'); d.route = 'wait'; assert.equal(F.status(S.daniel, d), 'progress', 'route choice');
+  const j = fresh('jordan'); j.disp = 'ended'; assert.equal(F.status(S.jordan, j), 'progress', 'audit reason');
+  const w = walked(S.elena, fresh('elena')); assert.equal(F.status(S.elena, w), 'progress', 'walk');
+  const q = fresh('jordan'); q.result = F.grade(S.jordan, q); assert.equal(F.status(S.jordan, q), 'correction', 'early close');
+  const g = fresh('jordan'); g.person.credential.active = false; g.disp = 'ended'; close(S.jordan, g); assert.equal(F.status(S.jordan, g), 'closed');
+  const k = fresh('daniel'); k.route = 'wait'; close(S.daniel, k); assert.equal(F.status(S.daniel, k), 'closed', 'a costed final result is closed');
+});
 console.log(`\n${n} flow tests passed`);
