@@ -2,7 +2,7 @@
 // colour pair used for text or controls meets WCAG 2.2 contrast (4.5:1 text, 3:1 large text, icons and boundaries).
 const assert = require('assert'), fs = require('fs'), path = require('path');
 const read = f => fs.readFileSync(path.join(__dirname, '../src/v2', f), 'utf8');
-const css = read('styles.css'), html = read('shell.html'), js = read('app.js');
+const css = read('styles.css'), html = read('shell.html'), js = read('app.js') + read('map.js');
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('ok', name); };
 
 t('every class selector in styles.css is nx-prefixed', () => {
@@ -10,7 +10,7 @@ t('every class selector in styles.css is nx-prefixed', () => {
   const bad = [...new Set([...sel.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map(m => m[1]).filter(c => !c.startsWith('nx-')))];
   assert.deepEqual(bad, []);
 });
-t('every class used in shell.html and app.js markup is nx-prefixed', () => {
+t('every class used in shell.html, app.js and map.js markup is nx-prefixed', () => {
   const used = [...(html + js).matchAll(/class="([^"$]*)"/g)].flatMap(m => m[1].split(/\s+/)).filter(Boolean);
   const viaJs = [...js.matchAll(/className='([^']*)'/g)].map(m => m[1]);
   const bad = [...new Set([...used, ...viaJs].filter(c => !c.startsWith('nx-')))];

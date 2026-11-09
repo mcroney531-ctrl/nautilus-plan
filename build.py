@@ -28,4 +28,4 @@ def build(template, targets, parts):
 
 shared = {"/*__ENGINE__*/": "src/engine.js", "/*__SCENARIOS__*/": "src/scenarios.js", "/*__FLOW__*/": "src/flow.js"}
 build("src/ui.html", ("dist/nautilus_access.html", "index.html"), shared)
-build("src/v2/shell.html", ("dist/v2.html", "v2.html"), {"/*__V2CSS__*/": "src/v2/styles.css", **shared, "/*__V2APP__*/": "src/v2/app.js"})
+build("src/v2/shell.html", ("dist/v2.html", "v2.html"), {"/*__V2CSS__*/": "src/v2/styles.css", **shared, "/*__V2MAP__*/": "src/v2/map.js", "/*__V2APP__*/": "src/v2/app.js"})

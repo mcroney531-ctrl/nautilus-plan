@@ -179,6 +179,51 @@ const tests = {
     assert(r.banner && r.main && r.nav === 'nxInboxH'); assert.equal(r.h1, 1); assert.deepEqual(r.h2, ['Review', 'Request', 'Records']); assert(r.quote);
     assert.equal(r.robots, 'noindex, nofollow', 'development preview is kept out of search indexes');
   },
+  async 'map shows GRANTED only: lit doors equal Engine.footprint for every ticket on both levels; no time, schedule or reader-fault cue'(b) {
+    const pg = await page(b, 'desk');
+    for (const id of TICKETS) { await pg.goto(`${url}#/t/${id}/review`); const fp = await pg.evaluate(id => __nx.footprint(id), id); const lit = [];
+      for (const l of [1, 2]) { await pg.click(`#nxLv${l}`); lit.push(...await pg.$$eval('#nxMapSvg .nx-door[data-granted="true"]', c => c.map(x => x.dataset.door))); }
+      assert.deepEqual(lit.sort(), fp.doors, id);
+      const txt = await pg.evaluate(() => document.querySelector('.nx-map').textContent);
+      assert(!/fault|repair|out of service|schedule|outside|denied|didn't open|07:00|hours/i.test(txt), `${id}: ${txt.match(/.{0,30}(fault|repair|service|schedule|outside|denied|hours).{0,30}/i)}`); }
+    await pg.goto(url + '#/t/marcus/review'); await pg.click('#nxLv1'); assert.equal(await pg.getAttribute('#nxMapSvg [data-door="D-DOCK"]', 'data-granted'), 'true', 'Cameron at 05:30: the dock is granted (time is not on the map)');
+    await pg.goto(url + '#/t/daniel/review'); await pg.click('#nxLv1'); assert.equal(await pg.getAttribute('#nxMapSvg [data-door="D-DOCK"]', 'data-granted'), 'true', 'Daniel: granted despite the reader fault (status is not on the map)');
+    await pg.goto(url + '#/inbox'); assert.equal(await pg.$$eval('#nxMapSvg [data-granted="true"]', c => c.length), 0, 'inbox: plain floor plan');
+  },
+  async 'map levels: aria-pressed, the L2 marker when the badge reaches topside, per-ticket memory, focus stays on the button, grading untouched'(b) {
+    const pg = await page(b, 'desk'); const before = await pg.evaluate(ids => ids.map(id => __nx.grade(id)), TICKETS);
+    await pg.goto(url + '#/t/jordan/review');
+    assert.equal(await pg.getAttribute('#nxLv1', 'aria-pressed'), 'true'); assert(/has areas the badge reaches/.test(await pg.getAttribute('#nxLv2', 'aria-label')));
+    assert(await pg.$eval('#nxLv2', b => b.classList.contains('nx-lit')));
+    await pg.focus('#nxLv2'); await pg.keyboard.press('Enter'); assert.equal(await active(pg), 'lv2', 'focus stays on the level button');
+    assert.equal(await pg.getAttribute('#nxLv2', 'aria-pressed'), 'true'); assert(/^Showing level 2/.test(await pg.textContent('#nxMapCap')));
+    await openTicket(pg, 'elena'); assert.equal(await pg.getAttribute('#nxLv1', 'aria-pressed'), 'true', 'Elena starts on L1');
+    assert(!/has areas/.test(await pg.getAttribute('#nxLv2', 'aria-label')), 'Elena has no badge yet: no L2 marker');
+    await openTicket(pg, 'jordan'); assert.equal(await pg.getAttribute('#nxLv2', 'aria-pressed'), 'true', 'Jordyn kept L2');
+    assert.deepEqual(await pg.evaluate(ids => ids.map(id => __nx.grade(id)), TICKETS), before);
+  },
+  async 'map text: the caption names every granted door and area and labels the drawing; the clock is the ticket\'s scenario time'(b) {
+    const pg = await page(b, 'phone400', '#/t/marcus/review'); await pg.click('#nxMapBtn');
+    const r = await pg.evaluate(() => ({ cap: document.querySelector('#nxMapCap').textContent, lab: document.querySelector('#nxMapSvg').getAttribute('aria-labelledby'), role: document.querySelector('#nxMapSvg').getAttribute('role'), clock: document.querySelector('#nxClock').textContent }));
+    assert.equal(r.role, 'img'); assert.equal(r.lab, 'nxMapCap'); assert.equal(r.clock, 'Tue Oct 27 · 05:30');
+    for (const d of ['Loading dock', 'Dive locker', 'East mezzanine']) assert(r.cap.includes(d), d);
+    assert(/Cameron Flynn's badge opens 5 doors/.test(r.cap), r.cap);
+  },
+  async 'one map instance: a single drawing and no duplicate ids across column, dialog, tickets and resizes'(b) {
+    const pg = await page(b, 'phone', '#/t/elena/review');
+    const check = async label => { const r = await pg.evaluate(() => { const ids = [...document.querySelectorAll('[id]')].map(e => e.id); return { svgs: document.querySelectorAll('#nxMapSvg').length, regions: document.querySelectorAll('.nx-map').length, dup: ids.filter((x, i) => ids.indexOf(x) !== i) }; });
+      assert.equal(r.svgs, 1, label); assert.equal(r.regions, 1, label); assert.deepEqual(r.dup, [], label); };
+    await check('phone, closed'); await pg.click('#nxMapBtn'); await check('phone, dialog open');
+    await pg.setViewportSize({ width: 1366, height: 900 }); await pg.waitForTimeout(100); await check('widened to desktop');
+    assert(await pg.isVisible('#nxMapCol #nxMapSvg'), 'the same map moved into the column'); assert(!(await pg.evaluate(() => document.getElementById('nxMapDlg').open)), 'dialog closed');
+    await pg.setViewportSize({ width: 320, height: 568 }); await pg.waitForTimeout(100); await check('narrowed again');
+  },
+  async 'stage container: data-stage follows the tracker for every stage of every ticket; Review content only in the first slot'(b) {
+    const pg = await page(b, 'desk');
+    for (const id of TICKETS) { await pg.goto(`${url}#/t/${id}/review`); const ss = await pg.evaluate(id => __nx.steps(id), id);
+      for (let i = 0; i < 4; i++) { await goStage(pg, i); const r = await pg.$eval('#nxStage', s => ({ k: s.dataset.stage, slot: s.dataset.slot, review: !!s.querySelector('.nx-request') }));
+        assert.deepEqual(r, { k: ss[i][0], slot: String(i), review: i === 0 }, `${id} ${i}`); } }
+  },
   async 'header and inbox text over the textures stays above 4.5:1 at the brightest point'(b) {
     const pg = await page(b, 'desk', '#/t/elena/review'); await pg.addStyleTag({ content: '.nx-header *,.nx-inbox *{visibility:hidden!important}' });
     for (const sel of ['.nx-header', '.nx-inbox']) {

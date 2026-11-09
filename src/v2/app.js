@@ -1,6 +1,6 @@
-/* Nautilus V2 (Phases 01-02): routing, the Shift Inbox, the four-stage tracker, the Review workspace, the global map region
-   and dialogs. Three layers: domain state (st, same shape as V1; only domain actions may change it), derived state (Flow),
-   view state (route + per-ticket stage; never read by evaluation). Configure, Verify, Close and the map drawing arrive in 03-06. */
+/* Nautilus V2 (Phases 01-03): routing, the Shift Inbox, the four-stage tracker, the stage container with the Review workspace,
+   the global map (one instance; drawing in map.js) and dialogs. Three layers: domain state (st, same shape as V1; only domain actions may change it), derived state (Flow),
+   view state (route, per-ticket stage and map level; never read by evaluation). Configure, Verify and Close arrive in 04-06. */
 (()=>{
 const E=Engine,S=SCENARIOS,F=Flow,$=id=>document.getElementById(id);
 const ORDER=['elena','marcus','jordan','daniel'];
@@ -20,7 +20,8 @@ const ICON={review:'M5 3h9l4 4v6 M5 3v18h7 M8 9h6 M8 13h3 M16.5 16.5m-3 0a3 3 0 
 const icon=(k,cls='nx-icon')=>`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]||ICON.close}"/></svg>`;
 const fresh=id=>{const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:E.clone(sc.doorStatus||{}),groupOverrides:{}},route:sc.routes?sc.routes[0].id:null,
   prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,record:null,open:{},read:{}};};
-const st={},view={};ORDER.forEach(id=>{st[id]=fresh(id);view[id]={stage:null};});
+const st={},view={};ORDER.forEach(id=>{st[id]=fresh(id);view[id]={stage:null,level:1};});
+let inboxLevel=1;
 const isWide=()=>matchMedia('(min-width:1180px)').matches;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let route={screen:'inbox',id:null,stage:null,map:false},invoker=null;
@@ -54,7 +55,7 @@ function closeMap(){history.state&&history.state.map?history.back():go({...route
 
 /* ---------- render (focus is restored by data-nx-key after every update) ---------- */
 function render(){const k=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.nxKey:null;
-  $('nxApp').dataset.screen=route.screen;renderInbox();renderWork();
+  $('nxApp').dataset.screen=route.screen;renderInbox();renderWork();renderMap();
   if(k){const el=document.querySelector(`[data-nx-key="${k}"]`);if(el&&el!==document.activeElement)el.focus({preventScroll:true});}}
 function renderInbox(){const open=ORDER.filter(id=>statusOf(id)!=='closed').length;
   $('nxInbox').innerHTML=`<div class="nx-inbox-inner"><h2 class="nx-inbox-h" id="nxInboxH">Shift Inbox <span class="nx-count" aria-label="${open} open">${open}</span></h2>
@@ -78,7 +79,7 @@ function renderWork(){const w=$('nxWork');
           <span class="nx-step-label" aria-hidden="true">${esc(s.label)}</span></button></li>`).join('')}</ol>
       <div class="nx-instr">${icon(cur.key)}<div><h2 tabindex="-1">${esc(cur.label)}${cur.na?' <span class="nx-instr-na">(not applicable on this route)</span>':''}</h2>${sc.coach&&sc.coach[cur.key]?`<p>${esc(sc.coach[cur.key])}</p>`:''}</div></div>
     </section>
-    ${i===0?reviewHTML(id):`<section class="nx-card nx-placeholder" aria-labelledby="nxPhH"><h2 id="nxPhH">${esc(cur.label)} workspace</h2><p>Not built yet: this stage's workspace arrives in ${PH[i]}. The Review stage, the tracker and the map region are live.</p></section>`}
+    <div class="nx-stage" id="nxStage" data-stage="${cur.key}" data-slot="${i}">${(STAGE_VIEW[i]||placeholderHTML)(id,cur,PH[i])}</div>
     ${next?`<button class="nx-btn" type="button" data-nx-key="next" data-nx-next="${next.key}">Next: ${esc(next.label)}</button>`:''}
   </div>`;}
 /* Review: the request in its sender's words, then the records and notes the ticket links (disclosures; reading one is work
@@ -95,16 +96,46 @@ function reviewHTML(id){const sc=S[id],p=sc.person,t=st[id],snd=SENDER[id];
       <ul class="nx-chips">${recs.map(r=>`<li><button class="nx-chip" type="button" data-nx-key="rec-${key(r)}" data-nx-rec="${esc(r.id)}" aria-expanded="${!!t.open[r.id]}" aria-controls="nxRec-${key(r)}">${esc(r.id)}</button></li>`).join('')}</ul>
       ${recs.map(r=>`<div class="nx-rec" id="nxRec-${key(r)}" role="region" aria-label="${esc(r.title)}"${t.open[r.id]?'':' hidden'}><h3>${esc(r.title)}</h3>${r.text?`<p>${esc(r.text)}</p>`
         :`<dl>${r.rows.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`}</div>`).join('')}</section>`;}
+/* stage container: one renderer per tracker slot. Slots 2-4 (Configure/Investigate/Respond, Verify/Decide, Close/Submit/Record)
+   stay labelled placeholders until Phases 04-06 give them workspaces. */
+const placeholderHTML=(id,cur,ph)=>`<section class="nx-card nx-placeholder" aria-labelledby="nxPhH"><h2 id="nxPhH">${esc(cur.label)} workspace</h2><p>Not built yet: this stage's workspace arrives in ${ph}. The Review stage, the tracker and the map are live.</p></section>`;
+const STAGE_VIEW={0:id=>reviewHTML(id)};
 function announce(t){const l=$('nxLive');l.textContent='';setTimeout(()=>l.textContent=t,30);}
 
 /* ---------- map region: one element, column on wide screens, full-screen dialog otherwise ---------- */
 const mapRegion=document.createElement('section');mapRegion.className='nx-map';const inMap=sel=>mapRegion.querySelector(sel);
+const sw=(fill,extra='')=>`<svg class="nx-sw" viewBox="0 0 16 16" aria-hidden="true">${fill}${extra}</svg>`;
 mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facility map</h2><button class="nx-close" type="button" id="nxMapClose" data-nx-key="mapclose">Close map</button></div>
-  <div class="nx-map-stage"><p>The engine's floor plan, levels, lens and walk move into this region in Phase 03 and 05.</p></div>`;
+  <div class="nx-map-ctl"><div class="nx-seg" role="group" aria-label="Level"><button type="button" id="nxLv1" data-nx-key="lv1" data-nx-level="1">L1 <span>Gallery</span></button><button type="button" id="nxLv2" data-nx-key="lv2" data-nx-level="2">L2 <span>Topside</span></button></div>
+    <span class="nx-clock" id="nxClock"></span></div>
+  <figure class="nx-map-fig"><svg class="nx-map-svg" id="nxMapSvg" viewBox="0 0 400 300" role="img" aria-labelledby="nxMapCap"></svg>
+    <figcaption class="nx-map-cap" id="nxMapCap"></figcaption></figure>
+  <ul class="nx-legend" aria-label="Map key">
+    <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/>')}Area the badge reaches</li>
+    <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/><circle cx="5" cy="8" r="1.4" fill="#0b2a39"/><circle cx="11" cy="8" r="1.4" fill="#0b2a39"/>')}Public gallery</li>
+    <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/><path d="M3 13l6-10M8 13l6-10" stroke="#0b2a39" stroke-width="1.5"/>')}Restricted area</li>
+    <li>${sw('<circle cx="8" cy="8" r="5" fill="#a4ead0" stroke="#a9cfd6"/>')}Door the badge opens</li>
+    <li>${sw('<circle cx="8" cy="8" r="5" fill="#0b2a39" stroke="#a9cfd6" stroke-width="1.3"/>')}Other door with a reader</li></ul>`;
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const list=a=>a.length?a.join(', '):'none';
+/* the map shows the open ticket's badge (granted only) at that ticket's level; in the inbox, the plain floor plan */
+function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel;
+  inMap('#nxMapSvg').innerHTML=NxMap.svg(t,l,getComputedStyle(document.body).fontFamily);
+  const l2=t&&NxMap.litOn(t,2);
+  inMap('#nxLv1').setAttribute('aria-pressed',l===1);inMap('#nxLv2').setAttribute('aria-pressed',l===2);
+  inMap('#nxLv1').setAttribute('aria-label','Level 1, Gallery');inMap('#nxLv2').setAttribute('aria-label',`Level 2, Topside${l2?', has areas the badge reaches':''}`);
+  inMap('#nxLv2').classList.toggle('nx-lit',!!l2&&l!==2);
+  inMap('#nxClock').textContent=sc?`${sc.day} ${MONTHS[+sc.date.slice(5,7)-1]} ${+sc.date.slice(8)} · ${E.fmt(sc.time)}`:'';
+  const s=NxMap.summary(t);
+  inMap('#nxMapCap').textContent=t?`Showing level ${l}. ${sc.person.name}'s badge opens ${s.doors.length} door${s.doors.length===1?'':'s'}: ${list(s.doors)}. Areas it reaches, level 1: ${list(s.l1)}; level 2: ${list(s.l2)}.`
+    :`Showing level ${l}. Open a ticket to see what that badge opens.`;}
+mapRegion.addEventListener('click',e=>{const b=e.target.closest('[data-nx-level]');if(!b)return;const l=+b.dataset.nxLevel;
+  if(route.screen==='ticket')view[route.id].level=l;else inboxLevel=l;renderMap();announce(`Level ${l}`);});
 function placeMap(){const dlg=$('nxMapDlg');
   if(isWide()){if(dlg.open)dlg.close();$('nxMapCol').appendChild(mapRegion);inMap('#nxMapClose').hidden=true;return;}
   inMap('#nxMapClose').hidden=false;
-  if(route.map){if(mapRegion.parentNode!==dlg)dlg.appendChild(mapRegion);if(!dlg.open){dlg.showModal();inMap('#nxMapH').focus();}}
+  if(mapRegion.parentNode!==dlg)dlg.appendChild(mapRegion);/* always in the document: inside the closed dialog when not shown */
+  if(route.map){if(!dlg.open){dlg.showModal();inMap('#nxMapH').focus();}}
   else if(dlg.open){dlg.close();const t=invoker&&document.contains(invoker)?invoker:$('nxMapBtn');t.focus({preventScroll:true});}}
 $('nxMapDlg').addEventListener('cancel',e=>{e.preventDefault();closeMap();});
 mapRegion.addEventListener('click',e=>{if(e.target.closest('#nxMapClose'))closeMap();});
@@ -140,6 +171,7 @@ document.addEventListener('keydown',e=>{const b=e.target.closest&&e.target.close
   if(j==null||j<0||j>=all.length)return;e.preventDefault();all[j].focus();});
 addEventListener('popstate',onRoute);addEventListener('hashchange',()=>{if(hashOf(parse(location.hash))!==hashOf(route))onRoute();});
 /* read-only hook for the browser tests: evaluation results must not change with navigation */
-window.__nx={grade:id=>F.grade(S[id],st[id]),steps:id=>F.steps(S[id],st[id]),status:id=>F.status(S[id],st[id]),view:()=>JSON.parse(JSON.stringify({route,view}))};
+window.__nx={grade:id=>F.grade(S[id],st[id]),steps:id=>F.steps(S[id],st[id]),status:id=>F.status(S[id],st[id]),view:()=>JSON.parse(JSON.stringify({route,view})),
+  footprint:id=>{const f=E.footprint(st[id].world,st[id].person);return{doors:[...f.doors].sort(),spaces:[...f.spaces].sort()};}};
 history.replaceState({nx:true,from:null},'',location.hash||'#/inbox');onRoute();
 })();

@@ -140,7 +140,20 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-map{display:grid;gap:10px;color:var(--nx-on-navy)}
 .nx-map-bar{display:flex;align-items:center;gap:8px;min-height:56px;padding:6px 8px}
 .nx-map-bar h2{flex:1;margin:0;font:700 17px var(--nx-font);outline:none}
-.nx-map-stage{margin:0 8px;min-height:200px;border-radius:var(--nx-r-md);border:1px dashed rgba(185,201,218,.6);display:grid;place-items:center;text-align:center;padding:16px;color:var(--nx-on-navy-muted);font-size:14px}
+.nx-map-ctl{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:0 8px}
+.nx-seg{display:inline-flex;gap:4px;padding:3px;border-radius:var(--nx-r-md);background:rgba(4,22,40,.6);border:1px solid rgba(185,201,218,.45)}
+.nx-seg button{position:relative;min-height:44px;min-width:44px;padding:0 12px;border:0;border-radius:9px;background:transparent;color:var(--nx-on-navy);font:700 14px var(--nx-font);cursor:pointer;white-space:nowrap}
+.nx-seg button span{font-weight:500;color:var(--nx-on-navy-muted)}
+.nx-seg button[aria-pressed="true"]{background:var(--nx-silver);color:var(--nx-on-silver)}.nx-seg button[aria-pressed="true"] span{color:var(--nx-on-silver)}
+.nx-seg button.nx-lit::after{content:"";position:absolute;top:7px;right:5px;width:7px;height:7px;border-radius:50%;background:#a4ead0}
+.nx-clock{font:700 13px var(--nx-font);letter-spacing:.04em;color:#ffd994}
+.nx-map-fig{margin:0 8px;display:block}
+.nx-map-fig .nx-map-cap{margin-top:8px}
+.nx-map-svg{display:block;width:100%;height:auto;aspect-ratio:4/3;border-radius:var(--nx-r-md);background:#061b29}
+.nx-map-cap{font-size:13px;line-height:1.45;color:var(--nx-on-navy-muted)}
+.nx-legend{list-style:none;margin:0;padding:0 8px 8px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--nx-on-navy-muted)}
+.nx-legend li{display:flex;align-items:center;gap:6px}
+.nx-sw{width:16px;height:16px;flex:0 0 auto}
 .nx-close{min-width:44px;min-height:44px;border-radius:var(--nx-r-md);border:1px solid rgba(185,201,218,.55);background:rgba(11,35,66,.55);color:var(--nx-on-navy);font:600 14px var(--nx-font);cursor:pointer;padding:0 12px}
 
 /* ---------- dialogs ---------- */
@@ -152,7 +165,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-brief p{margin:0;font-size:15px}.nx-brief .nx-note{color:var(--nx-muted);font-size:14px}
 .nx-btn{justify-self:start;min-height:44px;padding:0 18px;border-radius:var(--nx-r-md);border:1px solid var(--nx-navy-800);background:var(--nx-navy-800);color:var(--nx-on-navy);font:650 15px var(--nx-font);cursor:pointer}
 .nx-map-dlg{width:100vw;height:100dvh;margin:0;inset:0;background:var(--nx-navy-900);--nx-focus:var(--nx-focus-dark)}
-.nx-map-dlg .nx-map{height:100%;grid-template-rows:auto 1fr auto}
+.nx-map-dlg .nx-map{height:100%;align-content:start;overflow-y:auto;padding-bottom:12px}
+.nx-map-dlg .nx-map-svg{max-width:calc((100dvh - 190px) * 4 / 3);margin:0 auto}
 
 @media (min-width:760px){
   :root{--nx-header-h:64px}
@@ -524,9 +538,59 @@ return { routeOf, actorOf, center, outP, finalized, verified, steps, buildWalk, 
 })();
 if (typeof module !== 'undefined') module.exports = Flow;
 
-/* Nautilus V2 (Phases 01-02): routing, the Shift Inbox, the four-stage tracker, the Review workspace, the global map region
-   and dialogs. Three layers: domain state (st, same shape as V1; only domain actions may change it), derived state (Flow),
-   view state (route + per-ticket stage; never read by evaluation). Configure, Verify, Close and the map drawing arrive in 03-06. */
+/* Nautilus V2 map drawing (Phase 03): the engine's own floor plan as SVG strings, ported from V1's levelSVG.
+   Shows GRANTED only (Engine.footprint: doors the badge's groups and exceptions open, flooded through open passages).
+   Time windows, schedules, door status and reader faults never reach the map: those belong to the walk (opened or
+   didn't open, no reason) and to inspection. Change review, the lens and the walk route arrive in Phases 04 and 05. */
+const NxMap = ((E, F) => {
+  const shapes = (id, attrs = '') => E.SPACES[id].r.map(r => `<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" ${attrs}/>`).join('');
+  function label(id) {
+    const s = E.SPACES[id], [x, y] = F.center(id), r = s.r[0];
+    if (r[2] < 46 && r[3] > r[2] * 2) return `<text x="${x}" y="${y}" class="nx-lbl nx-lbl-sm" transform="rotate(-90 ${x} ${y})">${s.n.toUpperCase()}</text>`;
+    if (r[2] < 46) return `<text x="${x}" y="${y + 3}" class="nx-lbl nx-lbl-sm">${(s.short || s.n).toUpperCase()}</text>`;
+    const narrow = r[2] < 70, cls = narrow ? 'nx-lbl nx-lbl-nr' : 'nx-lbl', words = s.n.toUpperCase().split(' ');
+    const lines = words.length > 1 && (s.n.length > 11 || narrow) ? [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')] : [s.n.toUpperCase()];
+    return lines.map((t, i) => `<text x="${x}" y="${y + 4 + (i - (lines.length - 1) / 2) * 12}" class="${cls}">${t}</text>`).join('');
+  }
+  const defs = sfx => `<linearGradient id="nxWater${sfx}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#087b97"/><stop offset="1" stop-color="#0a4e6a"/></linearGradient>
+    <pattern id="nxHatch${sfx}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#0a2a38"/><rect width="1.5" height="6" fill="#1d4d5e"/></pattern>
+    <pattern id="nxDots${sfx}" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="1.1" fill="#d9fff1" opacity=".6"/></pattern>
+    <pattern id="nxStrp${sfx}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="6" fill="#ffe3b3" opacity=".45"/></pattern>
+    <filter id="nxRing${sfx}" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceGraphic" operator="dilate" radius="1.8" result="d"/><feComposite in="d" in2="SourceAlpha" operator="out"/></filter>`;
+  const style = font => `<style>.nx-lbl{fill:#e3f5f6;font:700 11.5px ${font};text-anchor:middle;letter-spacing:.04em;pointer-events:none}.nx-lbl-sm{font-size:9.5px;fill:#bfe0e5}.nx-lbl-nr{font-size:10px}
+    .nx-lbl-void{font-size:9px;fill:#7fa9b3;font-weight:600}.nx-lbl-out{font-size:9px;fill:#a4ead0}</style>`;
+  const footprintOf = t => t ? E.footprint(t.world, t.person) : { spaces: new Set(), doors: new Set() };
+  /* one level: spaces, labels, the dark-water veil with the granted footprint cut out, public/restricted patterns, doors */
+  function level(t, l, sfx) {
+    const fp = footprintOf(t), ids = Object.keys(E.SPACES).filter(k => E.SPACES[k].l === l), lit = [...fp.spaces].filter(k => E.SPACES[k].l === l);
+    let s = `<rect x="4" y="4" width="392" height="292" rx="10" fill="#082536" stroke="#3a7487" stroke-width="1.5"/>`;
+    for (const id of ids) { const k = E.SPACES[id].kind;
+      s += shapes(id, `fill="${k === 'public' ? '#12445a' : k === 'program' ? '#13495c' : k === 'core' ? '#1f4b5c' : k === 'restricted' ? '#2a3a4a' : '#163a47'}" stroke="#4d8696" stroke-width="1"`);
+      if (E.SPACES[id].ellipse) { const [cx, cy, rx, ry] = E.SPACES[id].ellipse; s += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#nxWater${sfx})" stroke="#61c8d6" stroke-width="1.5"/>`; } }
+    if (l === 2) { for (const v of E.VOIDS) s += `<rect x="${v.r[0]}" y="${v.r[1]}" width="${v.r[2]}" height="${v.r[3]}" fill="url(#nxHatch${sfx})" stroke="#2c5a69" stroke-dasharray="3 3"/><text x="${v.r[0] + v.r[2] / 2}" y="${v.r[1] + v.r[3] / 2 + 3}" class="nx-lbl nx-lbl-void">${v.n.toUpperCase()}</text>`;
+      s += `<g stroke="#d4bb8c" stroke-width="3" opacity=".55"><path d="M210 70H284M210 110H284M210 150H284M210 185H284M226 52V196M262 52V196"/></g>`; }
+    for (const id of ids) s += label(id);
+    s += `<mask id="nxVeil${sfx}"><rect width="400" height="300" fill="#fff"/>${lit.map(k => shapes(k, 'fill="#000"')).join('')}</mask><rect width="400" height="300" fill="#021019" opacity=".72" mask="url(#nxVeil${sfx})"/>`;
+    s += `<g filter="url(#nxRing${sfx})">${lit.map(k => shapes(k, 'fill="#a4ead0"')).join('')}</g>`;
+    for (const k of lit) { const kd = E.SPACES[k].kind; if (kd === 'public' || kd === 'restricted') s += shapes(k, `fill="url(#${kd === 'public' ? 'nxDots' : 'nxStrp'}${sfx})" pointer-events="none"`); }
+    for (const [d, o] of Object.entries(E.DOORS)) { if (E.doorLevel(d) !== l) continue; const g = fp.doors.has(d);
+      s += `<circle class="nx-door" data-door="${d}" data-granted="${g}" cx="${o.p[0]}" cy="${o.p[1]}" r="6" fill="${g ? '#a4ead0' : '#0b2a39'}" stroke="#a9cfd6" stroke-width="1.3"/>`; }
+    if (l === 1) s += `<path d="M24 296h16M390 242v16" stroke="#a4ead0" stroke-width="3"/><text x="44" y="297" class="nx-lbl nx-lbl-out" style="text-anchor:start">STAFF ENTRANCE</text><text x="383" y="236" class="nx-lbl nx-lbl-out" style="text-anchor:end">DOCK</text>`;
+    return s;
+  }
+  const svg = (t, l, font) => `<defs>${defs('A')}</defs>${style(font)}${level(t, l, 'A')}`;
+  /* the same facts as text, for screen readers and anyone who cannot read the drawing */
+  function summary(t) {
+    const fp = footprintOf(t), byL = l => [...fp.spaces].filter(k => E.SPACES[k].l === l).map(k => E.SPACES[k].n);
+    return { doors: [...fp.doors].map(d => E.DOORS[d].n), l1: byL(1), l2: byL(2) };
+  }
+  const litOn = (t, l) => [...footprintOf(t).spaces].some(k => E.SPACES[k].l === l);
+  return { svg, summary, litOn };
+})(Engine, Flow);
+
+/* Nautilus V2 (Phases 01-03): routing, the Shift Inbox, the four-stage tracker, the stage container with the Review workspace,
+   the global map (one instance; drawing in map.js) and dialogs. Three layers: domain state (st, same shape as V1; only domain actions may change it), derived state (Flow),
+   view state (route, per-ticket stage and map level; never read by evaluation). Configure, Verify and Close arrive in 04-06. */
 (()=>{
 const E=Engine,S=SCENARIOS,F=Flow,$=id=>document.getElementById(id);
 const ORDER=['elena','marcus','jordan','daniel'];
@@ -546,7 +610,8 @@ const ICON={review:'M5 3h9l4 4v6 M5 3v18h7 M8 9h6 M8 13h3 M16.5 16.5m-3 0a3 3 0 
 const icon=(k,cls='nx-icon')=>`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]||ICON.close}"/></svg>`;
 const fresh=id=>{const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:E.clone(sc.doorStatus||{}),groupOverrides:{}},route:sc.routes?sc.routes[0].id:null,
   prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,record:null,open:{},read:{}};};
-const st={},view={};ORDER.forEach(id=>{st[id]=fresh(id);view[id]={stage:null};});
+const st={},view={};ORDER.forEach(id=>{st[id]=fresh(id);view[id]={stage:null,level:1};});
+let inboxLevel=1;
 const isWide=()=>matchMedia('(min-width:1180px)').matches;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let route={screen:'inbox',id:null,stage:null,map:false},invoker=null;
@@ -580,7 +645,7 @@ function closeMap(){history.state&&history.state.map?history.back():go({...route
 
 /* ---------- render (focus is restored by data-nx-key after every update) ---------- */
 function render(){const k=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.nxKey:null;
-  $('nxApp').dataset.screen=route.screen;renderInbox();renderWork();
+  $('nxApp').dataset.screen=route.screen;renderInbox();renderWork();renderMap();
   if(k){const el=document.querySelector(`[data-nx-key="${k}"]`);if(el&&el!==document.activeElement)el.focus({preventScroll:true});}}
 function renderInbox(){const open=ORDER.filter(id=>statusOf(id)!=='closed').length;
   $('nxInbox').innerHTML=`<div class="nx-inbox-inner"><h2 class="nx-inbox-h" id="nxInboxH">Shift Inbox <span class="nx-count" aria-label="${open} open">${open}</span></h2>
@@ -604,7 +669,7 @@ function renderWork(){const w=$('nxWork');
           <span class="nx-step-label" aria-hidden="true">${esc(s.label)}</span></button></li>`).join('')}</ol>
       <div class="nx-instr">${icon(cur.key)}<div><h2 tabindex="-1">${esc(cur.label)}${cur.na?' <span class="nx-instr-na">(not applicable on this route)</span>':''}</h2>${sc.coach&&sc.coach[cur.key]?`<p>${esc(sc.coach[cur.key])}</p>`:''}</div></div>
     </section>
-    ${i===0?reviewHTML(id):`<section class="nx-card nx-placeholder" aria-labelledby="nxPhH"><h2 id="nxPhH">${esc(cur.label)} workspace</h2><p>Not built yet: this stage's workspace arrives in ${PH[i]}. The Review stage, the tracker and the map region are live.</p></section>`}
+    <div class="nx-stage" id="nxStage" data-stage="${cur.key}" data-slot="${i}">${(STAGE_VIEW[i]||placeholderHTML)(id,cur,PH[i])}</div>
     ${next?`<button class="nx-btn" type="button" data-nx-key="next" data-nx-next="${next.key}">Next: ${esc(next.label)}</button>`:''}
   </div>`;}
 /* Review: the request in its sender's words, then the records and notes the ticket links (disclosures; reading one is work
@@ -621,16 +686,46 @@ function reviewHTML(id){const sc=S[id],p=sc.person,t=st[id],snd=SENDER[id];
       <ul class="nx-chips">${recs.map(r=>`<li><button class="nx-chip" type="button" data-nx-key="rec-${key(r)}" data-nx-rec="${esc(r.id)}" aria-expanded="${!!t.open[r.id]}" aria-controls="nxRec-${key(r)}">${esc(r.id)}</button></li>`).join('')}</ul>
       ${recs.map(r=>`<div class="nx-rec" id="nxRec-${key(r)}" role="region" aria-label="${esc(r.title)}"${t.open[r.id]?'':' hidden'}><h3>${esc(r.title)}</h3>${r.text?`<p>${esc(r.text)}</p>`
         :`<dl>${r.rows.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`}</div>`).join('')}</section>`;}
+/* stage container: one renderer per tracker slot. Slots 2-4 (Configure/Investigate/Respond, Verify/Decide, Close/Submit/Record)
+   stay labelled placeholders until Phases 04-06 give them workspaces. */
+const placeholderHTML=(id,cur,ph)=>`<section class="nx-card nx-placeholder" aria-labelledby="nxPhH"><h2 id="nxPhH">${esc(cur.label)} workspace</h2><p>Not built yet: this stage's workspace arrives in ${ph}. The Review stage, the tracker and the map are live.</p></section>`;
+const STAGE_VIEW={0:id=>reviewHTML(id)};
 function announce(t){const l=$('nxLive');l.textContent='';setTimeout(()=>l.textContent=t,30);}
 
 /* ---------- map region: one element, column on wide screens, full-screen dialog otherwise ---------- */
 const mapRegion=document.createElement('section');mapRegion.className='nx-map';const inMap=sel=>mapRegion.querySelector(sel);
+const sw=(fill,extra='')=>`<svg class="nx-sw" viewBox="0 0 16 16" aria-hidden="true">${fill}${extra}</svg>`;
 mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facility map</h2><button class="nx-close" type="button" id="nxMapClose" data-nx-key="mapclose">Close map</button></div>
-  <div class="nx-map-stage"><p>The engine's floor plan, levels, lens and walk move into this region in Phase 03 and 05.</p></div>`;
+  <div class="nx-map-ctl"><div class="nx-seg" role="group" aria-label="Level"><button type="button" id="nxLv1" data-nx-key="lv1" data-nx-level="1">L1 <span>Gallery</span></button><button type="button" id="nxLv2" data-nx-key="lv2" data-nx-level="2">L2 <span>Topside</span></button></div>
+    <span class="nx-clock" id="nxClock"></span></div>
+  <figure class="nx-map-fig"><svg class="nx-map-svg" id="nxMapSvg" viewBox="0 0 400 300" role="img" aria-labelledby="nxMapCap"></svg>
+    <figcaption class="nx-map-cap" id="nxMapCap"></figcaption></figure>
+  <ul class="nx-legend" aria-label="Map key">
+    <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/>')}Area the badge reaches</li>
+    <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/><circle cx="5" cy="8" r="1.4" fill="#0b2a39"/><circle cx="11" cy="8" r="1.4" fill="#0b2a39"/>')}Public gallery</li>
+    <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/><path d="M3 13l6-10M8 13l6-10" stroke="#0b2a39" stroke-width="1.5"/>')}Restricted area</li>
+    <li>${sw('<circle cx="8" cy="8" r="5" fill="#a4ead0" stroke="#a9cfd6"/>')}Door the badge opens</li>
+    <li>${sw('<circle cx="8" cy="8" r="5" fill="#0b2a39" stroke="#a9cfd6" stroke-width="1.3"/>')}Other door with a reader</li></ul>`;
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const list=a=>a.length?a.join(', '):'none';
+/* the map shows the open ticket's badge (granted only) at that ticket's level; in the inbox, the plain floor plan */
+function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel;
+  inMap('#nxMapSvg').innerHTML=NxMap.svg(t,l,getComputedStyle(document.body).fontFamily);
+  const l2=t&&NxMap.litOn(t,2);
+  inMap('#nxLv1').setAttribute('aria-pressed',l===1);inMap('#nxLv2').setAttribute('aria-pressed',l===2);
+  inMap('#nxLv1').setAttribute('aria-label','Level 1, Gallery');inMap('#nxLv2').setAttribute('aria-label',`Level 2, Topside${l2?', has areas the badge reaches':''}`);
+  inMap('#nxLv2').classList.toggle('nx-lit',!!l2&&l!==2);
+  inMap('#nxClock').textContent=sc?`${sc.day} ${MONTHS[+sc.date.slice(5,7)-1]} ${+sc.date.slice(8)} · ${E.fmt(sc.time)}`:'';
+  const s=NxMap.summary(t);
+  inMap('#nxMapCap').textContent=t?`Showing level ${l}. ${sc.person.name}'s badge opens ${s.doors.length} door${s.doors.length===1?'':'s'}: ${list(s.doors)}. Areas it reaches, level 1: ${list(s.l1)}; level 2: ${list(s.l2)}.`
+    :`Showing level ${l}. Open a ticket to see what that badge opens.`;}
+mapRegion.addEventListener('click',e=>{const b=e.target.closest('[data-nx-level]');if(!b)return;const l=+b.dataset.nxLevel;
+  if(route.screen==='ticket')view[route.id].level=l;else inboxLevel=l;renderMap();announce(`Level ${l}`);});
 function placeMap(){const dlg=$('nxMapDlg');
   if(isWide()){if(dlg.open)dlg.close();$('nxMapCol').appendChild(mapRegion);inMap('#nxMapClose').hidden=true;return;}
   inMap('#nxMapClose').hidden=false;
-  if(route.map){if(mapRegion.parentNode!==dlg)dlg.appendChild(mapRegion);if(!dlg.open){dlg.showModal();inMap('#nxMapH').focus();}}
+  if(mapRegion.parentNode!==dlg)dlg.appendChild(mapRegion);/* always in the document: inside the closed dialog when not shown */
+  if(route.map){if(!dlg.open){dlg.showModal();inMap('#nxMapH').focus();}}
   else if(dlg.open){dlg.close();const t=invoker&&document.contains(invoker)?invoker:$('nxMapBtn');t.focus({preventScroll:true});}}
 $('nxMapDlg').addEventListener('cancel',e=>{e.preventDefault();closeMap();});
 mapRegion.addEventListener('click',e=>{if(e.target.closest('#nxMapClose'))closeMap();});
@@ -666,7 +761,8 @@ document.addEventListener('keydown',e=>{const b=e.target.closest&&e.target.close
   if(j==null||j<0||j>=all.length)return;e.preventDefault();all[j].focus();});
 addEventListener('popstate',onRoute);addEventListener('hashchange',()=>{if(hashOf(parse(location.hash))!==hashOf(route))onRoute();});
 /* read-only hook for the browser tests: evaluation results must not change with navigation */
-window.__nx={grade:id=>F.grade(S[id],st[id]),steps:id=>F.steps(S[id],st[id]),status:id=>F.status(S[id],st[id]),view:()=>JSON.parse(JSON.stringify({route,view}))};
+window.__nx={grade:id=>F.grade(S[id],st[id]),steps:id=>F.steps(S[id],st[id]),status:id=>F.status(S[id],st[id]),view:()=>JSON.parse(JSON.stringify({route,view})),
+  footprint:id=>{const f=E.footprint(st[id].world,st[id].person);return{doors:[...f.doors].sort(),spaces:[...f.spaces].sort()};}};
 history.replaceState({nx:true,from:null},'',location.hash||'#/inbox');onRoute();
 })();
 
