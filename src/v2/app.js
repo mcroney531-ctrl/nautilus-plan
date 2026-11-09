@@ -1,6 +1,6 @@
-/* Nautilus V2 (Phases 01-04): routing, the Shift Inbox, the four-stage tracker, the stage workspaces (Review, Investigate and the
+/* Nautilus V2 (Phases 01-05): routing, the Shift Inbox, the four-stage tracker, the stage workspaces (Review, Investigate and the
    decision stages: Configure, Decide, Respond), the global map (one instance; drawing in map.js) and dialogs. Three layers: domain state (st, same shape as V1; only domain actions may change it), derived state (Flow),
-   view state (route, per-ticket stage and map level; never read by evaluation). Verify and Close arrive in 05-06. */
+   view state (route, per-ticket stage, map level, inspect mode and lens position; never read by evaluation). Close arrives in 06. */
 (()=>{
 const E=Engine,S=SCENARIOS,F=Flow,$=id=>document.getElementById(id);
 const ORDER=['elena','marcus','jordan','daniel'];
@@ -22,7 +22,8 @@ const ICON={review:'M5 3h9l4 4v6 M5 3v18h7 M8 9h6 M8 13h3 M16.5 16.5m-3 0a3 3 0 
 const icon=(k,cls='nx-icon')=>`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]||ICON.close}"/></svg>`;
 const fresh=id=>{const sc=S[id];return{person:E.clone(sc.person),world:{day:sc.day,date:sc.date,doorStatus:E.clone(sc.doorStatus||{}),groupOverrides:{}},route:sc.routes?sc.routes[0].id:null,
   prev:null,delta:null,tdelta:null,tscope:'',disp:null,showDelta:true,walk:null,sel:null,flagged:false,result:null,record:null,open:{},read:{}};};
-const st={},view={};ORDER.forEach(id=>{st[id]=fresh(id);view[id]={stage:null,level:1,perms:null};});
+const st={},view={};ORDER.forEach(id=>{st[id]=fresh(id);view[id]={stage:null,level:1,perms:null,inspect:false,lensP:[143,88]};});
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let inboxLevel=1;
 const isWide=()=>matchMedia('(min-width:1180px)').matches,narrow=()=>!matchMedia('(min-width:760px)').matches;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -41,7 +42,10 @@ function parse(h){const p=h.replace(/^#\/?/,'').split('/').filter(Boolean),map=p
 const hashOf=r=>(r.screen==='ticket'?`#/t/${r.id}/${r.stage}`:'#/inbox')+(r.map?'/map':'');
 function go(r,{replace=false}={}){const s={nx:true,from:route.screen,map:!!r.map&&!route.map};
   replace?history.replaceState({...(history.state||{}),nx:true},'',hashOf(r)):history.pushState(s,'',hashOf(r));onRoute();}
-function onRoute(){const prev=route;route=parse(location.hash);
+function onRoute(){const next=parse(location.hash);
+  /* browser Back/Forward during a walk: put the address back, then ask */
+  if(walking()&&hashOf(next)!==hashOf(route)){history.pushState({...(history.state||{}),nx:true},'',hashOf(route));guard(()=>go(next,{replace:true}));return;}
+  const prev=route;route=next;
   if(route.screen==='ticket')view[route.id].stage=route.stage;
   if(hashOf(route)!==location.hash)history.replaceState(history.state,'',hashOf(route));
   render();placeMap();
@@ -49,11 +53,28 @@ function onRoute(){const prev=route;route=parse(location.hash);
     if(route.screen==='ticket'){const h=document.querySelector('.nx-person h1');h&&h.focus({preventScroll:true});scrollTo(0,0);}
     else if(prev.id){const a=document.querySelector(`[data-nx-key="inbox-${prev.id}"]`);a&&a.focus({preventScroll:true});}}
   else if(route.stage!==prev.stage&&route.screen==='ticket'){const ss=stagesOf(route.id),i=Math.max(0,ss.findIndex(x=>x.key===route.stage)),s=ss[i];announce(`Step ${i+1} of 4: ${s.label}${s.na?', not applicable':''}`);}}
-/* walk guard (Phase 05: navigation away from a running walk asks Cancel walk / Continue test; nothing can run a walk yet) */
-const leaveOK=()=>true;
-function backToInbox(){if(!leaveOK())return;history.state&&history.state.nx&&history.state.from==='inbox'&&!route.map?history.back():go({screen:'inbox',map:false});}
+/* ---------- walk and its guard: anything that would leave or change a running walk asks Cancel walk / Continue test.
+   Stage and ticket changes, closing the map, the logo, browser Back, badge or route changes. The walk pauses while asking. */
+let timer=null,walkId=null,pending=null;
+const walking=()=>!!(walkId&&st[walkId].walk&&st[walkId].walk.running);
+function guard(fn){if(!walking())return fn();pending=fn;clearTimeout(timer);timer=null;const sc=S[walkId],d=$('nxGuard');
+  d.innerHTML=`<div class="nx-brief"><h2 id="nxGuardH" tabindex="-1">A walk test is running</h2><p>${esc(sc.person.name)}'s walk is not finished. Leaving now cancels it, and the walk will not count as verified.</p>
+    <div class="nx-row"><button class="nx-btn" type="button" id="nxGuardGo" data-nx-key="guardgo">Continue test</button><button class="nx-btn nx-btn-quiet" type="button" id="nxGuardStop" data-nx-key="guardstop">Cancel walk</button></div></div>`;
+  d.showModal();$('nxGuardGo').focus();}
+function guardContinue(){const d=$('nxGuard');pending=null;d.close();render();tick();}
+function guardCancel(){const d=$('nxGuard'),fn=pending;pending=null;d.close();clearTimeout(timer);timer=null;if(walkId)st[walkId].walk=null;walkId=null;render();announce('Walk cancelled');fn&&fn();}
+function startWalk(){const id=route.id,sc=S[id],t=st[id],r=F.routeOf(sc,t);if(walking()||(r&&r.wait))return;
+  invoker=document.activeElement;invokerKey='walk';view[id].inspect=false;
+  if(!isWide()&&!route.map)go({...route,map:true}); /* open the map before the walk starts, so the guard does not intercept it */
+  t.walk=F.buildWalk(sc,t);view[id].level=1;walkId=id;render();announce(`Walking ${sc.person.name.split(' ')[0]} in`);tick();}
+function tick(){const t=st[walkId],w=t&&t.walk;if(!w||!w.running)return;
+  timer=setTimeout(()=>{if(t.walk!==w)return;
+    if(w.i>=w.pts.length-1){w.running=false;timer=null;walkId=null;render();const st0=w.res.stop;
+      announce(st0?`Walk stopped at ${E.DOORS[st0.door]?E.DOORS[st0.door].n:'a door'}.`:'Walk complete: reached every stop.');return;}
+    w.i++;view[walkId].level=w.pts[w.i].l;renderMap();tick();},RM?40:170);}
+function backToInbox(){guard(()=>history.state&&history.state.nx&&history.state.from==='inbox'&&!route.map?history.back():go({screen:'inbox',map:false}));}
 function openMap(){invoker=document.activeElement;invokerKey=invoker&&invoker.dataset?invoker.dataset.nxKey:null;if(isWide()){const h=inMap('#nxMapH');h.scrollIntoView({block:'nearest'});h.focus({preventScroll:true});return;}go({...route,map:true});}
-function closeMap(){history.state&&history.state.map?history.back():go({...route,map:false},{replace:true});}
+function closeMap(){guard(()=>{history.state&&history.state.map?history.back():go({...route,map:false},{replace:true});});}
 
 /* ---------- render (focus is restored by data-nx-key after every update) ---------- */
 function render(){const k=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.nxKey:null;
@@ -69,7 +90,7 @@ function renderInbox(){const open=ORDER.filter(id=>statusOf(id)!=='closed').leng
 function renderWork(){const w=$('nxWork');
   if(route.screen!=='ticket'){w.innerHTML=`<div class="nx-empty"><p>Select a request from the Shift Inbox.</p></div>`;return;}
   const id=route.id,sc=S[id],p=sc.person,ss=stagesOf(id),i=Math.max(0,ss.findIndex(s=>s.key===view[id].stage)),cur=ss[i],next=ss[i+1],sug=ss.find(s=>!s.done);
-  const PH={verify:'Phase 05',close:'Phase 06'};
+  const PH={close:'Phase 06'};
   w.innerHTML=`<div class="nx-ticket">
     <a class="nx-back" href="#/inbox" data-nx-key="back" data-nx-act="inbox"><span aria-hidden="true">‹</span> Shift Inbox</a>
     <div class="nx-person"><img class="nx-av" src="${AVATAR[id]}" alt="" width="64" height="64"><div><h1 tabindex="-1">${esc(p.name)}</h1><p>${ROLE[id]} · ${esc(refOf(sc))}${contextOf(id)?` · ${esc(contextOf(id))}`:''}</p></div></div>
@@ -79,7 +100,7 @@ function renderWork(){const w=$('nxWork');
           aria-label="Step ${j+1} of 4: ${esc(s.label)}${s.na?', not applicable':''}${s.done?', done':''}${s===sug&&s!==cur?', suggested next':''}">
           <span class="nx-chev">${icon(s.key)}<span class="nx-step-num" aria-hidden="true">${j+1}</span>${s.done?`<span class="nx-step-done" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.2 2.2 4.8-5"/></svg></span>`:''}</span>
           <span class="nx-step-label" aria-hidden="true">${esc(s.label)}</span></button></li>`).join('')}</ol>
-      <div class="nx-instr">${icon(cur.key)}<div><h2 tabindex="-1">${esc(cur.label)}${cur.na?' <span class="nx-instr-na">(not applicable on this route)</span>':''}</h2>${sc.coach&&sc.coach[cur.key]?`<p>${esc(sc.coach[cur.key])}</p>`:''}</div></div>
+      <div class="nx-instr">${icon(cur.key)}<div><h2 tabindex="-1">${esc(cur.label)}${cur.na?' <span class="nx-instr-na">(not applicable on this route)</span>':''}</h2>${(()=>{const w=st[id].walk,c=sc.coach||{},tip=(w&&!w.running&&w.res.stop&&c.afterFail)||c[cur.key];return tip?`<p>${esc(tip)}</p>`:'';})()}</div></div>
     </section>
     <div class="nx-stage" id="nxStage" data-stage="${cur.key}" data-slot="${i}">${(STAGE_VIEW[cur.key]||placeholderHTML)(id,cur,PH[cur.key])}</div>
     ${next?`<button class="nx-btn" type="button" data-nx-key="next" data-nx-next="${next.key}">Next: ${esc(next.label)}</button>`:''}
@@ -100,9 +121,9 @@ function recordsHTML(id){const sc=S[id],p=sc.person,t=st[id];
       ${recs.map(r=>`<div class="nx-rec" id="nxRec-${key(r)}" role="region" aria-label="${esc(r.title)}"${t.open[r.id]?'':' hidden'}><h3>${esc(r.title)}</h3>${r.text?`<p>${esc(r.text)}</p>`
         :`<dl>${r.rows.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`}</div>`).join('')}</section>`;}
 /* stage container: one workspace per stage FUNCTION, never per tracker position (Jordyn's Decide is her third segment,
-   Daniel's Respond his second). Verify and Close/Submit/Record stay labelled placeholders until Phases 05 and 06. */
+   Daniel's Respond his second). Close/Submit/Record stays a labelled placeholder until Phase 06. */
 const placeholderHTML=(id,cur,ph)=>`<section class="nx-card nx-placeholder" aria-labelledby="nxPhH"><h2 id="nxPhH">${esc(cur.label)} workspace</h2><p>Not built yet: this stage's workspace arrives in ${ph}. Review, the decision stages and the map are live.</p></section>`;
-const STAGE_VIEW={review:id=>reviewHTML(id),investigate:id=>evidenceHTML(id),configure:id=>decisionHTML(id,'configure'),decide:id=>decisionHTML(id,'decide'),respond:id=>decisionHTML(id,'respond')};
+const STAGE_VIEW={review:id=>reviewHTML(id),investigate:id=>evidenceHTML(id)+walkHTML(id,true),verify:id=>walkHTML(id,false),configure:id=>decisionHTML(id,'configure'),decide:id=>decisionHTML(id,'decide'),respond:id=>decisionHTML(id,'respond')};
 
 /* ---------- decision workspaces: sections come from the scenario's data (editable groups, time exceptions, a group-hours edit,
    routes, an audit decision), so one interface serves every ticket without scenario branches ---------- */
@@ -158,7 +179,7 @@ function miniHTML(id){const t=st[id],fp=E.footprint(t.world,t.person),lv=[1,2].f
 /* Investigate (audit): the evidence, read-only. The badge as it stands and the records; the inspection lens arrives in Phase 05. */
 function evidenceHTML(id){const t=st[id],c=t.person.credential;
   return `<section class="nx-card" aria-labelledby="nxEvH"><h2 id="nxEvH" class="nx-h">Current badge</h2><p>Credential: <b>${c.active?'active':'deactivated'}</b>. Assigned groups: ${c.groups.length?c.groups.map(g=>esc(E.GROUPS[g].n)).join(', '):'none'}.</p>
-    <p class="nx-note">Compare what the badge grants with the records below. The inspection lens arrives in Phase 05.</p></section>${badgeHTML(id)}${recordsHTML(id)}`;}
+    <p class="nx-note">Compare what the badge grants with the records below. Use Inspect on the facility map to check individual doors.</p></section>${badgeHTML(id)}${recordsHTML(id)}`;}
 
 /* ---------- domain actions (V1 semantics): every badge change recomputes the effective-permission difference, clears the walk
    and any result; a route or reason choice clears the walk/result only. Evaluation itself is untouched (src/flow.js). ---------- */
@@ -179,7 +200,22 @@ function act(input){const id=route.id,sc=S[id],t=st[id],c=t.person.credential,v=
     revoke:()=>change(id,()=>{c.active=!c.active;},()=>c.active?'Reactivated the badge':'Deactivated the badge'),
     route:()=>{t.route=v;t.walk=null;t.result=null;render();announce(`Response: ${sc.routes.find(r=>r.id===v).label}`);},
     reason:()=>{t.disp=v;t.result=null;render();announce(`Reason: ${sc.disposition.options.find(o=>o.id===v).text}`);}})[input.dataset.nxDo]();}
-document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closest('[data-nx-do]');if(i&&route.screen==='ticket')act(i);});
+/* a badge or route change during a walk would invalidate it: ask first (Continue restores the control) */
+document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closest('[data-nx-do]');if(i&&route.screen==='ticket')guard(()=>act(i));});
+/* walk test: route, time and stops; the log after it runs says which doors opened or didn't, never why */
+function walkHTML(id,optional){const sc=S[id],t=st[id],r=F.routeOf(sc,t),w=t.walk,first=sc.person.name.split(' ')[0];
+  if(r&&r.wait)return `<section class="nx-card" aria-labelledby="nxWalkH"><h2 id="nxWalkH" class="nx-h">Walk test</h2><p>Not applicable on this response: ${esc(first)} waits at the dock, so there is no walk to test. Choose another response under Respond to walk ${esc(first)} in.</p></section>`;
+  const from=(r&&r.start)||sc.start,run=!!(w&&w.running);
+  let h=`<section class="nx-card nx-walk" aria-labelledby="nxWalkH"><h2 id="nxWalkH" class="nx-h">${optional?'Optional: walk test':'Walk test'}</h2>
+    ${optional?`<p class="nx-note">See what ${esc(first)}'s badge does today. An audit does not need a walk.</p>`:''}
+    <dl class="nx-dl"><dt>Starts</dt><dd>${esc(E.OUTSIDE[from].n.replace('Outside · ',''))}${r?` · ${esc(r.label)}`:''}</dd><dt>Time</dt><dd>${sc.day} ${E.fmt(sc.time)}</dd>
+      <dt>Stops</dt><dd>${sc.targets.map(k=>esc(E.SPACES[k].n)).join(', ')}</dd></dl>
+    <button class="nx-btn" type="button" data-nx-act="walk" data-nx-key="walk"${run||walking()?' disabled':''}>${run?'Walking…':w?`Walk ${esc(first)} in again`:`Walk ${esc(first)} in`}</button>`;
+  if(w&&!run){const pts=w.pts.filter(p=>p.door||p.transfer||p.arrive),stop=w.res.stop;
+    h+=`<h3 class="nx-h3">Walk log · ${E.fmt(sc.time)}</h3><ol class="nx-log">${pts.map(p=>p.transfer?`<li>${esc(p.label)}</li>`:p.arrive?`<li class="nx-log-arr">Arrived: ${esc(E.SPACES[p.arrive].n)}</li>`
+      :`<li class="${p.ok?'nx-log-ok':'nx-log-no'}">${esc(E.DOORS[p.door].n)}${p.who?` · ${esc(p.who)}'s badge`:''}: ${p.ok?'opened':'didn\'t open'}</li>`).join('')}</ol>
+      <p class="nx-note">${stop?(E.grants(t.world,F.actorOf(sc,t))[stop.door]?'This door is in the badge\'s granted permissions, so the badge is granted here. Something else stopped it at this time.':'The walk stopped here.'):'Reached every stop on the request.'}</p>`;}
+  return h+'</section>';}
 function announce(t){const l=$('nxLive');l.textContent='';setTimeout(()=>l.textContent=t,30);}
 
 /* ---------- map region: one element, column on wide screens, full-screen dialog otherwise ---------- */
@@ -187,9 +223,12 @@ const mapRegion=document.createElement('section');mapRegion.className='nx-map';c
 const sw=(fill,extra='')=>`<svg class="nx-sw" viewBox="0 0 16 16" aria-hidden="true">${fill}${extra}</svg>`;
 mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facility map</h2><button class="nx-close" type="button" id="nxMapClose" data-nx-key="mapclose">Close map</button></div>
   <div class="nx-map-ctl"><div class="nx-seg" role="group" aria-label="Level"><button type="button" id="nxLv1" data-nx-key="lv1" data-nx-level="1">L1 <span>Gallery</span></button><button type="button" id="nxLv2" data-nx-key="lv2" data-nx-level="2">L2 <span>Topside</span></button></div>
+    <button class="nx-tool" type="button" id="nxInspect" data-nx-key="inspect" aria-pressed="false"><svg class="nx-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 10.5m-6.5 0a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0 M15.5 15.5L21 21"/></svg>Inspect</button>
     <span class="nx-clock" id="nxClock"></span></div>
+  <div class="nx-pick" id="nxPickWrap" hidden><label for="nxDoorPick">Inspect a door</label><select id="nxDoorPick" data-nx-key="doorpick"></select></div>
   <figure class="nx-map-fig"><svg class="nx-map-svg" id="nxMapSvg" viewBox="0 0 400 300" role="img" aria-labelledby="nxMapCap"></svg>
-    <figcaption class="nx-map-cap" id="nxMapCap"></figcaption></figure>
+    <p class="nx-walknote" id="nxWalkNote"></p><figcaption class="nx-map-cap" id="nxMapCap"></figcaption></figure>
+  <section class="nx-insp" id="nxInsp" aria-labelledby="nxInspH" hidden></section>
   <ul class="nx-legend" aria-label="Map key">
     <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/>')}Area in the granted footprint</li>
     <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/><circle cx="5" cy="8" r="1.4" fill="#0b2a39"/><circle cx="11" cy="8" r="1.4" fill="#0b2a39"/>')}Public gallery</li>
@@ -199,8 +238,20 @@ mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facil
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const list=a=>a.length?a.join(', '):'none';
 /* the map shows the open ticket's badge (granted only) at that ticket's level; in the inbox, the plain floor plan */
-function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel;
-  inMap('#nxMapSvg').innerHTML=NxMap.svg(t,l,getComputedStyle(document.body).fontFamily);
+function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,v=id?view[id]:null,ins=!!(v&&v.inspect),run=walking();
+  const w=t&&t.walk,svg=inMap('#nxMapSvg');
+  svg.innerHTML=NxMap.svg(t,l,getComputedStyle(document.body).fontFamily,{lens:ins?v.lensP:null,sel:ins&&t?t.sel:null,walk:w,initials:sc?sc.person.initials:''});
+  mapRegion.classList.toggle('nx-inspecting',ins);
+  /* inspecting: the drawing becomes a keyboard-operable lens; otherwise it is an image named by its caption */
+  if(ins){svg.setAttribute('role','application');svg.setAttribute('tabindex','0');svg.removeAttribute('aria-labelledby');svg.setAttribute('aria-label','Inspection lens on the facility map. Arrow keys move the lens; drag or tap to select a door or room. Evidence appears below the map.');svg.style.touchAction='none';}
+  else{svg.setAttribute('role','img');svg.removeAttribute('tabindex');svg.removeAttribute('aria-label');svg.setAttribute('aria-labelledby','nxMapCap');svg.style.touchAction='';}
+  const ib=inMap('#nxInspect');ib.setAttribute('aria-pressed',ins);ib.disabled=!id||run;
+  inMap('#nxLv1').disabled=inMap('#nxLv2').disabled=run;
+  const pw=inMap('#nxPickWrap'),pk=inMap('#nxDoorPick');pw.hidden=!ins;
+  if(ins){const cur=t.sel&&t.sel.door?t.sel.door:'';pk.innerHTML=`<option value="">Choose a door…</option>`+[1,2].map(L=>`<optgroup label="Level ${L}">${Object.entries(E.DOORS).filter(([d])=>E.doorLevel(d)===L).map(([d,o])=>`<option value="${d}"${d===cur?' selected':''}>${esc(o.n)}</option>`).join('')}</optgroup>`).join('');}
+  const wn=inMap('#nxWalkNote');wn.className='nx-walknote'+(w&&!w.running?(w.res.stop?' nx-walknote-stop':' nx-walknote-ok'):'');
+  wn.textContent=!w?'':w.running?`Walking ${sc.person.name.split(' ')[0]} in…`:w.res.stop?`Walk stopped at ${E.DOORS[w.res.stop.door]?E.DOORS[w.res.stop.door].n:'a door'}.`:'Walk complete: reached every stop.';
+  const ip=inMap('#nxInsp');ip.hidden=!ins;if(ins)ip.innerHTML=inspectHTML(id);
   const l2=t&&NxMap.litOn(t,2);
   inMap('#nxLv1').setAttribute('aria-pressed',l===1);inMap('#nxLv2').setAttribute('aria-pressed',l===2);
   inMap('#nxLv1').setAttribute('aria-label','Level 1, Gallery');inMap('#nxLv2').setAttribute('aria-label',`Level 2, Topside${l2?', has areas in the granted footprint':''}`);
@@ -209,8 +260,60 @@ function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:
   const s=NxMap.summary(t);
   inMap('#nxMapCap').textContent=t?`Showing level ${l}. ${sc.person.name}'s badge grants access to ${s.doors.length} door${s.doors.length===1?'':'s'}: ${list(s.doors)}. Areas in the granted footprint, level 1: ${list(s.l1)}; level 2: ${list(s.l2)}.`
     :`Showing level ${l}. Open a ticket to see that badge's permissions.`;}
-mapRegion.addEventListener('click',e=>{const b=e.target.closest('[data-nx-level]');if(!b)return;const l=+b.dataset.nxLevel;
+mapRegion.addEventListener('click',e=>{const b=e.target.closest('[data-nx-level]');if(!b||walking())return;const l=+b.dataset.nxLevel;
   if(route.screen==='ticket')view[route.id].level=l;else inboxLevel=l;renderMap();announce(`Level ${l}`);});
+mapRegion.addEventListener('click',e=>{if(!e.target.closest('#nxInspect')||route.screen!=='ticket'||walking())return;const v=view[route.id];v.inspect=!v.inspect;
+  renderMap();announce(v.inspect?'Inspect on. Drag or tap the map, or choose a door from the list.':'Inspect off');});
+mapRegion.addEventListener('click',e=>{if(e.target.closest('[data-nx-act="flag"]')){const t=st[route.id];t.flagged=!t.flagged;render();}});
+/* the door list is the accessible alternative to the lens: every door reachable by touch or keyboard without reading the map */
+mapRegion.addEventListener('change',e=>{if(e.target.id!=='nxDoorPick'||!e.target.value)return;const id=route.id,d=e.target.value,v=view[id];
+  st[id].sel={door:d};v.level=E.doorLevel(d);v.lensP=[...E.DOORS[d].p];render();announce(`Inspecting ${E.DOORS[d].n}`);
+  /* chosen by name: bring the evidence into view (the map stays one scroll up) */
+  inMap('#nxInsp').scrollIntoView({block:'nearest'});});
+const svgEl=inMap('#nxMapSvg');let dragging=false;
+const svgPt=e=>{const p=svgEl.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=svgEl.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0};};
+const clampL=(x,y)=>[Math.max(20,Math.min(380,x)),Math.max(20,Math.min(280,y))];
+/* the lens is the selector: a door under it (this level first, then the level seen through it), else a room on a tap */
+function lensAt(x,y,tap){const id=route.id,v=view[id],t=st[id];v.lensP=clampL(x,y);const l=v.level,s=NxMap.pick(x,y,l),s2=NxMap.pick(x,y,l===1?2:1);
+  const n=(s&&s.door)?s:(s2&&s2.door)?s2:tap?(s||s2):null;if(n)t.sel=n;}
+svgEl.addEventListener('pointerdown',e=>{const v=route.screen==='ticket'&&view[route.id];if(!v||!v.inspect||walking())return;dragging=true;try{svgEl.setPointerCapture(e.pointerId);}catch(_){}
+  const p=svgPt(e);lensAt(p.x,p.y,true);renderMap();});
+svgEl.addEventListener('pointermove',e=>{if(!dragging)return;const p=svgPt(e);lensAt(p.x,p.y,false);renderMap();});
+const endDrag=()=>{if(!dragging)return;dragging=false;render();const t=st[route.id];if(t.sel)announce(`Inspecting ${t.sel.door?E.DOORS[t.sel.door].n:E.SPACES[t.sel.space].n}`);};
+svgEl.addEventListener('pointerup',endDrag);svgEl.addEventListener('pointercancel',endDrag);
+svgEl.addEventListener('keydown',e=>{const v=route.screen==='ticket'&&view[route.id];if(!v||!v.inspect)return;const k={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]}[e.key];if(!k)return;
+  e.preventDefault();const t=st[route.id],before=JSON.stringify(t.sel);lensAt(v.lensP[0]+k[0],v.lensP[1]+k[1],true);render();if(JSON.stringify(t.sel)!==before&&t.sel)announce(`Inspecting ${t.sel.door?E.DOORS[t.sel.door].n:E.SPACES[t.sel.space].n}`);});
+/* inspection evidence (V1): the only place a denial cause appears */
+function inspectHTML(id){const sc=S[id],t=st[id],sel=t.sel;
+  let h=`<h3 id="nxInspH" class="nx-h">Inspection</h3>`;
+  if(!sel)return h+`<p class="nx-note">Drag the lens, tap a door or room, or choose a door from the list. Evidence for that spot appears here.</p>`;
+  if(sel.door){const rt=F.routeOf(sc,t),escort=rt&&rt.as==='escort'?sc.escort:null,d=E.DOORS[sel.door],r=E.canEnter(t.world,t.person,sel.door,sc.time),g=r.grants||E.grants(t.world,t.person)[sel.door]||[],re=escort?E.canEnter(t.world,escort,sel.door,sc.time):null;
+    const from=E.SPACES[d.from]?E.SPACES[d.from].n:E.OUTSIDE[d.from].n.replace('Outside · ','Outside, ');
+    const covering=t.person.authorizations.filter(a=>a.doors.includes(sel.door)),covered=covering.filter(a=>E.authActive(t.world,a)),ended=covering.filter(a=>a.status==='approved'&&!E.authActive(t.world,a));
+    const req=Object.entries(E.GROUPS).filter(([k,G])=>G.doors.includes(sel.door)).map(([k,G])=>`${esc(G.n)} ${hrs(E.groupHours(t.world,k))}`);
+    const WHY={OK:'<span class="nx-ok">Opens</span>',NO_GRANT:'<span class="nx-bad">Denied · badge has no group for this door</span>',OUTSIDE_SCHEDULE:'<span class="nx-bad">Denied · outside every schedule on this badge</span>',HARDWARE_FAULT:'<span class="nx-bad">Denied · reader fault</span>',CREDENTIAL_INACTIVE:'<span class="nx-bad">Denied · credential inactive</span>'};
+    const fault=t.world.doorStatus[sel.door]==='fault';
+    h+=`<h4 class="nx-ev-h">${esc(d.n)}</h4><dl class="nx-ev">
+      <dt>Reader</dt><dd>${fault?'<span class="nx-bad">Fault</span>':'Online'} · ${sel.door}${fault&&sc.faultNotes&&sc.faultNotes[sel.door]?`<br>${esc(sc.faultNotes[sel.door])}`:''}</dd>
+      <dt>Entry</dt><dd>${esc(from)} → ${esc(E.SPACES[d.into].n)}</dd>
+      <dt>Groups</dt><dd>${req.join('<br>')||'None'}</dd>
+      <dt>This badge</dt><dd>${g.length?g.map(x=>`${esc(x.via)} · ${x.day?x.day+' ':''}${hrs(x.window)}${x.inherited?`<br><span class="nx-warn">Inherited: ${esc(x.inherited)}</span>`:''}`).join('<br>'):'<span class="nx-muted">Not granted</span>'}</dd>
+      <dt>${sc.day} ${E.fmt(sc.time)}</dt><dd>${WHY[r.code]}</dd>
+      ${escort?`<dt>${esc(escort.name.split(' ')[0])} (escort)</dt><dd>${WHY[re.code]}</dd>`:''}
+      <dt>Records</dt><dd>${sc.hideVerdict?(covering.length?covering.map(a=>`${esc(a.id)} · ${E.authActive(t.world,a)?'active':'ended '+a.ends}`).join('<br>'):'<span class="nx-muted">None</span>')
+        :(covered.length?covered.map(a=>esc(a.id)).join(', '):g.length?'<span class="nx-warn">No active record covers this door</span>':'<span class="nx-muted">None</span>')+ended.map(a=>`<br><span class="nx-muted">${esc(a.id)} ended ${a.ends}</span>`).join('')}</dd></dl>`;
+    if(g.some(x=>x.inherited))h+=`<button class="nx-btn nx-btn-quiet" type="button" data-nx-act="flag" data-nx-key="flag" aria-pressed="${t.flagged}">${t.flagged?'Template flagged for review':'Flag template for review'}</button>`;}
+  else{const s=E.SPACES[sel.space],fp=E.footprint(t.world,t.person),[x,y]=sel.pt;
+    const reach=from=>{const seen=new Set([from]),q=[from];while(q.length){const a=q.shift();for(const [p,r] of E.LINKS){const n=p===a?r:r===a?p:null;if(n&&!seen.has(n)){seen.add(n);q.push(n);}}}return seen;};
+    const doorsIn=Object.values(E.DOORS).filter(o=>o.into===sel.space).map(o=>o.n),links=E.LINKS.filter(k=>k[0]===sel.space||k[1]===sel.space).map(k=>E.SPACES[k[0]===sel.space?k[1]:k[0]].n);
+    const via=[...fp.doors].filter(d=>reach(E.DOORS[d].into).has(sel.space)).map(d=>E.DOORS[d].n);
+    const other=Object.entries(E.SPACES).filter(([k,o])=>o.l!==s.l&&o.r.some(r=>x>=r[0]&&x<=r[0]+r[2]&&y>=r[1]&&y<=r[1]+r[3])).map(([k,o])=>o.n);
+    const vd=s.l===1?E.VOIDS.find(v=>x>=v.r[0]&&x<=v.r[0]+v.r[2]&&y>=v.r[1]&&y<=v.r[1]+v.r[3]):null;
+    h+=`<h4 class="nx-ev-h">${esc(s.n)}</h4><dl class="nx-ev"><dt>Level</dt><dd>L${s.l} · ${s.kind}</dd>
+      <dt>${s.l===1?'Above':'Below'}</dt><dd>${esc(other.join(', ')||(vd?vd.n.replace('Open to','Open volume over'):'Nothing'))}</dd>
+      <dt>Entry</dt><dd>${doorsIn.length?`Reader: ${esc(doorsIn.join(', '))}`:'No reader of its own'}${links.length?`<br>Open passage to ${esc(links.join(', '))}`:''}</dd>
+      <dt>Badge</dt><dd>${fp.spaces.has(sel.space)?`<span class="nx-ok">In the granted footprint</span>, through ${esc(via.join(', '))}${doorsIn.some(n=>via.includes(n))?'':' and open passages'}`:'<span class="nx-muted">Outside the granted footprint</span>: no granted door leads here'}</dd></dl>`;}
+  return h;}
 function placeMap(){const dlg=$('nxMapDlg');
   if(isWide()){if(dlg.open)dlg.close();$('nxMapCol').appendChild(mapRegion);inMap('#nxMapClose').hidden=true;return;}
   inMap('#nxMapClose').hidden=false;
@@ -236,17 +339,20 @@ $('nxBrief').addEventListener('click',e=>{if(e.target.id==='nxBriefClose'||e.tar
 /* ---------- events ---------- */
 $('nxBriefBtn').onclick=openBrief;$('nxMapBtn').onclick=openMap;
 document.querySelector('.nx-brand').addEventListener('click',e=>{e.preventDefault();if(route.screen!=='inbox')backToInbox();});
+$('nxGuard').addEventListener('click',e=>{if(e.target.id==='nxGuardGo')guardContinue();else if(e.target.id==='nxGuardStop')guardCancel();});
+$('nxGuard').addEventListener('cancel',e=>{e.preventDefault();guardContinue();});
 document.addEventListener('click',e=>{const a=e.target.closest('[data-nx-open],[data-nx-step],[data-nx-next],[data-nx-act],[data-nx-rec]');if(!a)return;
-  if(a.dataset.nxOpen){e.preventDefault();if(!leaveOK())return;const id=a.dataset.nxOpen;go({screen:'ticket',id,stage:stageOf(id).key,map:false});}
-  else if(a.dataset.nxStep){go({...route,stage:a.dataset.nxStep},{replace:true});}
+  if(a.dataset.nxOpen){e.preventDefault();const id=a.dataset.nxOpen;guard(()=>go({screen:'ticket',id,stage:stageOf(id).key,map:false}));}
+  else if(a.dataset.nxStep){const k=a.dataset.nxStep;guard(()=>go({...route,stage:k},{replace:true}));}
   /* Next starts the learner at the top of the new stage: focus its heading, bring the tracker into view (chevrons keep focus) */
-  else if(a.dataset.nxNext){go({...route,stage:a.dataset.nxNext},{replace:true});const h=document.querySelector('.nx-instr h2');
-    document.querySelector('.nx-tracker').scrollIntoView({block:'start'});h.focus({preventScroll:true});}
+  else if(a.dataset.nxNext){const k=a.dataset.nxNext;guard(()=>{go({...route,stage:k},{replace:true});const h=document.querySelector('.nx-instr h2');
+    document.querySelector('.nx-tracker').scrollIntoView({block:'start'});h.focus({preventScroll:true});});}
   /* reading a record is a domain action (as in V1): it is recorded on the ticket and counts toward Review/Investigate */
   else if(a.dataset.nxRec){const t=st[route.id],k=a.dataset.nxRec;t.open[k]=!t.open[k];if(t.open[k])t.read[k]=true;render();}
   else if(a.dataset.nxAct==='inbox'){e.preventDefault();backToInbox();}
   else if(a.dataset.nxAct==='brief')openBrief();
   else if(a.dataset.nxAct==='map')openMap();
+  else if(a.dataset.nxAct==='walk')startWalk();
   else if(a.dataset.nxAct==='perms'){view[route.id].perms=a.getAttribute('aria-expanded')!=='true';render();}
   else if(a.dataset.nxAct==='delta'){const t=st[route.id];t.showDelta=!t.showDelta;render();}});
 /* arrow keys move between the four stages; Enter or Space selects */
@@ -255,7 +361,8 @@ document.addEventListener('keydown',e=>{const b=e.target.closest&&e.target.close
   if(j==null||j<0||j>=all.length)return;e.preventDefault();all[j].focus();});
 addEventListener('popstate',onRoute);addEventListener('hashchange',()=>{if(hashOf(parse(location.hash))!==hashOf(route))onRoute();});
 /* read-only hook for the browser tests: evaluation results must not change with navigation */
-window.__nx={state:id=>JSON.parse(JSON.stringify({credential:st[id].person.credential,overrides:st[id].world.groupOverrides,route:st[id].route,disp:st[id].disp,delta:st[id].delta})),grade:id=>F.grade(S[id],st[id]),steps:id=>F.steps(S[id],st[id]),status:id=>F.status(S[id],st[id]),view:()=>JSON.parse(JSON.stringify({route,view})),
+window.__nx={state:id=>JSON.parse(JSON.stringify({credential:st[id].person.credential,overrides:st[id].world.groupOverrides,route:st[id].route,disp:st[id].disp,delta:st[id].delta,sel:st[id].sel,
+    walk:st[id].walk&&{running:st[id].walk.running,stop:st[id].walk.res.stop,i:st[id].walk.i,n:st[id].walk.pts.length}})),verified:id=>F.verified(S[id],st[id]),grade:id=>F.grade(S[id],st[id]),steps:id=>F.steps(S[id],st[id]),status:id=>F.status(S[id],st[id]),view:()=>JSON.parse(JSON.stringify({route,view})),
   footprint:id=>{const f=E.footprint(st[id].world,st[id].person);return{doors:[...f.doors].sort(),spaces:[...f.spaces].sort()};}};
 history.replaceState({nx:true,from:null},'',location.hash||'#/inbox');onRoute();
 })();

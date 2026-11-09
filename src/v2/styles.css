@@ -13,6 +13,7 @@
   --nx-header-h:56px;--nx-focus:var(--nx-focus-light);
 }
 *,*::before,*::after{box-sizing:border-box}
+.nx-body [hidden]{display:none!important} /* component display rules must never reveal a hidden element */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-body{margin:0;background:var(--nx-page);color:var(--nx-ink);font:15px/1.5 var(--nx-font)}
 .nx-body :focus-visible{outline:3px solid var(--nx-focus);outline-offset:2px}
@@ -115,13 +116,34 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-tag{padding:3px 10px;border-radius:14px;font-size:13px;font-weight:600;border:1px solid var(--nx-control-line);background:var(--nx-surface)}
 .nx-tag-add{background:var(--nx-pale);border-color:var(--nx-navy-800)}.nx-tag-rem{border-style:dashed}
 .nx-tag em{font-style:normal;font-weight:700;color:var(--nx-muted);margin-left:4px}
-.nx-btn-quiet{background:var(--nx-surface);color:var(--nx-ink);border-color:var(--nx-control-line);margin-top:6px}
-.nx-btn-quiet[aria-pressed="true"]{background:var(--nx-pale);border-color:var(--nx-navy-800)}
+.nx-btn.nx-btn-quiet{background:var(--nx-surface);color:var(--nx-ink);border-color:var(--nx-control-line);margin-top:6px}
+.nx-btn.nx-btn-quiet[aria-pressed="true"]{background:var(--nx-pale);border-color:var(--nx-navy-800)}
 .nx-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;padding:10px;border-radius:var(--nx-r-lg);border:1px solid var(--nx-navy-800);background:var(--nx-navy-800);color:var(--nx-on-navy);cursor:pointer;text-align:left;font:inherit}
 .nx-mini-lv{position:relative;display:block}.nx-mini-lv svg{display:block;width:100%;height:auto;border-radius:8px}
 .nx-mini-lv b{position:absolute;left:6px;top:4px;font:700 12px var(--nx-font);color:#e2ffff}
 .nx-mini-sum{grid-column:1/-1;font-size:13px;line-height:1.4;color:var(--nx-on-navy-muted)}.nx-mini-sum b{color:var(--nx-on-navy)}
 @media (min-width:1180px){.nx-mini{display:none}}
+/* ---------- walk and inspection ---------- */
+.nx-row{display:flex;flex-wrap:wrap;gap:8px}
+.nx-dl{margin:0 0 12px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}.nx-dl dt{color:var(--nx-muted)}.nx-dl dd{margin:0}
+.nx-btn:disabled{opacity:.55;cursor:default}
+.nx-h3{margin:14px 0 6px;font:700 15px var(--nx-font)}
+.nx-log{margin:0 0 8px;padding-left:22px;font-size:14px;display:grid;gap:3px}
+.nx-log-no{font-weight:700}.nx-log-no::marker{color:#b3261e}.nx-log-arr{color:var(--nx-muted)}
+.nx-tool{min-height:44px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:var(--nx-r-md);border:1px solid rgba(185,201,218,.55);background:rgba(4,22,40,.6);color:var(--nx-on-navy);font:700 14px var(--nx-font);cursor:pointer}
+.nx-tool[aria-pressed="true"]{background:#ffde9f;color:#1b1406;border-color:#ffde9f}
+.nx-tool:disabled,.nx-seg button:disabled{opacity:.5;cursor:default}
+.nx-pick{display:grid;gap:4px;padding:0 8px}.nx-pick label{font:700 13px var(--nx-font);color:var(--nx-on-navy)}
+.nx-pick select{min-height:44px;border-radius:var(--nx-r-md);border:1px solid var(--nx-silver);background:var(--nx-surface);color:var(--nx-ink);font:600 15px var(--nx-font);padding:0 10px}
+.nx-walknote{margin:8px 0 0;font:700 14px var(--nx-font);color:var(--nx-on-navy)}.nx-walknote:empty{display:none}
+.nx-walknote-ok{color:var(--nx-done)}.nx-walknote-stop{color:#ffd994}
+.nx-inspecting .nx-map-cap{display:none}
+@media (max-width:379px){.nx-seg button span{display:none}.nx-map-ctl{gap:6px}.nx-clock{font-size:12px}}
+.nx-insp{margin:0 8px;padding:12px 14px;border-radius:var(--nx-r-md);background:var(--nx-surface);color:var(--nx-ink)}
+.nx-insp .nx-h{margin-bottom:6px;font-size:15px;color:var(--nx-muted)}
+.nx-ev-h{margin:0 0 8px;font:800 18px var(--nx-font)}
+.nx-ev{margin:0 0 8px;display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:14px}.nx-ev dt{color:var(--nx-muted)}.nx-ev dd{margin:0}
+.nx-ok{color:#1d6b45;font-weight:700}.nx-bad{color:#b3261e;font-weight:700}.nx-warn{color:#8a5a00;font-weight:700}.nx-muted{color:var(--nx-muted)}
 .nx-card{background:var(--nx-surface);border:1px solid var(--nx-line);border-radius:var(--nx-r-lg);box-shadow:var(--nx-shadow);padding:16px}
 .nx-placeholder{border-style:dashed;color:var(--nx-muted)}
 .nx-placeholder h2{margin:0 0 4px;font:700 16px var(--nx-font);color:var(--nx-ink)}
