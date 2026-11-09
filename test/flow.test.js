@@ -48,6 +48,13 @@ t('Daniel: escort closes with the designated escort; waiting is a costed, finali
   const w = fresh('daniel'); w.route = 'wait'; close(sc, w); assert(F.finalized(w) && w.result.cls === 'warnr' && w.record.title === 'Delivery delayed');
   const d = walked(sc, fresh('daniel')); assert.equal(d.walk.res.stop.code, 'HARDWARE_FAULT');
 });
+t('Investigate stays done after a read record is collapsed (t.read); without t.read it follows open records as before', () => {
+  const j = fresh('jordan'); j.open['WO-1873'] = true; j.read = { 'WO-1873': true }; assert.equal(F.steps(S.jordan, j)[1][2], true);
+  j.open['WO-1873'] = false; assert.equal(F.steps(S.jordan, j)[1][2], true, 'collapsed but read');
+  const v = fresh('jordan'); v.open['WO-1873'] = true; assert.equal(F.steps(S.jordan, v)[1][2], true); v.open['WO-1873'] = false;
+  assert.equal(F.steps(S.jordan, v)[1][2], false, 'no read log (V1 state): unchanged behaviour');
+  assert.equal(F.steps(S.jordan, fresh('jordan'))[1][2], false);
+});
 t('landmarks: audit and adapt tickets use their own step names', () => {
   assert.deepEqual(F.steps(S.jordan, fresh('jordan')).map(s => s[1]), ['Review', 'Investigate', 'Decide', 'Submit']);
   assert.deepEqual(F.steps(S.daniel, fresh('daniel')).map(s => s[1]), ['Review', 'Respond', 'Verify', 'Record']);

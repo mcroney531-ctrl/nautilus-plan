@@ -1,7 +1,8 @@
 /* Nautilus V2 map drawing (Phase 03): the engine's own floor plan as SVG strings, ported from V1's levelSVG.
    Shows GRANTED only (Engine.footprint: doors the badge's groups and exceptions open, flooded through open passages).
    Time windows, schedules, door status and reader faults never reach the map: those belong to the walk (opened or
-   didn't open, no reason) and to inspection. Change review, the lens and the walk route arrive in Phases 04 and 05. */
+   didn't open, no reason) and to inspection. Change review (Phase 04) outlines what the last badge change added to or
+   removed from the granted footprint; the lens and the walk route arrive in Phase 05. */
 const NxMap = ((E, F) => {
   const shapes = (id, attrs = '') => E.SPACES[id].r.map(r => `<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" ${attrs}/>`).join('');
   function label(id) {
@@ -33,6 +34,9 @@ const NxMap = ((E, F) => {
     s += `<mask id="nxVeil${sfx}"><rect width="400" height="300" fill="#fff"/>${lit.map(k => shapes(k, 'fill="#000"')).join('')}</mask><rect width="400" height="300" fill="#021019" opacity=".72" mask="url(#nxVeil${sfx})"/>`;
     s += `<g filter="url(#nxRing${sfx})">${lit.map(k => shapes(k, 'fill="#a4ead0"')).join('')}</g>`;
     for (const k of lit) { const kd = E.SPACES[k].kind; if (kd === 'public' || kd === 'restricted') s += shapes(k, `fill="url(#${kd === 'public' ? 'nxDots' : 'nxStrp'}${sfx})" pointer-events="none"`); }
+    const d = t && t.delta && t.showDelta ? t.delta : null; /* effective-permission difference from the last change */
+    if (d) { for (const k of d.addedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="added" data-space="${k}">${shapes(k, 'fill="#f5d192" fill-opacity=".22" stroke="#f5d192" stroke-width="2" stroke-dasharray="5 3"')}</g>`;
+      for (const k of d.removedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="removed" data-space="${k}">${shapes(k, 'fill="none" stroke="#f39091" stroke-width="2" stroke-dasharray="5 3"')}</g>`; }
     for (const [d, o] of Object.entries(E.DOORS)) { if (E.doorLevel(d) !== l) continue; const g = fp.doors.has(d);
       s += `<circle class="nx-door" data-door="${d}" data-granted="${g}" cx="${o.p[0]}" cy="${o.p[1]}" r="6" fill="${g ? '#a4ead0' : '#0b2a39'}" stroke="#a9cfd6" stroke-width="1.3"/>`; }
     if (l === 1) s += `<path d="M24 296h16M390 242v16" stroke="#a4ead0" stroke-width="3"/><text x="44" y="297" class="nx-lbl nx-lbl-out" style="text-anchor:start">STAFF ENTRANCE</text><text x="383" y="236" class="nx-lbl nx-lbl-out" style="text-anchor:end">DOCK</text>`;
@@ -44,6 +48,13 @@ const NxMap = ((E, F) => {
     const fp = footprintOf(t), byL = l => [...fp.spaces].filter(k => E.SPACES[k].l === l).map(k => E.SPACES[k].n);
     return { doors: [...fp.doors].map(d => E.DOORS[d].n), l1: byL(1), l2: byL(2) };
   }
-  const litOn = (t, l) => [...footprintOf(t).spaces].some(k => E.SPACES[k].l === l);
-  return { svg, summary, litOn };
+  const litOn = (t, l) => [...footprintOf(t).spaces].some(k => E.SPACES[k].l === l) || !!(t && t.delta && t.showDelta && t.delta.addedSpaces.some(k => E.SPACES[k].l === l));
+  /* phone mini footprint: both levels as silhouettes (no labels, no doors), with the change-review outlines */
+  function mini(t, l) {
+    const fp = footprintOf(t), d = t && t.delta && t.showDelta ? t.delta : null; let s = '<rect width="400" height="300" fill="#04161f"/>';
+    for (const [k, o] of Object.entries(E.SPACES)) { if (o.l !== l) continue; const g = fp.spaces.has(k); s += shapes(k, `fill="${g ? (o.kind === 'restricted' ? '#e8c98f' : '#7fd8bd') : '#143644'}" stroke="#04161f" stroke-width="4"`); }
+    if (d) { for (const k of d.addedSpaces.filter(k => E.SPACES[k].l === l)) s += shapes(k, 'fill="none" stroke="#f5d192" stroke-width="7"'); for (const k of d.removedSpaces.filter(k => E.SPACES[k].l === l)) s += shapes(k, 'fill="none" stroke="#f39091" stroke-width="7" stroke-dasharray="14 8"'); }
+    return s;
+  }
+  return { svg, summary, litOn, mini };
 })(Engine, Flow);

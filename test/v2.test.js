@@ -165,11 +165,76 @@ const tests = {
         heading: document.querySelector('.nx-instr h2').getBoundingClientRect().bottom, focus: document.activeElement.textContent }));
       assert(q.top >= q.header - 1 && q.heading < 520, `${size} ${JSON.stringify(q)}`); assert.equal(q.focus, 'Configure'); await d.close(); }
   },
-  async 'Configure, Verify and Close stay labelled placeholders; Review is the only built stage'(b) {
-    const pg = await page(b, 'desk');
-    for (const id of TICKETS) { const ss = await pg.evaluate(id => __nx.steps(id), id);
-      for (let i = 1; i < 4; i++) { await pg.goto(`${url}#/t/${id}/${ss[i][0]}`); const t = await pg.textContent('#nxWork');
-        assert(/Not built yet: this stage's workspace arrives in Phase 0[456]/.test(t), `${id} ${ss[i][0]}`); assert(!(await pg.$('.nx-request')), 'no Review content on other stages'); } }
+  async 'stage workspaces follow stage FUNCTION, not tracker position; only Verify and Close/Submit/Record remain placeholders'(b) {
+    const pg = await page(b, 'desk'); const ctl = () => pg.evaluate(() => ({ groups: document.querySelectorAll('#nxStage [data-nx-do="group"]').length,
+      exc: document.querySelectorAll('#nxStage [data-nx-do="exception"]').length, hours: document.querySelectorAll('#nxStage [data-nx-do="hours"]').length,
+      routes: document.querySelectorAll('#nxStage [data-nx-do="route"]').length, revoke: document.querySelectorAll('#nxStage [data-nx-do="revoke"]').length,
+      reasons: document.querySelectorAll('#nxStage [data-nx-do="reason"]').length, ph: !!document.querySelector('#nxStage .nx-placeholder') }));
+    const want = { 'elena/configure': { groups: 4, exc: 0, hours: 0, routes: 0, revoke: 0, reasons: 0, ph: false }, 'marcus/configure': { groups: 4, exc: 1, hours: 1, routes: 0, revoke: 0, reasons: 0, ph: false },
+      'jordan/investigate': { groups: 0, exc: 0, hours: 0, routes: 0, revoke: 0, reasons: 0, ph: false }, 'jordan/decide': { groups: 4, exc: 0, hours: 0, routes: 0, revoke: 1, reasons: 3, ph: false },
+      'daniel/respond': { groups: 3, exc: 0, hours: 0, routes: 4, revoke: 0, reasons: 0, ph: false } };
+    for (const [h, w] of Object.entries(want)) { await pg.goto(`${url}#/t/${h}`); assert.deepEqual(await ctl(), w, h); }
+    await pg.goto(url + '#/t/jordan/decide'); assert.equal(await pg.$eval('#nxStage', s => s.dataset.slot), '2', 'Decide is the third segment and holds the decision controls');
+    for (const h of ['elena/verify', 'elena/close', 'marcus/verify', 'jordan/close', 'daniel/verify', 'daniel/close']) { await pg.goto(`${url}#/t/${h}`);
+      assert(/Not built yet: this stage's workspace arrives in Phase 0[56]/.test(await pg.textContent('#nxStage')), h); }
+  },
+  async 'decision controls change domain state exactly as V1 does; evaluation is the shared Flow.grade'(b) {
+    const pg = await page(b, 'desk', '#/t/elena/configure');
+    await pg.check('[data-nx-key="g-allStaff"]'); await pg.check('[data-nx-key="g-education"]');
+    assert.deepEqual((await pg.evaluate(() => __nx.state('elena'))).credential.groups, ['allStaff', 'education']); assert.equal((await pg.evaluate(() => __nx.grade('elena'))).title, 'Not ready to close', 'needs its walk');
+    await pg.goto(url + '#/t/marcus/configure'); await pg.check('[data-nx-key="gs"]'); assert.deepEqual((await pg.evaluate(() => __nx.state('marcus'))).overrides, { diveCrew: [5, 19] });
+    await pg.uncheck('[data-nx-key="gs"]'); await pg.check('[data-nx-key="x-WO-2291"]'); const m = await pg.evaluate(() => __nx.state('marcus'));
+    assert.deepEqual(m.overrides, {}); assert.equal(m.credential.exceptions[0].source, 'WO-2291');
+    await pg.goto(url + '#/t/jordan/decide'); await pg.check('[data-nx-key="rv"]'); await pg.check('[data-nx-key="dp-ended"]');
+    assert.equal((await pg.evaluate(() => __nx.grade('jordan'))).title, 'Ticket closed', 'deactivated with the matching reason (submitting arrives in Phase 06)');
+    await pg.check('[data-nx-key="dp-followup"]'); assert.equal((await pg.evaluate(() => __nx.grade('jordan'))).title, 'Reason does not match the records');
+    assert(/Recorded: Credential deactivated · Future follow-up work may require access/.test(await pg.textContent('.nx-recorded')));
+    await pg.goto(url + '#/t/daniel/respond'); await pg.check('[data-nx-key="rt-wait"]'); assert.equal((await pg.evaluate(() => __nx.state('daniel'))).route, 'wait');
+    assert.equal((await pg.evaluate(() => __nx.grade('daniel'))).title, 'Closed, delivery delayed');
+    assert.deepEqual(await pg.$$eval('.nx-step', s => s.map(x => x.getAttribute('aria-label').split(': ')[1].split(',')[0])), ['Review', 'Respond', 'Verify', 'Record']);
+    assert(/not applicable/.test(await pg.getAttribute('.nx-step >> nth=2', 'aria-label')), 'Verify is not applicable on the wait route');
+  },
+  async 'change review: added and removed areas and doors as separate lists; schedule-only changes with their scope; the map outlines the change'(b) {
+    const pg = await page(b, 'desk', '#/t/elena/configure'); await pg.check('[data-nx-key="g-exhibitOps"]');
+    let r = await pg.textContent('.nx-impact'); assert(/Added Exhibit Operations/.test(r) && /Added to the granted footprint/.test(r) && /Quarantine restricted L2/.test(r), r);
+    await pg.click('#nxLv2'); assert(await pg.$('#nxMapSvg [data-delta="added"][data-space="quarantine"]'), 'Quarantine outlined on L2');
+    await pg.click('[data-nx-key="delta"]'); assert(!(await pg.$('#nxMapSvg [data-delta]')), 'overlay hidden'); assert.equal(await pg.getAttribute('[data-nx-key="delta"]', 'aria-pressed'), 'false');
+    await pg.uncheck('[data-nx-key="g-exhibitOps"]'); r = await pg.textContent('.nx-impact'); assert(/Removed Exhibit Operations/.test(r) && /Removed from the granted footprint/.test(r));
+    await pg.check('[data-nx-key="g-allStaff"]'); r = await pg.textContent('.nx-impact'); assert(/Doors added to badge permissions|Added to the granted footprint/.test(r), r);
+    await pg.goto(url + '#/t/marcus/configure'); await pg.check('[data-nx-key="x-WO-2291"]'); r = await pg.textContent('.nx-impact');
+    assert(/Same places, different hours/.test(r) && /this badge only/.test(r) && !/Added to the granted footprint/.test(r), r);
+    await pg.uncheck('[data-nx-key="x-WO-2291"]'); await pg.check('[data-nx-key="gs"]'); r = await pg.textContent('.nx-impact'); assert(/all 12 Dive Crew badges/.test(r), r);
+  },
+  async 'phone: the live mini footprint updates with each change and opens the full map; it never names time or reader causes'(b) {
+    const pg = await page(b, 'phone', '#/t/elena/configure'); const sum = () => pg.textContent('.nx-mini-sum');
+    assert(/^0 doors in badge permissions/.test(await sum())); await pg.check('[data-nx-key="g-education"]'); assert(/^3 doors in badge permissions · footprint on L1/.test(await sum()), await sum());
+    await pg.click('.nx-mini'); assert(await pg.evaluate(() => document.getElementById('nxMapDlg').open)); await pg.keyboard.press('Escape'); assert.equal(await active(pg), 'mini', 'focus returns to the mini footprint');
+    for (const h of ['marcus/configure', 'daniel/respond']) { await pg.goto(`${url}#/t/${h}`); assert(!/fault|repair|schedule|05:30|08:15|outside|denied/i.test(await sum()), h); }
+    const d = await page(b, 'desk', '#/t/elena/configure'); assert(!(await d.isVisible('.nx-mini')), 'desktop has the map column instead');
+  },
+  async 'Daniel: the escort route shows Jenni (portrait, name, role, ESC-07) only inside that route; no other ticket or stage mentions her'(b) {
+    const pg = await page(b, 'phone400', '#/t/daniel/respond'); const esc = await pg.textContent('.nx-escort');
+    assert(/Jenni Nair/.test(esc) && /Receiving Supervisor · Designated Vendor Escort · ESC-07/.test(esc), esc); assert.equal(await pg.$$eval('.nx-escort img', i => i[0].naturalWidth), 192);
+    for (const h of ['elena/configure', 'marcus/configure', 'jordan/investigate', 'jordan/decide', 'daniel/review']) { await pg.goto(`${url}#/t/${h}`); assert(!/Jenni/.test(await pg.textContent('#nxWork')), h); }
+  },
+  async 'no denial causes in any decision workspace before investigation; wording keeps granted separate from working at a time'(b) {
+    const pg = await page(b, 'phone');
+    for (const h of ['elena/configure', 'marcus/configure', 'jordan/investigate', 'jordan/decide', 'daniel/respond']) { await pg.goto(`${url}#/t/${h}`);
+      const txt = await pg.textContent('#nxStage'); const bad = txt.match(/.{0,30}(fault|repair|out of service|denied|didn't open|outside (its|the) schedule|NO_GRANT|HARDWARE|no active record|out of scope).{0,30}/i);
+      assert(!bad, h + ': ' + (bad && bad[0])); assert(!/badge opens|reaches/i.test(txt), h + ' wording'); }
+  },
+  async 'keyboard: Space toggles a group, arrows move between routes and reasons, focus stays on the control after each update'(b) {
+    const pg = await page(b, 'desk', '#/t/elena/configure'); await pg.focus('[data-nx-key="g-allStaff"]'); await pg.keyboard.press('Space');
+    assert.equal(await active(pg), 'g-allStaff'); assert(await pg.isChecked('[data-nx-key="g-allStaff"]'));
+    await pg.goto(url + '#/t/daniel/respond'); await pg.focus('[data-nx-key="rt-dock"]'); await pg.keyboard.press('ArrowDown');
+    assert.equal(await active(pg), 'rt-selfWest'); assert.equal((await pg.evaluate(() => __nx.state('daniel'))).route, 'selfWest');
+    await pg.goto(url + '#/t/jordan/decide'); await pg.focus('[data-nx-key="rv"]'); await pg.keyboard.press('Space'); assert.equal(await active(pg), 'rv');
+    const sem = await pg.evaluate(() => [...document.querySelectorAll('#nxStage fieldset')].map(f => f.querySelector('legend').textContent));
+    assert.deepEqual(sem.slice(0, 3), ['Credential', 'Reason for the decision', 'Access groups']);
+  },
+  async 'Investigate stays done after Jordyn reads and collapses a record; status and tracker agree'(b) {
+    const pg = await page(b, 'desk', '#/t/jordan/investigate'); await pg.click('[data-nx-rec="WO-1873"]'); await pg.click('[data-nx-rec="WO-1873"]');
+    assert(/Investigate, done/.test(await pg.getAttribute('.nx-step >> nth=1', 'aria-label')), 'tick kept after collapsing'); assert.equal(await pg.evaluate(() => __nx.status('jordan')), 'progress');
   },
   async 'semantics: banner, labelled inbox navigation, main; one h1 per ticket; stage and section headings; the message is a quotation with its sender; noindex'(b) {
     const pg = await page(b, 'desk', '#/t/elena/review');
@@ -193,7 +258,7 @@ const tests = {
   async 'map levels: aria-pressed, the L2 marker when the badge reaches topside, per-ticket memory, focus stays on the button, grading untouched'(b) {
     const pg = await page(b, 'desk'); const before = await pg.evaluate(ids => ids.map(id => __nx.grade(id)), TICKETS);
     await pg.goto(url + '#/t/jordan/review');
-    assert.equal(await pg.getAttribute('#nxLv1', 'aria-pressed'), 'true'); assert(/has areas the badge reaches/.test(await pg.getAttribute('#nxLv2', 'aria-label')));
+    assert.equal(await pg.getAttribute('#nxLv1', 'aria-pressed'), 'true'); assert(/has areas in the granted footprint/.test(await pg.getAttribute('#nxLv2', 'aria-label')));
     assert(await pg.$eval('#nxLv2', b => b.classList.contains('nx-lit')));
     await pg.focus('#nxLv2'); await pg.keyboard.press('Enter'); assert.equal(await active(pg), 'lv2', 'focus stays on the level button');
     assert.equal(await pg.getAttribute('#nxLv2', 'aria-pressed'), 'true'); assert(/^Showing level 2/.test(await pg.textContent('#nxMapCap')));
@@ -207,7 +272,9 @@ const tests = {
     const r = await pg.evaluate(() => ({ cap: document.querySelector('#nxMapCap').textContent, lab: document.querySelector('#nxMapSvg').getAttribute('aria-labelledby'), role: document.querySelector('#nxMapSvg').getAttribute('role'), clock: document.querySelector('#nxClock').textContent }));
     assert.equal(r.role, 'img'); assert.equal(r.lab, 'nxMapCap'); assert.equal(r.clock, 'Tue Oct 27 · 05:30');
     for (const d of ['Loading dock', 'Dive locker', 'East mezzanine']) assert(r.cap.includes(d), d);
-    assert(/Cameron Flynn's badge opens 5 doors/.test(r.cap), r.cap);
+    assert(/Cameron Flynn's badge grants access to 5 doors/.test(r.cap), r.cap);
+    const all = await pg.evaluate(() => document.querySelector('.nx-map').innerText + ' ' + [...document.querySelectorAll('.nx-map [aria-label]')].map(e => e.getAttribute('aria-label')).join(' '));
+    assert(!/\bopens?\b|\breach(es)?\b/i.test(all), 'map wording never claims a door opens or an area is reached: ' + (all.match(/.{0,30}\b(opens?|reach(es)?)\b.{0,30}/i) || [''])[0]);
   },
   async 'one map instance: a single drawing and no duplicate ids across column, dialog, tickets and resizes'(b) {
     const pg = await page(b, 'phone', '#/t/elena/review');

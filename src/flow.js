@@ -12,7 +12,8 @@ const verified=(sc,t)=>{const r=routeOf(sc,t);return !!(t.walk&&!t.walk.running&
 /* workflow landmarks (indicators, not gates) */
 function steps(sc,t){const g=sc.goal||'reach',r=routeOf(sc,t),c=t.person.credential;
   const seen=!!(t.delta||t.disp||t.walk||t.sel||Object.values(t.open).some(Boolean)||(sc.routes&&t.route!==sc.routes[0].id)),closed=finalized(t);
-  if(g==='audit')return[['review','Review',seen],['investigate','Investigate',!!t.sel||Object.values(t.open).some(Boolean)],['decide','Decide',!!t.disp&&!c.active],['close','Submit',closed]];
+  /* Investigate: inspecting, an open record, or (V2) a record read earlier this session, so collapsing it keeps the tick */
+  if(g==='audit')return[['review','Review',seen],['investigate','Investigate',!!t.sel||Object.values(t.open).some(Boolean)||Object.keys(t.read||{}).length>0],['decide','Decide',!!t.disp&&!c.active],['close','Submit',closed]];
   if(g==='adapt')return[['review','Review',seen],['respond','Respond',!!(sc.routes&&t.route!==sc.routes[0].id)],['verify',r&&r.wait?'Verify (n/a)':'Verify',verified(sc,t)||!!(r&&r.wait)],['close','Record',closed]];
   return[['review','Review',seen],['configure','Configure',!!t.delta],['verify','Verify',verified(sc,t)],['close','Close',closed]];}
 /* walk: the evaluator's result plus the points the map animates through */
