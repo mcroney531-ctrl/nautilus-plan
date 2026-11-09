@@ -168,7 +168,7 @@ const tests = {
         heading: document.querySelector('.nx-instr h2').getBoundingClientRect().bottom, focus: document.activeElement.textContent }));
       assert(q.top >= q.header - 1 && q.heading < 520, `${size} ${JSON.stringify(q)}`); assert.equal(q.focus, 'Configure'); await d.close(); }
   },
-  async 'stage workspaces follow stage FUNCTION, not tracker position; only Close/Submit/Record remains a placeholder'(b) {
+  async 'stage workspaces follow stage FUNCTION, not tracker position; no stage is a placeholder any more'(b) {
     const pg = await page(b, 'desk'); const ctl = () => pg.evaluate(() => ({ groups: document.querySelectorAll('#nxStage [data-nx-do="group"]').length,
       exc: document.querySelectorAll('#nxStage [data-nx-do="exception"]').length, hours: document.querySelectorAll('#nxStage [data-nx-do="hours"]').length,
       routes: document.querySelectorAll('#nxStage [data-nx-do="route"]').length, revoke: document.querySelectorAll('#nxStage [data-nx-do="revoke"]').length,
@@ -179,7 +179,7 @@ const tests = {
     for (const [h, w] of Object.entries(want)) { await pg.goto(`${url}#/t/${h}`); assert.deepEqual(await ctl(), w, h); }
     await pg.goto(url + '#/t/jordan/decide'); assert.equal(await pg.$eval('#nxStage', s => s.dataset.slot), '2', 'Decide is the third segment and holds the decision controls');
     for (const h of ['elena/close', 'marcus/close', 'jordan/close', 'daniel/close']) { await pg.goto(`${url}#/t/${h}`);
-      assert(/Not built yet: this stage's workspace arrives in Phase 06/.test(await pg.textContent('#nxStage')), h); }
+      assert(await pg.$('#nxStage [data-nx-act="submit"]'), h + ' has its submit action'); assert(!/Not built yet/.test(await pg.textContent('#nxStage')), h); }
     for (const h of ['elena/verify', 'marcus/verify', 'daniel/verify']) { await pg.goto(`${url}#/t/${h}`); assert(await pg.$('#nxStage [data-nx-act="walk"]'), h + ' has the walk test'); }
   },
   async 'decision controls change domain state exactly as V1 does; evaluation is the shared Flow.grade'(b) {
@@ -359,6 +359,87 @@ const tests = {
     const shown = () => pg.evaluate(() => [...document.querySelectorAll('[hidden]')].filter(e => e.getClientRects().length).map(e => e.id || e.className));
     assert.deepEqual(await shown(), []); await pg.click('#nxInspect'); await pg.click('#nxInspect'); assert.deepEqual(await shown(), [], 'after inspect off');
     await pg.click('#nxMapClose'); const bg = await pg.$eval('[data-nx-key="perms"]', e => getComputedStyle(e).backgroundColor); assert.equal(bg, 'rgb(255, 255, 255)', 'quiet button');
+  },
+  async 'Close, all four correct paths: scenario action, Flow.grade result, a record that matches Flow.buildRecord, tracker and inbox closed'(b) {
+    const pg = await fast(b, 'desk', '#/inbox'); const steps = id => pg.evaluate(id => __nx.steps(id), id);
+    const finish = async (id, prep, action) => { await pg.goto(`${url}#/t/${id}/review`); await prep();
+      await pg.goto(`${url}#/t/${id}/close`); assert.equal(await pg.textContent('[data-nx-key="submit"]'), action, id); await pg.click('[data-nx-key="submit"]');
+      if (await dlgOpen(pg, 'nxMoment')) await pg.click('#nxMomentOk');
+      const rec = await pg.evaluate(id => __nx.record(id), id), shown = await pg.$$eval('.nx-rec-card .nx-facts dd', d => d.map(x => x.textContent));
+      assert.deepEqual(shown, rec.fields.map(f => f[1]), id + ' record shows Flow.buildRecord values'); assert.equal(await pg.evaluate(id => __nx.status(id), id), 'closed');
+      assert((await steps(id))[3][2], id + ' close step done'); return rec; };
+    const walk = async id => { await pg.goto(`${url}#/t/${id}/verify`); await pg.click('[data-nx-key="walk"]'); await walkDone(pg, id); };
+    let r = await finish('elena', async () => { await pg.goto(url + '#/t/elena/configure'); await pg.check('[data-nx-key="g-allStaff"]'); await pg.check('[data-nx-key="g-education"]'); await walk('elena'); }, 'Issue badge');
+    assert.equal(r.title, 'Credential issued'); assert(/Doors in permissions/.test(await pg.textContent('.nx-rec-card')) && !/\bOpens\b/.test(await pg.textContent('.nx-rec-card')), 'display label, not "Opens"');
+    r = await finish('marcus', async () => { await pg.goto(url + '#/t/marcus/configure'); await pg.check('[data-nx-key="x-WO-2291"]'); await walk('marcus'); }, 'Apply access update'); assert.equal(r.status, 'Temporary access');
+    r = await finish('jordan', async () => { await pg.goto(url + '#/t/jordan/decide'); await pg.check('[data-nx-key="rv"]'); await pg.check('[data-nx-key="dp-ended"]'); }, 'Submit audit'); assert.equal(r.status, 'Deactivated');
+    r = await finish('daniel', async () => { await pg.goto(url + '#/t/daniel/respond'); await pg.check('[data-nx-key="rt-escortWest"]'); await walk('daniel'); }, 'Record response');
+    assert.equal(r.title, 'Entry recorded'); assert(/Jenni Nair/.test(await pg.textContent('.nx-rec-card')));
+    await pg.goto(url + '#/inbox'); const sum = await pg.textContent('.nx-shift');
+    assert(/Shift summary/.test(sum) && /Generated by the access desk/.test(sum) && /Cameron Flynn · Ticket closed/.test(sum) && /Where vs\. when/.test(sum), sum);
+    assert.equal(await pg.textContent('.nx-count'), '0'); assert.deepEqual(await pg.$$eval('.nx-status', s => s.map(x => x.textContent)), ['Closed', 'Closed', 'Closed', 'Closed']);
+  },
+  async 'Close, meaningful wrong answers: corrections make no record and need correction; an early submit is only Not ready; Daniel waiting is a closed, costly outcome'(b) {
+    const pg = await fast(b, 'desk', '#/inbox');
+    const sub = async id => { await pg.goto(`${url}#/t/${id}/close`); await pg.click('[data-nx-key="submit"]'); return { kind: await pg.textContent('.nx-res-kind'), title: await pg.textContent('#nxResH'), rec: !!(await pg.$('.nx-rec-card')), status: await pg.evaluate(id => __nx.status(id), id) }; };
+    const walk = async id => { await pg.goto(`${url}#/t/${id}/verify`); await pg.click('[data-nx-key="walk"]'); await walkDone(pg, id); };
+    assert.deepEqual(await sub('elena'), { kind: 'Not ready', title: 'Not ready to close', rec: false, status: 'progress' });
+    await pg.goto(url + '#/t/elena/configure'); await pg.check('[data-nx-key="g-allStaff"]'); await pg.check('[data-nx-key="g-exhibitOps"]'); await walk('elena');
+    assert.deepEqual(await sub('elena'), { kind: 'Needs correction', title: 'Works, but outside the approved scope', rec: false, status: 'correction' });
+    assert(!(await dlgOpen(pg, 'nxMoment')), 'no issuance moment for a correction');
+    await pg.goto(url + '#/t/marcus/configure'); await pg.check('[data-nx-key="gs"]'); await walk('marcus');
+    assert.deepEqual(await sub('marcus'), { kind: 'Needs correction', title: 'Works, but too broad', rec: false, status: 'correction' });
+    await pg.goto(url + '#/t/jordan/decide'); await pg.uncheck('[data-nx-key="g-tempExhibitAV"]'); await pg.check('[data-nx-key="dp-ended"]');
+    assert.deepEqual(await sub('jordan'), { kind: 'Needs correction', title: 'Offboarding incomplete', rec: false, status: 'correction' });
+    await pg.goto(url + '#/t/daniel/respond'); await pg.check('[data-nx-key="g-allStaff"]'); await pg.check('[data-nx-key="rt-selfWest"]'); await walk('daniel');
+    assert.deepEqual(await sub('daniel'), { kind: 'Needs correction', title: 'Works, but outside the approved scope', rec: false, status: 'correction' });
+    await pg.goto(url + '#/t/daniel/respond'); await pg.uncheck('[data-nx-key="g-allStaff"]'); await pg.check('[data-nx-key="rt-wait"]');
+    const d = await sub('daniel'); assert.deepEqual(d, { kind: 'Closed with a cost', title: 'Closed, delivery delayed', rec: true, status: 'closed' }, JSON.stringify(d));
+    assert.equal((await pg.evaluate(() => __nx.record('daniel'))).title, 'Delivery delayed');
+  },
+  async 'no verdict before submitting: the case summary states facts only'(b) {
+    const pg = await fast(b, 'phone', '#/t/elena/configure'); await pg.check('[data-nx-key="g-allStaff"]'); await pg.check('[data-nx-key="g-education"]');
+    await pg.goto(url + '#/t/elena/verify'); await pg.click('[data-nx-key="walk"]'); await walkDone(pg, 'elena'); await pg.click('#nxMapClose'); await pg.goto(url + '#/t/elena/close');
+    const txt = await pg.textContent('#nxStage'); assert(!/ready|correct|success|approved scope|closed|all required|least privilege/i.test(txt), txt.match(/.{0,30}(ready|correct|success|closed).{0,30}/i));
+    assert(/Reached every stop, Tue 07:15/.test(txt)); assert(!(await pg.$('#nxResult')));
+  },
+  async 'stale records: any change after a closed result clears the result and the record; the inbox and tracker follow'(b) {
+    const pg = await fast(b, 'desk', '#/t/jordan/decide'); await pg.check('[data-nx-key="rv"]'); await pg.check('[data-nx-key="dp-ended"]');
+    await pg.goto(url + '#/t/jordan/close'); await pg.click('[data-nx-key="submit"]'); assert(await pg.$('.nx-rec-card')); assert.equal(await pg.evaluate(() => __nx.status('jordan')), 'closed');
+    await pg.goto(url + '#/t/jordan/decide'); await pg.check('[data-nx-key="dp-followup"]');
+    assert.equal(await pg.evaluate(() => __nx.record('jordan')), null); assert.equal(await pg.evaluate(() => __nx.result('jordan')), null);
+    await pg.goto(url + '#/t/jordan/close'); assert(!(await pg.$('.nx-rec-card')) && !(await pg.$('#nxResult'))); assert.equal(await pg.evaluate(() => __nx.status('jordan')), 'progress');
+    assert(!(await pg.evaluate(() => __nx.steps('jordan')))[3][2]);
+    const e = await fast(b, 'desk', '#/t/elena/configure'); await e.check('[data-nx-key="g-allStaff"]'); await e.check('[data-nx-key="g-education"]');
+    await e.goto(url + '#/t/elena/verify'); await e.click('[data-nx-key="walk"]'); await walkDone(e, 'elena'); await e.goto(url + '#/t/elena/close'); await e.click('[data-nx-key="submit"]'); await e.click('#nxMomentOk');
+    await e.goto(url + '#/t/elena/configure'); await e.uncheck('[data-nx-key="g-education"]'); assert.equal(await e.evaluate(() => __nx.record('elena')), null, 'badge change clears the issued record');
+    await e.goto(url + '#/t/elena/close'); await e.click('[data-nx-key="reset"]'); assert.equal(await e.evaluate(() => __nx.status('elena')), 'new', 'reset');
+  },
+  async 'Elena\'s moment: scanner on issuing with live badge text, Skip goes to the record art, focus lands on Record details; reopening and reduced motion skip the scanner'(b) {
+    const ctx = await b.newContext({ viewport: SIZES.phone400 }), pg = await ctx.newPage(); await pg.goto(url + '#/t/elena/configure');
+    await pg.check('[data-nx-key="g-allStaff"]'); await pg.check('[data-nx-key="g-education"]'); await pg.click('.nx-step >> nth=2'); await pg.click('[data-nx-key="walk"]'); await walkDone(pg, 'elena');
+    await pg.click('#nxMapClose'); await pg.click('.nx-step >> nth=3'); await pg.click('[data-nx-key="submit"]');
+    assert(await pg.$eval('#nxMoment .nx-moment', m => m.classList.contains('nx-scan'))); const sc = await pg.textContent('#nxMoment .nx-scanner');
+    assert(/Issuing credential · Elena Park/.test(sc) && /Marine Educator/.test(sc) && /STAFF/.test(sc) && /Assigned groups · All Staff \+ Education/.test(sc), sc);
+    assert.equal(await active(pg), 'nxSkip'); await pg.click('#nxSkip'); assert(!(await pg.$eval('#nxMoment .nx-moment', m => m.classList.contains('nx-scan'))));
+    const slots = await pg.$$eval('#nxMoment .nx-slot', s => s.map(x => x.textContent)); assert.deepEqual(slots.slice(0, 5), ['Elena Park', 'Marine Educator', 'Education', 'WA-1041', 'All Staff, Education']);
+    await pg.click('#nxMomentOk'); assert.equal(await active(pg), 'nxRecordH'); assert(!(await dlgOpen(pg, 'nxMoment')));
+    await pg.click('[data-nx-key="art"]'); assert(await dlgOpen(pg, 'nxMoment') && !(await pg.$('#nxMoment .nx-scanner')), 'reopening shows the record only');
+    await pg.keyboard.press('Escape'); assert.equal(await active(pg), 'nxRecordH');
+    const r = await fast(b, 'desk', '#/t/elena/configure'); await r.check('[data-nx-key="g-allStaff"]'); await r.check('[data-nx-key="g-education"]');
+    await r.goto(url + '#/t/elena/verify'); await r.click('[data-nx-key="walk"]'); await walkDone(r, 'elena'); await r.goto(url + '#/t/elena/close'); await r.click('[data-nx-key="submit"]');
+    assert(await dlgOpen(r, 'nxMoment') && !(await r.$('#nxMoment .nx-scanner')), 'reduced motion: record only');
+  },
+  async 'keyboard and announcements: submitting by keyboard moves focus to the result and announces it; 320px close stage has no sideways scroll'(b) {
+    const pg = await fast(b, 'phone', '#/t/marcus/close'); await pg.focus('[data-nx-key="submit"]'); await pg.keyboard.press('Enter');
+    assert.equal(await active(pg), 'nxResult'); await pg.waitForTimeout(80); assert(/^Not ready: Not ready to close/.test(await pg.textContent('#nxLive')));
+    assert.equal(await overflow(pg), 0); assert.equal(await pg.getAttribute('#nxResult', 'aria-labelledby'), 'nxResH');
+  },
+  async 'compare (Elena, after issuing): shows what the template would also grant, badge unchanged, record kept'(b) {
+    const pg = await fast(b, 'desk', '#/t/elena/configure'); await pg.check('[data-nx-key="g-allStaff"]'); await pg.check('[data-nx-key="g-education"]');
+    await pg.goto(url + '#/t/elena/verify'); await pg.click('[data-nx-key="walk"]'); await walkDone(pg, 'elena'); await pg.goto(url + '#/t/elena/close'); await pg.click('[data-nx-key="submit"]'); await pg.click('#nxMomentOk');
+    await pg.click('[data-nx-key="compare"]'); const txt = await pg.textContent('.nx-rec-card'); assert(/badge is unchanged/.test(txt) && /Quarantine/.test(txt), txt);
+    assert.deepEqual((await pg.evaluate(() => __nx.state('elena'))).credential.groups, ['allStaff', 'education']); assert(await pg.evaluate(() => !!__nx.record('elena')));
   },
   async 'semantics: banner, labelled inbox navigation, main; one h1 per ticket; stage and section headings; the message is a quotation with its sender; noindex'(b) {
     const pg = await page(b, 'desk', '#/t/elena/review');

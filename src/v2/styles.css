@@ -123,6 +123,57 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-mini-lv b{position:absolute;left:6px;top:4px;font:700 12px var(--nx-font);color:#e2ffff}
 .nx-mini-sum{grid-column:1/-1;font-size:13px;line-height:1.4;color:var(--nx-on-navy-muted)}.nx-mini-sum b{color:var(--nx-on-navy)}
 @media (min-width:1180px){.nx-mini{display:none}}
+/* ---------- Elena's approved record artwork and scanner moment (ported from V1; class names namespaced only) ---------- */
+.nx-art{position:relative;container-type:inline-size;-webkit-text-size-adjust:none;text-size-adjust:none;border-radius:10px;overflow:hidden;box-shadow:0 10px 28px #0007}
+.nx-art img{display:block;width:100%;height:auto}
+.nx-art .nx-slot{position:absolute;left:11.02%;width:51.5%;padding:0 1.2cqw;overflow:hidden;font:650 1.46cqw/3.41cqw var(--nx-font);color:#0b2f55}
+.nx-art .nx-slot span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nx-art .nx-slot.nx-long{font-size:1.2cqw;line-height:1.6cqw;display:flex;align-items:center}.nx-art .nx-slot.nx-long span{white-space:normal;max-height:3.2cqw}
+@keyframes nx-recIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+#nxMoment{padding:0;border:0;background:transparent;overflow:visible;width:min(94vw,1025px,calc((100dvh - 96px) * .667));max-width:none;max-height:none}
+#nxMoment::backdrop{background:#020c12e6}
+#nxMoment .nx-moment{display:grid;animation:nx-recIn .5s ease-out both}#nxMoment .nx-moment>*{grid-area:1/1}
+#nxMoment .nx-recview{display:grid;gap:12px;transition:opacity .4s}#nxMoment .nx-recview .nx-btn{justify-self:center}
+/* scanner: badge art + live text, pad and light built in CSS; the whole layer cross-fades into the record */
+.nx-scanner{align-self:center;display:grid;justify-items:center;gap:12px;transition:opacity .4s;pointer-events:none}
+.nx-moment.nx-scan .nx-recview{opacity:0;visibility:hidden}.nx-moment:not(.nx-scan) .nx-scanner{opacity:0;visibility:hidden}
+.nx-moment.nx-scan{cursor:pointer}
+.nx-scap{font:700 11px/1.3 var(--nx-font);letter-spacing:.16em;text-transform:uppercase;color:#8acbd2;text-align:center;min-height:2.6em;display:grid;align-items:end}
+.nx-scap .nx-s2,.nx-mlit .nx-scap .nx-s1{display:none}.nx-mlit .nx-scap .nx-s2{display:inline}
+.nx-spad{position:relative;width:100%;aspect-ratio:1/1.12;border-radius:28px;background:linear-gradient(160deg,#1b3442,#0a1a23 60%);box-shadow:inset 0 2px 0 #ffffff22,inset 0 -8px 20px #0008,0 24px 50px #000a;display:grid;place-items:center}
+.nx-well{position:absolute;inset:7%;border-radius:20px;background:#06121a;border:2px solid #5fe0e6aa;box-shadow:inset 0 6px 18px #000c,0 0 22px #5fe0e688;transition:border-color .3s,box-shadow .3s}
+.nx-mlit .nx-well{border-color:#7ef0c0;box-shadow:inset 0 6px 18px #000c,0 0 24px #7ef0c099,inset 0 0 30px #7ef0c044}
+.nx-led{position:absolute;top:2.6%;right:9%;width:10px;height:10px;border-radius:50%;background:#5fe0e6;box-shadow:0 0 10px #5fe0e6}.nx-mlit .nx-led{background:#7ef0c0;box-shadow:0 0 12px #7ef0c0}
+.nx-cbadge{position:relative;width:62%;container-type:inline-size;-webkit-text-size-adjust:none;text-size-adjust:none;filter:drop-shadow(0 12px 18px #000b);animation:nx-badgeIn .3s ease-out both}
+.nx-cbadge img{display:block;width:100%;height:auto}
+.nx-cbadge .nx-ph{position:absolute;left:31.6%;top:22.2%;width:36.5%;height:26.9%;border-radius:2.4cqw;background-repeat:no-repeat}
+.nx-cbadge .nx-f{position:absolute;left:19.3%;background:#e4e7eb;border-radius:1cqw;display:flex;align-items:center;padding-left:1.5cqw;color:#0b2f55;font-weight:700;white-space:nowrap;overflow:hidden;font-family:var(--nx-font)}
+.nx-cbadge .nx-fn{top:53.1%;height:5.6%;width:63%;font-size:6.2cqw}.nx-cbadge .nx-fr{top:61%;height:5%;width:51%;font-size:5cqw;font-weight:600}.nx-cbadge .nx-fd{top:68.1%;height:5%;width:63%;font-size:5cqw;font-weight:600}
+.nx-cbadge .nx-ft{left:70.6%;top:78%;width:20.5%;height:4.2%;padding-left:2cqw;font-size:3.8cqw;font-weight:800;letter-spacing:.08em;border-radius:0}
+.nx-sline{position:absolute;left:-6%;right:-6%;top:0;height:3px;background:#bff8ff;box-shadow:0 0 10px 3px #5fe0e6,0 0 34px 10px #5fe0e688;border-radius:3px;opacity:0;animation:nx-sweep .7s .3s ease-in-out both}
+.nx-sline::after{content:"";position:absolute;left:0;right:0;bottom:3px;height:60px;background:linear-gradient(0deg,#5fe0e633,transparent)}
+.nx-mlit .nx-sline{animation:none;opacity:0}
+.nx-schip{border:1px solid #7ef0c0;color:#c9fbe6;border-radius:20px;padding:7px 14px;font:650 13px/1.3 var(--nx-font);background:#0b2a2a;text-align:center;visibility:hidden}.nx-mlit .nx-schip{visibility:visible}
+.nx-sskip{position:fixed;right:14px;top:12px;z-index:2}.nx-moment:not(.nx-scan) .nx-sskip{display:none}
+@keyframes nx-sweep{0%{top:2%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:98%;opacity:0}}
+@keyframes nx-badgeIn{from{opacity:0;transform:translateY(-24px) scale(1.04)}to{opacity:1;transform:none}}
+/* ---------- Close: case summary, result, record, shift summary ---------- */
+.nx-facts{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}.nx-facts dt{color:var(--nx-muted)}.nx-facts dd{margin:0}
+.nx-res{border-left:5px solid var(--nx-control-line);outline:none}
+.nx-res-good{border-left-color:#1d6b45}.nx-res-cost{border-left-color:#8a5a00}.nx-res-fix{border-left-color:#b3261e}.nx-res-notyet{border-left-color:var(--nx-silver)}
+.nx-res-kind{display:inline-block;margin-bottom:6px;padding:2px 10px;border-radius:12px;font:700 12px var(--nx-font);letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor}
+.nx-res-good .nx-res-kind{color:#1d6b45}.nx-res-cost .nx-res-kind{color:#8a5a00}.nx-res-fix .nx-res-kind{color:#b3261e}.nx-res-notyet .nx-res-kind{color:var(--nx-muted)}
+.nx-res h3{margin:0 0 4px;font:750 17px var(--nx-font)}.nx-res p{margin:0 0 6px;font-size:14px}.nx-principle{color:var(--nx-muted);font-style:italic}
+.nx-pill{display:inline-block;padding:2px 10px;border-radius:12px;border:1px solid currentColor;font:700 12px var(--nx-font);letter-spacing:.06em;text-transform:uppercase}
+.nx-rec-card h3{outline:none}
+.nx-rtop{display:grid;grid-template-columns:minmax(96px,38%) 1fr;gap:12px;align-items:start;margin-bottom:12px}
+.nx-artthumb{padding:0;border:0;background:none;cursor:zoom-in;border-radius:10px;display:block;width:100%}
+.nx-artthumb .nx-art{border-radius:6px;box-shadow:0 4px 14px #0008}
+.nx-rsum{display:grid;gap:3px;align-content:start}.nx-rsum .nx-pill{justify-self:start;margin:2px 0 6px;color:#1d6b45}
+.nx-rlbl{font:700 12px var(--nx-font);letter-spacing:.12em;text-transform:uppercase;color:var(--nx-muted)}
+.nx-who{display:flex;gap:10px;align-items:center;margin:4px 0 10px}.nx-who .nx-av{width:44px;height:44px}.nx-who b{display:block}.nx-who span{font-size:13px;color:var(--nx-muted)}
+.nx-shift{padding:12px;border-radius:var(--nx-r-md);border:1px solid var(--nx-done);background:rgba(4,22,40,.7)}
+.nx-shift h3{margin:0 0 8px;font:750 16px var(--nx-font)}.nx-shift ol{margin:0;padding-left:20px;display:grid;gap:6px;font-size:13.5px}.nx-shift li span{color:var(--nx-on-navy-muted)}
 /* ---------- walk and inspection ---------- */
 .nx-row{display:flex;flex-wrap:wrap;gap:8px}
 .nx-dl{margin:0 0 12px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}.nx-dl dt{color:var(--nx-muted)}.nx-dl dd{margin:0}
