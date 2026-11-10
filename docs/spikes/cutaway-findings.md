@@ -106,3 +106,7 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
   3. Then I re-register it, re-run the opening check (target 15 of 15) and the label/function review.
 - **Process for the rest:** keep this controlled method. The shell (walls, floors, lighting) comes from the blockout-guided paint; room interiors are filled through engine-generated masks, one room at a time, and each pass is checked by the overlay and opening sheet. This avoids regenerating whole maps hoping one lands, and it is how L2 should be produced.
 - **L2 is now the visible gap:** the lens shows the grey L2 blockout beneath painted L1. L2 art (same method) is needed before the lens looks right.
+
+### Correction handoff (Nov 10)
+
+`docs/spikes/cutaway-l1-correction/` replaces `docs/spikes/cutaway-masks/` for corrections: 8 separate engine-derived regions, a labelled reference, alignment rules, and `spikes/cutaway/composite.py`, which brings each returned region back into the master without moving its geometry. One region per pass, starting with Living Shore. See its README.

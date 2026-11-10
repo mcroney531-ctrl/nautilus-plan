@@ -1,0 +1,130 @@
+{
+ "master": "master-L1-v1.png",
+ "size": [
+  1600,
+  1004
+ ],
+ "projection": {
+  "variant": "C",
+  "k": 0.68,
+  "hI": 9,
+  "hE": 34,
+  "hF": 2,
+  "hT": 42,
+  "sh": 0.5,
+  "h": 9,
+  "off": 40,
+  "W": 400,
+  "H": 251
+ },
+ "regions": {
+  "01-living-shore": {
+   "box_px": [
+    423,
+    534,
+    739,
+    658
+   ],
+   "room": "Living Shore (engine: touch, public gallery)",
+   "brief": "Shallow touch pool: low open pool, rocks, sand, coastal habitat, a rail at visitor height. Public, warm and inviting.",
+   "mask": "mask-01-living-shore.png",
+   "crop": "crop-01-living-shore.png"
+  },
+  "02-jelly-room": {
+   "box_px": [
+    1191,
+    290,
+    1371,
+    435
+   ],
+   "room": "Jelly Room (engine: jelly, public gallery)",
+   "brief": "Jellyfish gallery: dark room, glowing cylindrical or round tanks with jellies, soft blue and violet light. Public.",
+   "mask": "mask-02-jelly-room.png",
+   "crop": "crop-02-jelly-room.png"
+  },
+  "03-seasonal": {
+   "box_px": [
+    1191,
+    496,
+    1371,
+    642
+   ],
+   "room": "Seasonal (engine: seasonal, public gallery)",
+   "brief": "Flexible temporary exhibit gallery: display cases or plinths, blank panels (no text), track lighting. Public.",
+   "mask": "mask-03-seasonal.png",
+   "crop": "crop-03-seasonal.png"
+  },
+  "04-atrium": {
+   "box_px": [
+    823,
+    725,
+    1243,
+    897
+   ],
+   "room": "Atrium (engine: atrium, public; open to L2 above)",
+   "brief": "Open central gathering space, visibly open to Level 2 above (light from above, the void edge), seating; no storage, no pipes.",
+   "mask": "mask-04-atrium.png",
+   "crop": "crop-04-atrium.png"
+  },
+  "05-dock-door": {
+   "box_px": [
+    1534,
+    701,
+    1600,
+    897
+   ],
+   "room": "Loading dock door D-DOCK (east exterior wall of Receiving, plan 388,250)",
+   "brief": "A dock door opening in the east exterior wall, centred at the marked point; the engine's dock reader is here.",
+   "mask": "mask-05-dock-door.png",
+   "crop": "crop-05-dock-door.png"
+  },
+  "06-receiving-north-wall": {
+   "box_px": [
+    1294,
+    649,
+    1522,
+    789
+   ],
+   "room": "Receiving north wall (engine passage to East service hall at plan 368,196 stays)",
+   "brief": "Remove the roll-up door: plain wall with the existing passage. Receiving's dock door belongs on the east wall (region 05).",
+   "mask": "mask-06-receiving-north-wall.png",
+   "crop": "crop-06-receiving-north-wall.png"
+  },
+  "07-reef-to-jelly": {
+   "box_px": [
+    1146,
+    312,
+    1182,
+    412
+   ],
+   "room": "Passage Reef Tunnel to Jelly Room (plan 289,80)",
+   "brief": "A clear open passage through the wall at the marked point (about 15 units wide), no door leaf.",
+   "mask": "mask-07-reef-to-jelly.png",
+   "crop": "crop-07-reef-to-jelly.png"
+  },
+  "08-reef-to-seasonal": {
+   "box_px": [
+    1146,
+    521,
+    1182,
+    621
+   ],
+   "room": "Passage Reef Tunnel to Seasonal (plan 289,157)",
+   "brief": "A clear open passage through the wall at the marked point (about 15 units wide), no door leaf.",
+   "mask": "mask-08-reef-to-seasonal.png",
+   "crop": "crop-08-reef-to-seasonal.png"
+  }
+ },
+ "canvas_3x2": {
+  "file": "canvas-3x2-L1-v1.png",
+  "size": [
+   1600,
+   1067
+  ],
+  "master_at": [
+   0,
+   0
+  ],
+  "note": "Returned 3:2 images (for example 1536 x 1024) are scaled uniformly to 1600 x 1067; the top 1004 rows are the master."
+ }
+}
