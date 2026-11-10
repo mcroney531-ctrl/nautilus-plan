@@ -207,7 +207,7 @@ Views and tap results: `docs/spikes/cutaway-shots/l1-review/` (24 views and `l1-
 - **Granted against not granted:** clear at all three widths. The veil dims floors and the exhibits stay recognisable under it.
 - **Interaction:** 21 of 21 real taps on L1 door markers (7 doors × 3 widths) select the right door. Footprint, markers, walk, denied stop, callout and lens register on the painting with no change to the overlay.
 - **Openings:** 15 of 15 engine openings have an opening in the painted wall at the right place; none is a solid wall. Twelve are clean. Three are cosmetically weak: a dark panel beside the dock opening (05) and dark gaps at the two Reef Tunnel passages (07, 08).
-- **Asset:** the painted L1 is 164 KB as WebP.
+- **Asset:** the painted L1 is 159 KB as WebP.
 
 **Do the three weak openings confuse a learner or get in the way? No.**
 
