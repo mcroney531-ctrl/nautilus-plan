@@ -126,5 +126,30 @@
    0
   ],
   "note": "Returned 3:2 images (for example 1536 x 1024) are scaled uniformly to 1600 x 1067; the top 1004 rows are the master."
- }
+ },
+ "history": [
+  {
+   "region": "01-living-shore",
+   "returned": "ls01.png",
+   "returned_size": [
+    1536,
+    1024
+   ],
+   "base_mapping": "canvas-3x2",
+   "correction_applied": {
+    "scale": 1.0,
+    "dx_px": 0,
+    "dy_px": 0
+   },
+   "ring_mad_plain": 4.79,
+   "ring_mad_fit": 4.79,
+   "pixels_changed_inside": 37948,
+   "pixels_inside": 39625,
+   "outside_mask_unchanged": true,
+   "editor_redrew_outside_pct": 6.8,
+   "from": "master-L1-v1.png",
+   "to": "master-L1-v2.png",
+   "compare": "compare-01-v2.png"
+  }
+ ]
 }

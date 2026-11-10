@@ -110,3 +110,15 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
 ### Correction handoff (Nov 10)
 
 `docs/spikes/cutaway-l1-correction/` replaces `docs/spikes/cutaway-masks/` for corrections: 8 separate engine-derived regions, a labelled reference, alignment rules, and `spikes/cutaway/composite.py`, which brings each returned region back into the master without moving its geometry. One region per pass, starting with Living Shore. See its README.
+
+### Correction pass 01, Living Shore (Nov 10): PASS, promoted to `master-L1-v2.png`
+
+- **Composite:** returned at 1536 × 1024, mapped through the 3:2 canvas, fitted at identity (scale 1.0, 0 px). 37,948 of 39,625 masked pixels changed; every pixel outside the mask is unchanged (asserted). The editor redrew 6.8% of the picture outside the mask; all of that was discarded.
+- **Openings:** no regressions by construction (walls and openings are outside the mask). Still 12 of 15 until 05 to 08.
+- **Function:** reads as a public touch-pool exhibit at desktop and 400 px. At 320 px it reduces to a mural, a rock mass and a turquoise pool: an exhibit, not storage, which is the distinction the map needs.
+- **Overlays:** footprint, door markers, walk route, lens and selection register unchanged at 320 / 400 / desktop (`cutaway-shots/painted-*`, `cutaway-l1-correction/compare-01-v2.png`).
+- **Accepted deviations:**
+  - two wall posters and an interpretive stand carry illegible pseudo-text marks (about 12 px tall at desktop map size), against the no-signage rule;
+  - no visitor rail; the pool has a stone coping instead;
+  - a soft tonal ring where the warm repaint meets the master's cooler floor at the mask inset, visible at 4× zoom only.
+- **For later passes:** the prompt now has to say "no posters, wall graphics or interpretive stands", not only "no text".
