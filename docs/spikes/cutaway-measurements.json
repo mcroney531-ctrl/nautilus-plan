@@ -1,0 +1,387 @@
+{
+ "sizes": {
+  "A-L1-treated.webp": 17954,
+  "A-L1.webp": 10652,
+  "A-L2.webp": 10276,
+  "B-L1-treated.webp": 17570,
+  "B-L1.webp": 10016,
+  "B-L2.webp": 9504,
+  "C-L1-treated.webp": 21072,
+  "C-L1.webp": 12694,
+  "C-L2.webp": 12010,
+  "cutaway-poc.html": 207527
+ },
+ "widths": {
+  "320-A": {
+   "scale": 0.76,
+   "visiblePx": 14,
+   "hitPx": 44,
+   "levels": {
+    "L1": {
+     "minSpacingPx": 32.7,
+     "closest": [
+      "D-WGC",
+      "D-LSG"
+     ],
+     "under48px": [
+      "D-WGC~D-LSG 33px",
+      "D-WGC~D-CLS 47px",
+      "D-LSG~D-CLS 36px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    },
+    "L2": {
+     "minSpacingPx": 26.7,
+     "closest": [
+      "D-QUAR",
+      "D-TOPW"
+     ],
+     "under48px": [
+      "D-QUAR~D-TOPW 27px",
+      "D-TOPW~D-FOOD 36px",
+      "D-DIVE~D-TOPE 29px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    }
+   },
+   "decodeMs": {
+    "max": "8.8",
+    "total": "47.4"
+   },
+   "overlayMs": {
+    "ticks": 16,
+    "median": "1.30",
+    "p95": "2.70"
+   }
+  },
+  "320-B": {
+   "scale": 0.76,
+   "visiblePx": 14,
+   "hitPx": 44,
+   "levels": {
+    "L1": {
+     "minSpacingPx": 28.3,
+     "closest": [
+      "D-LSG",
+      "D-CLS"
+     ],
+     "under48px": [
+      "D-WGC~D-LSG 33px",
+      "D-WGC~D-CLS 42px",
+      "D-LSG~D-CLS 28px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    },
+    "L2": {
+     "minSpacingPx": 21.2,
+     "closest": [
+      "D-QUAR",
+      "D-TOPW"
+     ],
+     "under48px": [
+      "D-QUAR~D-TOPW 21px",
+      "D-QUAR~D-FOOD 44px",
+      "D-TOPW~D-FOOD 35px",
+      "D-DIVE~D-TOPE 26px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    }
+   },
+   "decodeMs": {
+    "max": "8.2",
+    "total": "39.7"
+   },
+   "overlayMs": {
+    "ticks": 16,
+    "median": "1.20",
+    "p95": "1.70"
+   }
+  },
+  "320-C": {
+   "scale": 0.76,
+   "visiblePx": 14,
+   "hitPx": 44,
+   "levels": {
+    "L1": {
+     "minSpacingPx": 31,
+     "closest": [
+      "D-LSG",
+      "D-CLS"
+     ],
+     "under48px": [
+      "D-WGC~D-LSG 33px",
+      "D-WGC~D-CLS 44px",
+      "D-LSG~D-CLS 31px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    },
+    "L2": {
+     "minSpacingPx": 23.3,
+     "closest": [
+      "D-QUAR",
+      "D-TOPW"
+     ],
+     "under48px": [
+      "D-QUAR~D-TOPW 23px",
+      "D-QUAR~D-FOOD 45px",
+      "D-TOPW~D-FOOD 35px",
+      "D-DIVE~D-TOPE 27px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    }
+   },
+   "decodeMs": {
+    "max": "9.6",
+    "total": "39.6"
+   },
+   "overlayMs": {
+    "ticks": 16,
+    "median": "1.20",
+    "p95": "1.50"
+   }
+  },
+  "400-A": {
+   "scale": 0.96,
+   "visiblePx": 14,
+   "hitPx": 44,
+   "levels": {
+    "L1": {
+     "minSpacingPx": 41.3,
+     "closest": [
+      "D-WGC",
+      "D-LSG"
+     ],
+     "under48px": [
+      "D-WGC~D-LSG 41px",
+      "D-LSG~D-CLS 45px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    },
+    "L2": {
+     "minSpacingPx": 33.7,
+     "closest": [
+      "D-QUAR",
+      "D-TOPW"
+     ],
+     "under48px": [
+      "D-QUAR~D-TOPW 34px",
+      "D-TOPW~D-FOOD 45px",
+      "D-DIVE~D-TOPE 37px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    }
+   },
+   "decodeMs": {
+    "max": "10.9",
+    "total": "51.9"
+   },
+   "overlayMs": {
+    "ticks": 16,
+    "median": "1.30",
+    "p95": "1.70"
+   }
+  },
+  "400-B": {
+   "scale": 0.96,
+   "visiblePx": 14,
+   "hitPx": 44,
+   "levels": {
+    "L1": {
+     "minSpacingPx": 35.7,
+     "closest": [
+      "D-LSG",
+      "D-CLS"
+     ],
+     "under48px": [
+      "D-WGC~D-LSG 41px",
+      "D-LSG~D-CLS 36px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    },
+    "L2": {
+     "minSpacingPx": 26.8,
+     "closest": [
+      "D-QUAR",
+      "D-TOPW"
+     ],
+     "under48px": [
+      "D-QUAR~D-TOPW 27px",
+      "D-TOPW~D-FOOD 45px",
+      "D-DIVE~D-TOPE 33px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    }
+   },
+   "decodeMs": {
+    "max": "10.8",
+    "total": "46.6"
+   },
+   "overlayMs": {
+    "ticks": 16,
+    "median": "1.20",
+    "p95": "1.50"
+   }
+  },
+  "400-C": {
+   "scale": 0.96,
+   "visiblePx": 14,
+   "hitPx": 44,
+   "levels": {
+    "L1": {
+     "minSpacingPx": 39.2,
+     "closest": [
+      "D-LSG",
+      "D-CLS"
+     ],
+     "under48px": [
+      "D-WGC~D-LSG 41px",
+      "D-LSG~D-CLS 39px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    },
+    "L2": {
+     "minSpacingPx": 29.4,
+     "closest": [
+      "D-QUAR",
+      "D-TOPW"
+     ],
+     "under48px": [
+      "D-QUAR~D-TOPW 29px",
+      "D-TOPW~D-FOOD 45px",
+      "D-DIVE~D-TOPE 35px"
+     ],
+     "tapMisses": [],
+     "alignment": 0
+    }
+   },
+   "decodeMs": {
+    "max": "9.4",
+    "total": "39.2"
+   },
+   "overlayMs": {
+    "ticks": 16,
+    "median": "1.20",
+    "p95": "1.90"
+   }
+  },
+  "desktop-A": {
+   "scale": 2.46,
+   "visiblePx": 14,
+   "hitPx": 44,
+   "levels": {
+    "L1": {
+     "minSpacingPx": 105.9,
+     "closest": [
+      "D-WGC",
+      "D-LSG"
+     ],
+     "under48px": [],
+     "tapMisses": [],
+     "alignment": 0
+    },
+    "L2": {
+     "minSpacingPx": 86.3,
+     "closest": [
+      "D-QUAR",
+      "D-TOPW"
+     ],
+     "under48px": [],
+     "tapMisses": [],
+     "alignment": 0
+    }
+   },
+   "decodeMs": {
+    "max": "12.1",
+    "total": "60.3"
+   },
+   "overlayMs": {
+    "ticks": 16,
+    "median": "1.40",
+    "p95": "4.70"
+   }
+  },
+  "desktop-B": {
+   "scale": 2.46,
+   "visiblePx": 14,
+   "hitPx": 44,
+   "levels": {
+    "L1": {
+     "minSpacingPx": 91.5,
+     "closest": [
+      "D-LSG",
+      "D-CLS"
+     ],
+     "under48px": [],
+     "tapMisses": [],
+     "alignment": 0
+    },
+    "L2": {
+     "minSpacingPx": 68.6,
+     "closest": [
+      "D-QUAR",
+      "D-TOPW"
+     ],
+     "under48px": [],
+     "tapMisses": [],
+     "alignment": 0
+    }
+   },
+   "decodeMs": {
+    "max": "10.1",
+    "total": "39.3"
+   },
+   "overlayMs": {
+    "ticks": 16,
+    "median": "1.40",
+    "p95": "1.80"
+   }
+  },
+  "desktop-C": {
+   "scale": 2.46,
+   "visiblePx": 14,
+   "hitPx": 44,
+   "levels": {
+    "L1": {
+     "minSpacingPx": 100.4,
+     "closest": [
+      "D-LSG",
+      "D-CLS"
+     ],
+     "under48px": [],
+     "tapMisses": [],
+     "alignment": 0
+    },
+    "L2": {
+     "minSpacingPx": 75.3,
+     "closest": [
+      "D-QUAR",
+      "D-TOPW"
+     ],
+     "under48px": [],
+     "tapMisses": [],
+     "alignment": 0
+    }
+   },
+   "decodeMs": {
+    "max": "7.9",
+    "total": "37.1"
+   },
+   "overlayMs": {
+    "ticks": 16,
+    "median": "1.40",
+    "p95": "1.80"
+   }
+  }
+ }
+}
