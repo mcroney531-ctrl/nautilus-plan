@@ -216,6 +216,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-step-num{display:none;font:800 18px var(--nx-font)}
 .nx-step-done{position:absolute;top:4px;right:18px;width:18px;height:18px;border-radius:50%;background:var(--nx-done);color:var(--nx-navy-900);display:grid;place-items:center}
 .nx-step-done svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+/* not applicable (Daniel's wait route): neutral, never the green completion tick */
+.nx-step-na{position:absolute;top:4px;right:16px;padding:0 5px;border-radius:8px;border:1.5px dashed var(--nx-silver);background:var(--nx-navy-900);color:var(--nx-on-navy);font:800 10px/16px var(--nx-font);letter-spacing:.04em}
+.nx-step[aria-current="step"] .nx-step-na{background:var(--nx-surface);color:var(--nx-ink);border-color:var(--nx-navy-800)}
 .nx-step-label{font:600 13px/1.2 var(--nx-font);color:var(--nx-on-navy);text-align:center;max-width:100%;overflow-wrap:anywhere}
 .nx-step[aria-current="step"] .nx-step-label{font-weight:800}
 .nx-instr{display:flex;gap:12px;align-items:flex-start;margin-top:12px;padding:12px 14px;border-radius:var(--nx-r-md);background:var(--nx-pale);color:var(--nx-ink)}
@@ -228,6 +231,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .nx-step-num{display:block}
   .nx-step .nx-step-done{position:static;width:24px;height:24px}
   .nx-step:has(.nx-step-done) .nx-step-num{display:none}
+  .nx-step .nx-step-na{position:static;font-size:12px;line-height:20px;padding:0 6px}
+  .nx-step:has(.nx-step-na) .nx-step-num{display:none}
 }
 
 /* ---------- map region (one instance; column on wide screens, dialog otherwise) ---------- */
@@ -277,6 +282,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .nx-app{grid-template-columns:300px minmax(0,1fr) 380px;grid-template-areas:"header header header" "inbox screen mapcol" "foot foot foot"}
   .nx-mapcol{grid-area:mapcol;display:block;background:var(--nx-navy-800);--nx-focus:var(--nx-focus-dark)}
   .nx-mapcol .nx-map{position:sticky;top:var(--nx-header-h);padding:8px 0 16px}
+}
+/* enlarged Verify map (approved reference): the single map region moves into the Verify workspace on wide screens */
+.nx-vwide{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:16px;align-items:start}
+.nx-bigmap{border-radius:var(--nx-r-lg);background:var(--nx-navy-800);padding:6px 4px 12px;--nx-focus:var(--nx-focus-dark)}
+@media (min-width:1180px){
+  .nx-app[data-bigmap="1"]{grid-template-columns:300px minmax(0,1fr);grid-template-areas:"header header" "inbox screen" "foot foot"}
+  .nx-app[data-bigmap="1"] .nx-mapcol{display:none}
+  .nx-app[data-bigmap="1"] .nx-ticket{max-width:1240px}
 }
 @media (max-width:299px){.nx-brand-lockup{display:none}.nx-brand-mark{display:block}}
 @media (prefers-reduced-motion:reduce){.nx-body *{transition:none!important;animation:none!important}}

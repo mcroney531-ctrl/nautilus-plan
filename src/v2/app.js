@@ -78,7 +78,7 @@ function closeMap(){guard(()=>{history.state&&history.state.map?history.back():g
 
 /* ---------- render (focus is restored by data-nx-key after every update) ---------- */
 function render(){const k=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.nxKey:null;
-  $('nxApp').dataset.screen=route.screen;renderInbox();renderWork();renderMap();
+  $('nxApp').dataset.screen=route.screen;renderInbox();renderWork();renderMap();placeMap();
   if(k){const el=document.querySelector(`[data-nx-key="${k}"]`);if(el&&el!==document.activeElement)el.focus({preventScroll:true});}}
 function renderInbox(){const open=ORDER.filter(id=>statusOf(id)!=='closed').length;
   $('nxInbox').innerHTML=`<div class="nx-inbox-inner"><h2 class="nx-inbox-h" id="nxInboxH">Shift Inbox <span class="nx-count" aria-label="${open} open">${open}</span></h2>
@@ -99,8 +99,8 @@ function renderWork(){const w=$('nxWork');
     <section class="nx-tracker" aria-labelledby="nxTrackerH">
       <div class="nx-tracker-h"><span id="nxTrackerH">Request progress</span><b aria-hidden="true">${String(i+1).padStart(2,'0')} of 04</b></div>
       <ol class="nx-steps">${ss.map((s,j)=>`<li><button class="nx-step" type="button" data-nx-key="step-${j}" data-nx-step="${s.key}"${s===cur?' aria-current="step"':''}
-          aria-label="Step ${j+1} of 4: ${esc(s.label)}${s.na?', not applicable':''}${s.done?', done':''}${s===sug&&s!==cur?', suggested next':''}">
-          <span class="nx-chev">${icon(s.key)}<span class="nx-step-num" aria-hidden="true">${j+1}</span>${s.done?`<span class="nx-step-done" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.2 2.2 4.8-5"/></svg></span>`:''}</span>
+          aria-label="Step ${j+1} of 4: ${esc(s.label)}${s.na?', not applicable':s.done?', done':''}${s===sug&&s!==cur?', suggested next':''}">
+          <span class="nx-chev">${icon(s.key)}<span class="nx-step-num" aria-hidden="true">${j+1}</span>${s.na?'<span class="nx-step-na" aria-hidden="true">N/A</span>':s.done?`<span class="nx-step-done" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2.5 6.5l2.2 2.2 4.8-5"/></svg></span>`:''}</span>
           <span class="nx-step-label" aria-hidden="true">${esc(s.label)}</span></button></li>`).join('')}</ol>
       <div class="nx-instr">${icon(cur.key)}<div><h2 tabindex="-1">${esc(cur.label)}${cur.na?' <span class="nx-instr-na">(not applicable on this route)</span>':''}</h2>${(()=>{const w=st[id].walk,c=sc.coach||{},tip=(w&&!w.running&&w.res.stop&&c.afterFail)||c[cur.key];return tip?`<p>${esc(tip)}</p>`:'';})()}</div></div>
     </section>
@@ -125,7 +125,7 @@ function recordsHTML(id){const sc=S[id],p=sc.person,t=st[id];
 /* stage container: one workspace per stage FUNCTION, never per tracker position (Jordyn's Decide is her third segment,
    Daniel's Respond his second). Close/Submit/Record stays a labelled placeholder until Phase 06. */
 const placeholderHTML=(id,cur,ph)=>`<section class="nx-card nx-placeholder" aria-labelledby="nxPhH"><h2 id="nxPhH">${esc(cur.label)} workspace</h2><p>Not built yet: this stage's workspace arrives in ${ph}. Review, the decision stages and the map are live.</p></section>`;
-const STAGE_VIEW={close:id=>closeHTML(id),review:id=>reviewHTML(id),investigate:id=>evidenceHTML(id)+walkHTML(id,true),verify:id=>walkHTML(id,false),configure:id=>decisionHTML(id,'configure'),decide:id=>decisionHTML(id,'decide'),respond:id=>decisionHTML(id,'respond')};
+const STAGE_VIEW={close:id=>closeHTML(id),review:id=>reviewHTML(id),investigate:id=>evidenceHTML(id)+walkHTML(id,true),verify:id=>isWide()?`<div class="nx-vwide"><div class="nx-bigmap" id="nxBigMap"></div><div class="nx-vside">${walkHTML(id,false)}</div></div>`:walkHTML(id,false),configure:id=>decisionHTML(id,'configure'),decide:id=>decisionHTML(id,'decide'),respond:id=>decisionHTML(id,'respond')};
 
 /* ---------- decision workspaces: sections come from the scenario's data (editable groups, time exceptions, a group-hours edit,
    routes, an audit decision), so one interface serves every ticket without scenario branches ---------- */
@@ -340,7 +340,8 @@ mapRegion.addEventListener('change',e=>{if(e.target.id!=='nxDoorPick'||!e.target
   inMap('#nxInsp').scrollIntoView({block:'nearest'});});
 const svgEl=inMap('#nxMapSvg');let dragging=false;
 const svgPt=e=>{const p=svgEl.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=svgEl.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0};};
-const clampL=(x,y)=>[Math.max(20,Math.min(380,x)),Math.max(20,Math.min(280,y))];
+/* the lens may centre on any point of the plan, edge doors included (the circle is clipped by the map frame) */
+const clampL=(x,y)=>[Math.max(0,Math.min(400,x)),Math.max(0,Math.min(300,y))];
 /* the lens is the selector: a door under it (this level first, then the level seen through it), else a room on a tap */
 function lensAt(x,y,tap){const id=route.id,v=view[id],t=st[id];v.lensP=clampL(x,y);const l=v.level,s=NxMap.pick(x,y,l),s2=NxMap.pick(x,y,l===1?2:1);
   const n=(s&&s.door)?s:(s2&&s2.door)?s2:tap?(s||s2):null;if(n)t.sel=n;}
@@ -383,7 +384,9 @@ function inspectHTML(id){const sc=S[id],t=st[id],sel=t.sel;
       <dt>Badge</dt><dd>${fp.spaces.has(sel.space)?`<span class="nx-ok">In the granted footprint</span>, through ${esc(via.join(', '))}${doorsIn.some(n=>via.includes(n))?'':' and open passages'}`:'<span class="nx-muted">Outside the granted footprint</span>: no granted door leads here'}</dd></dl>`;}
   return h;}
 function placeMap(){const dlg=$('nxMapDlg');
-  if(isWide()){if(dlg.open)dlg.close();$('nxMapCol').appendChild(mapRegion);inMap('#nxMapClose').hidden=true;return;}
+  /* wide screens: Verify hosts the same map region large inside its workspace; every other stage keeps the map column */
+  const big=$('nxBigMap');$('nxApp').dataset.bigmap=isWide()&&big?'1':'';
+  if(isWide()){if(dlg.open)dlg.close();const host=big||$('nxMapCol');if(mapRegion.parentNode!==host)host.appendChild(mapRegion);inMap('#nxMapClose').hidden=true;return;}
   inMap('#nxMapClose').hidden=false;
   if(mapRegion.parentNode!==dlg)dlg.appendChild(mapRegion);/* always in the document: inside the closed dialog when not shown */
   if(route.map){if(!dlg.open){dlg.showModal();inMap('#nxMapH').focus();}}
@@ -391,7 +394,7 @@ function placeMap(){const dlg=$('nxMapDlg');
   else if(dlg.open){dlg.close();const k=invokerKey&&document.querySelector(`[data-nx-key="${invokerKey}"]`),t=k||(invoker&&document.contains(invoker)?invoker:$('nxMapBtn'));t.focus({preventScroll:true});}}
 $('nxMapDlg').addEventListener('cancel',e=>{e.preventDefault();closeMap();});
 mapRegion.addEventListener('click',e=>{if(e.target.closest('#nxMapClose'))closeMap();});
-matchMedia('(min-width:1180px)').addEventListener('change',placeMap);
+matchMedia('(min-width:1180px)').addEventListener('change',()=>render());
 
 /* ---------- shift brief ---------- */
 function openBrief(){const d=$('nxBrief');invoker=document.activeElement;

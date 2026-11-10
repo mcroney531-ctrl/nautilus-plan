@@ -41,10 +41,6 @@ const NxMap = ((E, F) => {
     for (const [d, o] of Object.entries(E.DOORS)) { if (E.doorLevel(d) !== l) continue; const g = fp.doors.has(d);
       s += `<circle class="nx-door" data-door="${d}" data-granted="${g}" cx="${o.p[0]}" cy="${o.p[1]}" r="6" fill="${g ? '#a4ead0' : '#0b2a39'}" stroke="#a9cfd6" stroke-width="1.3"/>`; }
     if (l === 1) s += `<path d="M24 296h16M390 242v16" stroke="#a4ead0" stroke-width="3"/><text x="44" y="297" class="nx-lbl nx-lbl-out" style="text-anchor:start">STAFF ENTRANCE</text><text x="383" y="236" class="nx-lbl nx-lbl-out" style="text-anchor:end">DOCK</text>`;
-    const sel = o.sel;
-    if (sel && sel.door && E.doorLevel(sel.door) === l) { const [x, y] = E.DOORS[sel.door].p; s += `<circle data-sel="${sel.door}" cx="${x}" cy="${y}" r="10" fill="none" stroke="#ffde9f" stroke-width="3"/>`; }
-    if (sel && sel.space && E.SPACES[sel.space].l === l) s += `<g data-sel="${sel.space}">${shapes(sel.space, 'fill="none" stroke="#ffde9f" stroke-width="2.5"')}</g>`;
-    if (o.walk) s += route(o.walk, l, o.initials);
     return s;
   }
   /* walk route up to the current point: dotted path, door results (green opened / red didn't open), the walker's marker */
@@ -62,13 +58,22 @@ const NxMap = ((E, F) => {
     if (!sel || !sel.door) return ''; const d = E.DOORS[sel.door], [x, y] = d.p, w = Math.min(220, d.n.length * 7.2 + 16), bx = Math.max(6, Math.min(394 - w, x - w / 2)), by = y > 40 ? y - 38 : y + 16;
     return `<g class="nx-callout" pointer-events="none"><rect x="${bx}" y="${by}" width="${w}" height="22" rx="6" fill="#ffde9f"/><text x="${bx + w / 2}" y="${by + 15.5}" text-anchor="middle" style="font:800 12.5px inherit;fill:#1b1406">${d.n}</text></g>`;
   }
-  /* o: {lens:[x,y]|null, sel, walk, initials}. Inside the lens, the other level (no route): what lies above or below. */
+  /* the selected door or room: a ring that stays on top of the lens, whichever level it is on */
+  function selection(sel, l) {
+    if (sel && sel.door) { const [x, y] = E.DOORS[sel.door].p; return `<circle data-sel="${sel.door}" cx="${x}" cy="${y}" r="10" fill="none" stroke="#ffde9f" stroke-width="3"/>`; }
+    if (sel && sel.space) return `<g data-sel="${sel.space}">${shapes(sel.space, `fill="none" stroke="#ffde9f" stroke-width="2.5"${E.SPACES[sel.space].l === l ? '' : ' stroke-dasharray="4 3"'}`)}</g>`;
+    return '';
+  }
+  /* o: {lens:[x,y]|null, sel, walk, initials}. Layers, bottom to top: this level; the lens (the other level seen through
+     it); then the walk route, the selection and its name, so the lens never hides a stopped door or the selected door. */
   function svg(t, l, font, o = {}) {
     const other = l === 1 ? 2 : 1, lens = o.lens;
     let s = `<defs>${defs('A')}${defs('B')}${lens ? `<clipPath id="nxLensClip"><circle cx="${lens[0]}" cy="${lens[1]}" r="56"/></clipPath>` : ''}</defs>${style(font)}${level(t, l, 'A', o)}`;
-    if (lens) s += `<g clip-path="url(#nxLensClip)"><rect width="400" height="300" fill="#061b29"/>${level(t, other, 'B', { sel: o.sel })}</g>
-      <circle class="nx-lens" cx="${lens[0]}" cy="${lens[1]}" r="56" fill="none" stroke="#e2ffff" stroke-width="3"/><text x="${lens[0]}" y="${lens[1] + 68}" class="nx-lbl nx-lbl-sm" style="fill:#e2ffff">${other === 2 ? 'ABOVE · L2' : 'BELOW · L1'}</text>`;
-    return s + callout(o.sel);
+    if (lens) { const ly = lens[1] + 68 > 296 ? lens[1] - 62 : lens[1] + 68, lx = Math.max(40, Math.min(360, lens[0]));
+      s += `<g clip-path="url(#nxLensClip)"><rect width="400" height="300" fill="#061b29"/>${level(t, other, 'B')}</g>
+      <circle class="nx-lens" cx="${lens[0]}" cy="${lens[1]}" r="56" fill="none" stroke="#e2ffff" stroke-width="3"/><text x="${lx}" y="${ly}" class="nx-lbl nx-lbl-sm" style="fill:#e2ffff">${other === 2 ? 'ABOVE · L2' : 'BELOW · L1'}</text>`; }
+    if (o.walk) s += `<g class="nx-route">${route(o.walk, l, o.initials)}</g>`;
+    return s + selection(o.sel, l) + callout(o.sel);
   }
   /* what is under a point: the nearest door within 18 map units, else the room */
   function pick(x, y, l) {

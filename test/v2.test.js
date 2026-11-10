@@ -441,6 +441,38 @@ const tests = {
     await pg.click('[data-nx-key="compare"]'); const txt = await pg.textContent('.nx-rec-card'); assert(/badge is unchanged/.test(txt) && /Quarantine/.test(txt), txt);
     assert.deepEqual((await pg.evaluate(() => __nx.state('elena'))).credential.groups, ['allStaff', 'education']); assert(await pg.evaluate(() => !!__nx.record('elena')));
   },
+  async 'Daniel wait route: Verify shows a neutral N/A marker, not the completion tick, on full and compact trackers; name says not applicable'(b) {
+    for (const size of ['phone400', 'phone']) { const pg = await fast(b, size, '#/t/daniel/respond'); await pg.check('[data-nx-key="rt-wait"]');
+      const v = await pg.evaluate(() => { const s = document.querySelectorAll('.nx-step')[2], na = s.querySelector('.nx-step-na');
+        return { na: !!na && na.getClientRects().length > 0, tick: !!s.querySelector('.nx-step-done'), label: s.getAttribute('aria-label') }; });
+      assert(v.na && !v.tick, size + JSON.stringify(v)); assert(/Verify, not applicable/.test(v.label) && !/done/.test(v.label), v.label);
+      assert((await pg.evaluate(() => __nx.steps('daniel')))[2][2], 'Flow.steps still counts it as satisfied');
+      await pg.check('[data-nx-key="rt-escortWest"]'); assert(!(await pg.$('.nx-step-na')), size + ': N/A only on the wait route'); }
+  },
+  async 'lens layering: walk route, stopped-door ring and selection sit above the lens; the lens centres on edge doors'(b) {
+    const pg = await fast(b, 'phone', '#/t/daniel/verify'); await pg.click('[data-nx-key="walk"]'); await walkDone(pg, 'daniel');
+    await pg.click('#nxInspect'); await pg.selectOption('#nxDoorPick', 'D-DOCK');
+    const r = await pg.evaluate(() => { const kids = [...document.querySelector('#nxMapSvg').children], at = q => kids.findIndex(k => k.matches(q) || k.querySelector?.(q));
+      const lens = document.querySelector('#nxMapSvg .nx-lens');
+      return { lens: kids.indexOf(lens), route: at('.nx-route'), sel: at('[data-sel]'), call: at('.nx-callout'), stopped: !!document.querySelector('.nx-route [data-walk="D-DOCK"][data-ok="false"]'),
+        lx: +lens.getAttribute('cx'), ly: +lens.getAttribute('cy'), door: Engine.DOORS['D-DOCK'].p }; });
+    assert(r.lens >= 0 && r.route > r.lens && r.sel > r.lens && r.call > r.sel, JSON.stringify(r)); assert(r.stopped, 'the red stopped door is in the route layer');
+    assert.deepEqual([r.lx, r.ly], r.door, 'lens centred on the edge door');
+  },
+  async 'desktop Verify: the one map region moves into the workspace, larger, with the column hidden; other stages restore the column; walk and inspection still work'(b) {
+    const pg = await fast(b, 'desk', '#/t/marcus/review'); const w = () => pg.evaluate(() => Math.round(document.querySelector('#nxMapSvg').getBoundingClientRect().width));
+    const colW = await w(); await goStage(pg, 2);
+    const r = await pg.evaluate(() => ({ inBig: !!document.querySelector('#nxBigMap #nxMapSvg'), col: getComputedStyle(document.getElementById('nxMapCol')).display, n: document.querySelectorAll('#nxMapSvg').length, ov: document.documentElement.scrollWidth - innerWidth }));
+    assert.deepEqual(r, { inBig: true, col: 'none', n: 1, ov: 0 }); const bigW = await w(); assert(bigW > colW * 1.5, `${bigW} vs ${colW}`);
+    await pg.click('[data-nx-key="walk"]'); await walkDone(pg, 'marcus'); await pg.click('#nxInspect'); await pg.selectOption('#nxDoorPick', 'D-DOCK');
+    assert(/outside every schedule/.test(await pg.textContent('#nxInsp')));
+    await pg.focus('#nxDoorPick'); await pg.keyboard.press('ArrowDown'); assert.equal(await active(pg), 'doorpick', 'focus survives the map moving through a re-render');
+    await goStage(pg, 0); assert(await pg.isVisible('#nxMapCol #nxMapSvg'), 'back in the column'); assert.equal(await w(), colW);
+    await pg.setViewportSize({ width: 900, height: 800 }); await goStage(pg, 2); assert(!(await pg.$('#nxBigMap')), 'no big map without the wide layout');
+  },
+  async 'Elena\'s principle uses the granted-footprint wording'(b) {
+    const pg = await fast(b, 'desk', '#/inbox'); assert.equal(await pg.evaluate(() => SCENARIOS.elena.principle), 'Least privilege: grant what the work needs, and check the full granted footprint on both levels.');
+  },
   async 'semantics: banner, labelled inbox navigation, main; one h1 per ticket; stage and section headings; the message is a quotation with its sender; noindex'(b) {
     const pg = await page(b, 'desk', '#/t/elena/review');
     const r = await pg.evaluate(() => ({ banner: !!document.querySelector('header.nx-header'), nav: document.querySelector('nav#nxInbox').getAttribute('aria-labelledby'), main: !!document.querySelector('main#nxWork'),
