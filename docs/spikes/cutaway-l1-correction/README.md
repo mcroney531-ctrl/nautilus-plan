@@ -101,6 +101,10 @@ After an opening region is composited, the opening count is re-run: the target o
 
 Region 06 changed kind. The roll-up door is not on the engine's north wall: it is painted on a false tall wall that stands on Receiving's floor. Removing it is an interior repaint of Receiving, and the north wall with its passage to the East service hall stays outside the mask.
 
+## Handoff zip
+
+`python3 spikes/cutaway/bundle.py NN` writes `spikes/cutaway/out/handoff-NN-vN.zip` (not committed): the files for that region, numbered in the order the prompt refers to them, and `PROMPT.txt`. Build it for every handoff, so there is one thing to carry to the editor.
+
 ## Zoomed-crop pass (small regions)
 
 An image editor places small features to within about 10 px across the full picture, which a 36 to 56 px wall mask cannot absorb. For those regions the editor works on an enlarged crop instead. The editable region is the same mask; only the working resolution changes.

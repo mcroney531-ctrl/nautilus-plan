@@ -5,3 +5,4 @@ Thumbs.db
 __pycache__/
 spikes/cutaway/out/*.png
 docs/spikes/cutaway-l1-correction/edit-*.png
+spikes/cutaway/out/*.zip
