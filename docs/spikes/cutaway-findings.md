@@ -166,3 +166,12 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
 - **Composite:** the returned picture was 0.5% larger than the master around the region; the script corrected it (limit 1.5%). 9,671 pixels changed inside, every pixel outside unchanged (asserted). The editor redrew 21.4% of the rest of the picture, all discarded.
 - **Result:** the bench and its shadow are gone; the planter was redrawn in the same place and looks the same; both wave lines run through the patch without a break; no visible square at 3× zoom or in the page views. The path from the West Gallery passage to the room centre is clear floor.
 - **Overlays:** unchanged at 320 / 400 / desktop. **Openings:** 12 of 15, no regressions.
+
+### Correction pass 06, Receiving interior (Nov 10): PASS, promoted to `master-L1-v7.png`
+
+- **Mask:** (1288, 694)–(1543, 922), interior; I1 and O4 pass.
+- **Composite:** identity fit, no drift; 48,783 pixels changed inside, every pixel outside unchanged (asserted); the editor redrew 7.2% elsewhere, discarded.
+- **Result:** the roll-up door, the false tall wall, the control boxes, the conduit and the hazard stripes are gone; concrete floor runs back to the north partition. One forklift mid-room, one crate stack by the left wall. The line from the corridor passage (368, 196) to the dock point (388, 250) is clear floor, with about 190 px between it and the forklift.
+- **Left over for 05:** a dark strip of the old wall face between the mask's right edge and the east wall, inside region 05's box.
+- **Overlays:** unchanged at 320 / 400 / desktop; the dock door marker and lens sit on the east wall. **Openings:** 12 of 15, no regressions.
+- **Hazard stripes:** rule O4 keeps region 05 off Receiving's floor, now locked, so stripes in front of the dock door would need their own small region inside 06.

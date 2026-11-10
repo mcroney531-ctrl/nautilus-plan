@@ -327,6 +327,29 @@
    "from": "master-L1-v5.png",
    "to": "master-L1-v6.png",
    "compare": "compare-04b-v6.png"
+  },
+  {
+   "region": "06-receiving-north-wall",
+   "returned": "recv06.png",
+   "returned_size": [
+    1536,
+    1024
+   ],
+   "base_mapping": "canvas-3x2",
+   "correction_applied": {
+    "scale": 1.0,
+    "dx_px": 0,
+    "dy_px": 0
+   },
+   "ring_mad_plain": 5.92,
+   "ring_mad_fit": 5.92,
+   "pixels_changed_inside": 48783,
+   "pixels_inside": 58624,
+   "outside_mask_unchanged": true,
+   "editor_redrew_outside_pct": 7.2,
+   "from": "master-L1-v6.png",
+   "to": "master-L1-v7.png",
+   "compare": "compare-06-v7.png"
   }
  ]
 }
