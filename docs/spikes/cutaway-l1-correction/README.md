@@ -11,6 +11,7 @@ Spike material, not V2. This package corrects the painted L1 one region at a tim
 | `mask-NN-*.png` | One mask per region, 1600 × 1004, 8-bit. White = editable; black = keep. Walls, wall caps, door openings and the passages a room needs are outside the room masks by construction (they are inset from the engine's room rectangles by wall thickness, the partition face height and the variant C shear). |
 | `crop-NN-*.png` | The region with 90 px of context and a yellow outline. This is the close-up to show the editor. |
 | `canvas-3x2-L1-v1.png`, `canvas-3x2-mask-NN-*.png` | For editors that only return 3:2 images: the master pasted at the top-left of a 1600 × 1067 canvas, with dark padding below. |
+| `canvas-3x2-L1-vN.png`, `reference-regions-vN.jpg` | The same inputs re-cut from the latest promoted master by `python3 spikes/cutaway/refresh.py`, which also re-cuts the crops of the regions still pending. Always hand the editor the highest N. |
 | `manifest.json` | For each region: its box in px, its engine room, its brief and its files; the projection constants; a history of every composite. |
 | `edit-NN-*.png` | Not committed (2.5 MB each). The master with the region made transparent: the alpha-mask format some edit APIs take. Generate one with `python3 spikes/cutaway/handoff.py <master> --edit NN`. |
 
@@ -75,3 +76,16 @@ Order: 01 first, then 02, 03, 04, then 05 to 08. Do one region per pass. Never c
 ## Paste-ready prompt for GPT (region 01)
 
 > Edit this aquarium cutaway illustration (attached at 1600 × 1004 px; return it at exactly the same size and framing). Change only the room inside the amber box marked 01 on the reference sheet (close-up attached): it is the Living Shore, a public touch-pool gallery, but it is currently painted as a storage room with crates and carts. Repaint its interior as a shallow, open touch pool at low height, with rockwork, sand and coastal habitat (anemones, sea stars, kelp fronds), and a simple rail at visitor height. It should be warm, inviting and public. Keep the existing walls, wall caps, ceiling lights and door openings exactly as they are; everything outside the box must stay pixel-identical, with no shift, rescale, re-crop or change of perspective. Match the existing viewing angle (walls extrude up and to the right), lighting direction and colour temperature. No text, signage, numbers, people or logos. If you think the box is too small for a convincing touch pool, or something in this brief conflicts with the image, tell me before painting rather than working around it.
+
+## Status
+
+| NN | Result | Master |
+| --- | --- | --- |
+| 01 Living Shore | PASS (Nov 10). Accepted deviations: illegible poster and stand marks, stone coping instead of a rail, a faint tonal ring. | `master-L1-v2.png` |
+| 02 Jelly Room | Sent for editing against v2. | |
+
+## Paste-ready prompt for GPT (region 02, against v2)
+
+Attach `canvas-3x2-L1-v2.png`, `crop-02-jelly-room.png` and `reference-regions-v2.jpg`.
+
+> Edit this aquarium cutaway illustration and return it at exactly the same size and framing. Change only the room inside the amber box marked 02 on the reference sheet (close-up attached, yellow outline). It is the Jelly Room, a public jellyfish gallery, but it is currently painted as a pump room with pipes and blue tanks. Remove every pipe, valve and tank, including the parts that touch the edge of the box, and repaint the interior as a sophisticated, immersive jellyfish gallery: several cylindrical or rounded illuminated jelly tanks, translucent jellyfish suspended inside them, deep blue, indigo and restrained violet light, subtle reflections on a dark polished floor, and a premium aquarium-gallery atmosphere. It should be the coolest, most atmospheric room on this level, in clear contrast to the warm touch-pool room. Keep the light coming from the tanks: the floor should be dark but still visibly a floor, not black, and keep clear open floor in front of the tanks and at the opening in the left wall. Keep the tanks inside the box; nothing may rise over the wall caps or cover an opening. No posters, wall graphics, interpretive stands or signage. No letters, numbers, pseudo-text or invented labels. No people or logos. Do not change the walls, wall caps, openings or any other room; everything outside the box must stay pixel-identical, with no shift, rescale, re-crop or change of perspective. Match the existing viewing angle (walls extrude up and to the right) and rendering style. If the box is too small for this, or anything here conflicts with the image, tell me before painting rather than working around it.
