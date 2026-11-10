@@ -304,6 +304,29 @@
    "from": "master-L1-v4.png",
    "to": "master-L1-v5.png",
    "compare": "compare-04-v5.png"
+  },
+  {
+   "region": "04b-atrium-west-approach",
+   "returned": "atrium04b.png",
+   "returned_size": [
+    1536,
+    1024
+   ],
+   "base_mapping": "canvas-3x2",
+   "correction_applied": {
+    "scale": 1.005,
+    "dx_px": 0,
+    "dy_px": 0
+   },
+   "ring_mad_plain": 8.06,
+   "ring_mad_fit": 7.75,
+   "pixels_changed_inside": 9671,
+   "pixels_inside": 16899,
+   "outside_mask_unchanged": true,
+   "editor_redrew_outside_pct": 21.4,
+   "from": "master-L1-v5.png",
+   "to": "master-L1-v6.png",
+   "compare": "compare-04b-v6.png"
   }
  ]
 }

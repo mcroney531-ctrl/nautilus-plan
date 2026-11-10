@@ -159,3 +159,10 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
 - **Region 06 is an interior region, not a wall edit.** The roll-up door is painted on a false tall wall standing on Receiving's floor; the engine's north wall is above it and already correct. Its mask is now Receiving's floor, (1288, 694)–(1543, 922).
 - **Region 05** was tightened to (1544, 716)–(1599, 880). The painting already has a break in the east wall near the engine's dock opening; the pass has to make it read as a dock door.
 - All nine regions pass their rules. Nothing was composited; the master is still v5.
+
+### Correction pass 04b, Atrium west approach (Nov 10): PASS, promoted to `master-L1-v6.png`
+
+- **Mask:** (818, 778)–(948, 906), inside the locked Atrium region; I1, O4 and O5 pass.
+- **Composite:** the returned picture was 0.5% larger than the master around the region; the script corrected it (limit 1.5%). 9,671 pixels changed inside, every pixel outside unchanged (asserted). The editor redrew 21.4% of the rest of the picture, all discarded.
+- **Result:** the bench and its shadow are gone; the planter was redrawn in the same place and looks the same; both wave lines run through the patch without a break; no visible square at 3× zoom or in the page views. The path from the West Gallery passage to the room centre is clear floor.
+- **Overlays:** unchanged at 320 / 400 / desktop. **Openings:** 12 of 15, no regressions.
