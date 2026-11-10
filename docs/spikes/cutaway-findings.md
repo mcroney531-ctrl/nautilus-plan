@@ -130,3 +130,11 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
 - **Second composite, same returned image:** identity fit, 28,621 pixels changed inside, every pixel outside unchanged (asserted), remnants gone.
 - **Function and overlays:** reads as a jellyfish gallery at 320 / 400 / desktop, the coolest room on the level. Granted, it is bright blue; not granted, it dims with the other rooms and the tanks still glow. Footprint, markers, walk and lens register unchanged. No posters or text.
 - **Openings:** 12 of 15, no regressions.
+
+### Correction pass 03, Seasonal (Nov 10): PASS, promoted to `master-L1-v4.png`
+
+- **Mask:** widened before editing to (1184, 493)–(1383, 643); `maskcheck.py` reports 0 protected pixels inside.
+- **Composite:** identity fit, 28,270 pixels changed inside, every pixel outside unchanged (asserted). No office remnants at the edges. The returned picture still showed the old pump room in the Jelly Room, so the editor worked from an older image; that has no effect, because only masked pixels are taken.
+- **Function and overlays:** a pale gallery with a plinth, a glass case of coral and shells, and two spotlights; mostly clear floor. Reads as an exhibit room at 320 / 400 / desktop, granted and not granted. Footprint, markers, walk and lens register unchanged. No text, posters or stands.
+- **Accepted deviations:** two features, not three; sandstone and amber only, no teal accent. A small camera and bulb from the old office remain on the back wall above the mask.
+- **Openings:** 12 of 15, no regressions.

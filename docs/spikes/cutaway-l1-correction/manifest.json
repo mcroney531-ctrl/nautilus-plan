@@ -194,6 +194,29 @@
    "from": "master-L1-v2.png",
    "to": "master-L1-v3.png",
    "compare": "compare-02-v3.png"
+  },
+  {
+   "region": "03-seasonal",
+   "returned": "seasonal03.png",
+   "returned_size": [
+    1536,
+    1024
+   ],
+   "base_mapping": "canvas-3x2",
+   "correction_applied": {
+    "scale": 1.0,
+    "dx_px": 0,
+    "dy_px": 0
+   },
+   "ring_mad_plain": 5.83,
+   "ring_mad_fit": 5.83,
+   "pixels_changed_inside": 28270,
+   "pixels_inside": 30200,
+   "outside_mask_unchanged": true,
+   "editor_redrew_outside_pct": 5.8,
+   "from": "master-L1-v3.png",
+   "to": "master-L1-v4.png",
+   "compare": "compare-03-v4.png"
   }
  ]
 }
