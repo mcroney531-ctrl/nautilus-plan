@@ -211,6 +211,58 @@
     ],
     "width": 15
    }
+  },
+  "09-north-wall-face": {
+   "room": "North exterior wall face behind the Service spine and both cores (engine: wall line y = 12)",
+   "brief": "A plain working back wall: remove the ocean mural, the bench and the two plants painted on it; painted concrete or block, cable tray or pipe run, plain utility lights. No doors.",
+   "check": {
+    "kind": "surface",
+    "o": "h",
+    "at": 12
+   },
+   "status": "proposed",
+   "box_px": [
+    97,
+    61,
+    1599,
+    189
+   ],
+   "mask": "mask-09-north-wall-face.png",
+   "crop": "crop-09-north-wall-face.png"
+  },
+  "10-west-hall-furnishings": {
+   "box_px": [
+    95,
+    392,
+    144,
+    692
+   ],
+   "room": "West service hall floor beside the west wall (engine: westSvc, staff)",
+   "brief": "Remove the plants, planter and bench; plain sealed floor, clear path.",
+   "check": {
+    "kind": "interior"
+   },
+   "mask": "mask-10-west-hall-furnishings.png",
+   "crop": "crop-10-west-hall-furnishings.png",
+   "status": "proposed"
+  },
+  "11-west-wall-face": {
+   "room": "West exterior wall face in the West service hall (engine: wall line x = 12)",
+   "brief": "Remove the blue mural and shark silhouette: plain painted wall like the other corridor walls, wall lights kept.",
+   "check": {
+    "kind": "surface",
+    "o": "v",
+    "at": 12
+   },
+   "status": "proposed",
+   "box_px": [
+    51,
+    196,
+    87,
+    925
+   ],
+   "mask": "mask-11-west-wall-face.png",
+   "crop": "crop-11-west-wall-face.png"
   }
  },
  "canvas_3x2": {
@@ -363,6 +415,17 @@
    "from": "master-L1-v6.png",
    "to": "master-L1-v7.png",
    "compare": "compare-06-v7.png"
+  }
+ ],
+ "locked": [
+  {
+   "name": "Kelp Hall tank (painted exhibit, overlaps the north wall face)",
+   "box_px": [
+    490,
+    118,
+    818,
+    196
+   ]
   }
  ]
 }

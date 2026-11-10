@@ -1,5 +1,6 @@
 // Level 1 review of the painted master in the spike page: views and real taps at 320 / 400 / desktop.
 // Usage: node spikes/cutaway/l1-review.js   -> docs/spikes/cutaway-shots/l1-review/*.png and l1-review.json
+// Views kept: every state at 320 px, three representative desktop views. Taps run at all three widths.
 const { chromium } = require('playwright'), path = require('path'), fs = require('fs'), { pathToFileURL } = require('url');
 const U = pathToFileURL(path.join(__dirname, '../../docs/spikes/cutaway-poc.html')).href, O = path.join(__dirname, '../../docs/spikes/cutaway-shots/l1-review/');
 const E = require('../../src/engine.js'); fs.mkdirSync(O, { recursive: true });
@@ -7,7 +8,8 @@ const PASSAGES = { 'reef-jelly': [289, 80], 'reef-seasonal': [289, 157] };
 (async () => { const b = await chromium.launch(), out = { taps: {}, passages: {} };
   for (const [tag, vw] of [['320', 320], ['400', 400], ['desktop', 1000]]) {
     const pg = await (await b.newContext({ viewport: { width: vw, height: 900 }, deviceScaleFactor: 2, hasTouch: vw < 500 })).newPage(); await pg.goto(U);
-    const set = o => pg.evaluate(o => __spike.set(o), o), shot = async n => { await pg.waitForTimeout(120); await pg.locator('.map').screenshot({ path: O + tag + '-' + n + '.png' }); };
+    const KEEP = { '320': null, '400': [], desktop: ['2-granted', '4-walk-denied', '6-inspect-dock-door'] }[tag];  // 320: every state; 400: taps only; desktop: three representative views
+    const set = o => pg.evaluate(o => __spike.set(o), o), shot = async n => { if (KEEP && !KEEP.includes(n)) return; await pg.waitForTimeout(120); await pg.locator('.map').screenshot({ path: O + tag + '-' + n + '.png' }); };
     const walked = async () => { await pg.evaluate(() => __spike.walk()); await pg.waitForFunction(() => __spike.st.walk.running === false, null, { timeout: 20000 }); };
     const base = { v: 'C', art: 'painted', level: 1, inspect: false, lens: null, sel: null, walk: null };
     await set({ ...base, badge: 'none' }); await shot('1-not-granted');

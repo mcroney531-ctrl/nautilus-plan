@@ -93,6 +93,12 @@ A mask protects architecture. It does not have to preserve leftovers of a wrong 
 - O2: the mask contains the whole engine opening: the gap the engine cuts in that wall, with the wall's height and shear.
 - O3: the mask reaches no more than 28 px beyond that opening on any side.
 
+**Surface regions** (masks that repaint what is painted on the face of one wall, without moving the wall: 09, 11). The mask is generated from the engine by `spikes/cutaway/surfacemask.py NN`, not drawn as a box.
+
+- S1: every mask pixel is on the target wall line, 2 px inside its outline.
+- S2: the mask holds no pixel of any other wall.
+- S3: the mask holds no painted wall cap (neutral near-white pixels in the master), so the wall's top edge cannot change.
+
 **All regions**
 
 - O4: the mask does not overlap a region that has already been composited, so an approved room cannot change. A targeted re-edit of a locked region (04b) names that region as `within`: it may overlap that region only, and (O5) must stay inside its box.
@@ -137,6 +143,9 @@ Full-frame mode is unchanged: re-running passes 04b and 06 through the new scrip
 | 05 Dock door | Box tightened to (1544, 716)–(1599, 880) to pass O3 and clear the forklift. Open doorway, no hazard stripes. First return REVISE (Nov 10), discarded: the editor's doorway sat about 10 px off, so the 56 px mask clipped its frame and a wall light. Zoomed crop REFUSED (Nov 10): the editor re-rendered the whole crop (3.25% scale, −12 / −5 px). Open. | |
 | 06 Receiving interior | PASS (Nov 10), first composite, box (1288, 694)–(1543, 922), interior kind. | `master-L1-v7.png` |
 | 07, 08 Reef passages | Boxes pass the opening rules unchanged. Not sent. | |
+| 09 North wall face | **Proposed, not approved.** Surface region on the north exterior wall behind the Service spine and both cores; box (97, 61)–(1599, 189), 156,830 px; the Kelp Hall tank is locked out. | |
+| 10 West hall furnishings | **Proposed, not approved.** Interior region (95, 392)–(144, 692) on the West service hall floor. | |
+| 11 West wall face | **Proposed, not approved.** Surface region on the west exterior wall; box (51, 196)–(87, 925), 22,620 px. | |
 
 ## Paste-ready prompt for GPT (region 02, against v2)
 

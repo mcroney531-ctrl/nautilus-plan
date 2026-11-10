@@ -225,3 +225,40 @@ Views and tap results: `docs/spikes/cutaway-shots/l1-review/` (24 views and `l1-
 - Openings 05, 07, 08: cosmetic cleanup, by a mask-based editor if one is used later.
 - **Service spine and West service hall still read as public space** (ocean mural, plants, a bench). They are staff corridors. This was logged as minor in the first review and was never one of the eight regions. It is the same kind of error as the four rooms that were fixed, in a weaker form, and it is the largest remaining gap in instructional accuracy on L1.
 - Living Shore: illegible poster marks.
+
+### Decisions after the L1 review (Nov 10)
+
+L1 technical GO approved. Final visual lock on HOLD until the staff corridors read as staff space. Openings 05, 07, 08 accepted as cosmetic backlog.
+
+**Integration requirements (accepted; not implemented in the spike)**
+
+1. Canvas margin so that no marker, selection ring or lens is cut at any tested width.
+2. Better labels at 320 px without crowding: selective labels and tap-to-identify. The named-door picker and accessible identification stay.
+3. Open passages are identifiable on interaction: the passage or adjacent area is named and described as an open passage. No reader, no door inspection, no invented evidence.
+
+### Staff corridors: assessment and proposed regions (for review; no art generated)
+
+What makes the two corridors read as public is not on their floors.
+
+- **Service spine.** Its floor is already a plain tiled service floor. The ocean mural, the bench, both plants and the row of lights are painted on the face of the north exterior wall, the tall back wall behind the spine and both cores. In engine terms these are wall pixels, which the interior rule (I1) forbids, so this needs a new kind of region.
+- **West service hall.** The blue mural with a shark silhouette is painted on the face of the west exterior wall. The plants, planter and bench stand on the floor beside it.
+- **East service hall** already reads as back of house (pipework, equipment) and needs nothing.
+
+| NN | Region | Kind | Mask | Brief |
+| --- | --- | --- | --- | --- |
+| 09 | North wall face | surface, wall line y = 12 | Generated from the engine: the wall face, less other walls, painted caps and the locked Kelp Hall tank. Box (97, 61)–(1599, 189), 156,830 px | Remove the mural, bench and plants. A plain working back wall: painted concrete or block, a cable tray or pipe run, plain utility lights. |
+| 10 | West hall furnishings | interior | Box (95, 392)–(144, 692) | Remove the plants, planter and bench. Plain sealed floor, clear path. |
+| 11 | West wall face | surface, wall line x = 12 | Generated from the engine. Box (51, 196)–(87, 925), 22,620 px | Remove the blue mural and silhouette. Plain painted wall like the other corridor walls; keep the wall lights. |
+
+All three pass their rules (`proposal-corridors-north.jpg`, `proposal-corridors-west.jpg` in the correction package). All twelve regions pass.
+
+**Open points for review**
+
+- **Blue fringe on region 11.** The painted west wall is about 6 px wider than the engine's on its outer (left) side, so the engine-derived mask leaves a thin blue strip of mural along the building's edge. Covering it means letting a surface mask reach a few pixels past an exterior wall into empty background, which is a rule change.
+- **Region 11 is 37 px wide.** That is the size class where the chat editor failed on the dock door. It is a flat surface, not a placed feature, so a 10 px slip matters less, but it is the riskiest of the three. A plain colour change of the mural to wall grey, done by script inside the mask, would be exact; it is a recolour, not new art, and would need approval as such.
+- **Region 09 is one pass, 1,500 px wide.** It could be split at the Kelp Hall tank into two passes if the first return drifts.
+- **Lights on the north wall** are inside region 09 and will be repainted. Keeping them exactly would mean cutting them out of the mask.
+- **The cores' share of the north wall** (both ends) is included, so the wall reads as one surface.
+- **Order:** 10 first (ordinary interior pass), then 09, then 11.
+
+Screenshot evidence was trimmed from 23 MB to 9.5 MB: every state at 320 px, three desktop views and two contact sheets are kept; the 400 px set and five desktop views that showed nothing the others do not were removed. Tap tests still run at all three widths.
