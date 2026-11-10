@@ -175,3 +175,9 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
 - **Left over for 05:** a dark strip of the old wall face between the mask's right edge and the east wall, inside region 05's box.
 - **Overlays:** unchanged at 320 / 400 / desktop; the dock door marker and lens sit on the east wall. **Openings:** 12 of 15, no regressions.
 - **Hazard stripes:** rule O4 keeps region 05 off Receiving's floor, now locked, so stripes in front of the dock door would need their own small region inside 06.
+
+### Correction pass 05, dock door (Nov 10): REVISE, discarded; master stays `master-L1-v7.png`
+
+- **Fit:** within limits but the loosest yet: scale 1.01, offset −2 / +1 px, and the editor redrew 36.1% of the picture outside the mask.
+- **Result:** every pixel outside the mask unchanged (asserted), but the composite is broken inside it. The editor painted the doorway frame about 10 px left of the mask, so the frame is cut off; a wall light it added is sliced at the mask's top edge; part of the old dark strip remains.
+- **Cause:** the method, not the brief. The editor places small features to within about 10 px across a 1600 px picture. That is invisible in a 200 px room and fatal in a 56 px wall box. Regions 07 and 08 are 36 px wide and would fail the same way.
