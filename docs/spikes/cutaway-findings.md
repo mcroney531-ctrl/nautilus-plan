@@ -138,3 +138,16 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
 - **Function and overlays:** a pale gallery with a plinth, a glass case of coral and shells, and two spotlights; mostly clear floor. Reads as an exhibit room at 320 / 400 / desktop, granted and not granted. Footprint, markers, walk and lens register unchanged. No text, posters or stands.
 - **Accepted deviations:** two features, not three; sandstone and amber only, no teal accent. A small camera and bulb from the old office remain on the back wall above the mask.
 - **Openings:** 12 of 15, no regressions.
+
+### Correction pass 04, Atrium (Nov 10): PASS, promoted to `master-L1-v5.png`
+
+- **Mask:** widened before editing to the full floor, (816, 716)–(1254, 922); `maskcheck.py` reports 0 protected pixels inside.
+- **Composite:** identity fit, 88,963 pixels changed inside, every pixel outside unchanged (asserted). The editor worked from v4 this time. No crate or pipe remnants.
+- **Front uplights:** the two floor lights at the front wall are inside the new mask; the editor's versions sit at the same positions as v4's, slightly brighter.
+- **Function:** pale polished floor, two curved benches, two planters, a wave inlay and a cool daylight pool under the L1 to Reef Tunnel passage. No stairs, railings, balcony or new opening. With the lens over the room, the L2 void shows beneath, which agrees with the daylight cue.
+- **Overlays:** footprint, markers, walk and lens register unchanged at 320 / 400 / desktop, granted and not granted.
+- **Accepted deviations:**
+  - one bench and planter stand about 7 plan units inside the West Gallery passage; the opening itself is not covered and the lower half of the threshold has clear floor, but a straight route from that passage to the room centre crosses the bench (the prompt did not ask for clear floor at the openings; later prompts must);
+  - two planters were not in the brief;
+  - a 6 px strip of the old darker floor remains along the front wall and reads as the wall's shadow.
+- **Openings:** 12 of 15, no regressions. All four room interiors are done; 05 to 08 remain.

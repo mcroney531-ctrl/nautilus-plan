@@ -217,6 +217,29 @@
    "from": "master-L1-v3.png",
    "to": "master-L1-v4.png",
    "compare": "compare-03-v4.png"
+  },
+  {
+   "region": "04-atrium",
+   "returned": "atrium04.png",
+   "returned_size": [
+    1536,
+    1024
+   ],
+   "base_mapping": "canvas-3x2",
+   "correction_applied": {
+    "scale": 1.0,
+    "dx_px": 0,
+    "dy_px": 0
+   },
+   "ring_mad_plain": 4.74,
+   "ring_mad_fit": 4.74,
+   "pixels_changed_inside": 88963,
+   "pixels_inside": 90873,
+   "outside_mask_unchanged": true,
+   "editor_redrew_outside_pct": 6.5,
+   "from": "master-L1-v4.png",
+   "to": "master-L1-v5.png",
+   "compare": "compare-04-v5.png"
   }
  ]
 }

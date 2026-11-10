@@ -88,7 +88,7 @@ Order: 01 first, then 02, 03, 04, then 05 to 08. Do one region per pass. Never c
 | 01 Living Shore | PASS (Nov 10). Accepted deviations: illegible poster and stand marks, stone coping instead of a rail, a faint tonal ring. | `master-L1-v2.png` |
 | 02 Jelly Room | PASS (Nov 10), with the mask revised to (1184, 286)–(1383, 436). The original inset kept pump-room pixels at the room's edges. | `master-L1-v3.png` |
 | 03 Seasonal | PASS (Nov 10), first composite, with the mask widened before editing to (1184, 493)–(1383, 643). Two exhibit features, no teal accent. | `master-L1-v4.png` |
-| 04 Atrium | Mask widened before editing to (816, 716)–(1254, 922): pipes crossed the original box's top and right edges, and old floor would have remained at the left and front. Sent for editing against v4. | |
+| 04 Atrium | Mask widened before editing to (816, 716)–(1254, 922): pipes crossed the original box's top and right edges, and old floor would have remained at the left and front. PASS (Nov 10), first composite. Accepted: a bench and planter stand just inside the West Gallery passage. | `master-L1-v5.png` |
 
 ## Paste-ready prompt for GPT (region 02, against v2)
 
