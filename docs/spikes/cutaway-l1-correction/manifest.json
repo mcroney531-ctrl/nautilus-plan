@@ -131,7 +131,20 @@
     1600,
     897
    ],
-   "mask_note": "Revised Nov 10 to pass the opening rules: no further than 28 px from the engine opening, and clear of the forklift."
+   "mask_note": "Revised Nov 10 to pass the opening rules: no further than 28 px from the engine opening, and clear of the forklift.",
+   "zoom": {
+    "rect": [
+     1430,
+     656,
+     1620,
+     941
+    ],
+    "canvas": [
+     1024,
+     1536
+    ],
+    "scale": 5.389
+   }
   },
   "06-receiving-north-wall": {
    "box_px": [

@@ -101,6 +101,26 @@ After an opening region is composited, the opening count is re-run: the target o
 
 Region 06 changed kind. The roll-up door is not on the engine's north wall: it is painted on a false tall wall that stands on Receiving's floor. Removing it is an interior repaint of Receiving, and the north wall with its passage to the East service hall stays outside the mask.
 
+## Zoomed-crop pass (small regions)
+
+An image editor places small features to within about 10 px across the full picture, which a 36 to 56 px wall mask cannot absorb. For those regions the editor works on an enlarged crop instead. The editable region is the same mask; only the working resolution changes.
+
+1. `python3 spikes/cutaway/zoomcrop.py NN` cuts the region's box plus at least 60 px of context from the latest master, at 2:3 or 3:2, and scales it to 1024 × 1536 or 1536 × 1024 (region 05: a 190 × 285 px rectangle at 5.39×). It writes `zoom-NN-*-vN.png` (the crop to edit), `zoom-guide-NN-*-vN.png` (the same with the mask outlined in yellow) and `zoom-mask-NN-*.png`, and records the rectangle in the manifest.
+2. The editor gets the crop, the guide and the full canvas as a style reference, and returns the crop at the same framing.
+3. `python3 spikes/cutaway/composite.py NN <returned crop> --zoom` scales the return back to the rectangle, places it at its original coordinates, fits scale and offset on the unedited ring inside the rectangle, and composites the masked pixels only. The 6 px / 1.5% refusal, the 3 px feather and the outside-mask assertion are unchanged and are measured in master pixels; a return with a different aspect is refused. `maskcheck.py` runs as before.
+
+`python3 spikes/cutaway/test-zoom.py` proves the round trip on a temporary copy of the package, with a synthetic edit (a block at a known place inside the mask, and the rest of the crop repainted slightly):
+
+| Case | Result |
+| --- | --- |
+| Returned as is | Block at its exact master coordinates, 0 px error; outside the mask unchanged |
+| Returned at 832 × 1248 | 0 px error; outside the mask unchanged |
+| Shifted 3 / −2 master px and scaled 1% | Fitted and corrected, 1 px error; outside the mask unchanged |
+| Shifted 12 master px | Refused |
+| Re-framed to 1024 × 1024 | Refused |
+
+Full-frame mode is unchanged: re-running passes 04b and 06 through the new script reproduces `master-L1-v6.png` and `master-L1-v7.png` pixel for pixel.
+
 ## Status
 
 | NN | Result | Master |
@@ -110,7 +130,7 @@ Region 06 changed kind. The roll-up door is not on the engine's north wall: it i
 | 03 Seasonal | PASS (Nov 10), first composite, with the mask widened before editing to (1184, 493)–(1383, 643). Two exhibit features, no teal accent. | `master-L1-v4.png` |
 | 04 Atrium | Mask widened before editing to (816, 716)–(1254, 922): pipes crossed the original box's top and right edges, and old floor would have remained at the left and front. PASS (Nov 10), first composite. Accepted: a bench and planter stand just inside the West Gallery passage. | `master-L1-v5.png` |
 | 04b Atrium, West Gallery approach | Targeted edit inside 04, (818, 778)–(948, 906): remove the bench in the path from the passage. PASS (Nov 10), first composite. | `master-L1-v6.png` |
-| 05 Dock door | Box tightened to (1544, 716)–(1599, 880) to pass O3 and clear the forklift. Open doorway, no hazard stripes. First return REVISE (Nov 10), discarded: the editor's doorway sat about 10 px off, so the 56 px mask clipped its frame and a wall light. | |
+| 05 Dock door | Box tightened to (1544, 716)–(1599, 880) to pass O3 and clear the forklift. Open doorway, no hazard stripes. First return REVISE (Nov 10), discarded: the editor's doorway sat about 10 px off, so the 56 px mask clipped its frame and a wall light. Re-sent as a zoomed crop against v7. | |
 | 06 Receiving interior | PASS (Nov 10), first composite, box (1288, 694)–(1543, 922), interior kind. | `master-L1-v7.png` |
 | 07, 08 Reef passages | Boxes pass the opening rules unchanged. Not sent. | |
 
@@ -149,3 +169,9 @@ Attach `canvas-3x2-L1-v6.png`, `crop-06-receiving-north-wall.png` and `reference
 Attach `canvas-3x2-L1-v7.png`, `crop-05-dock-door.png` and `reference-regions-v7.jpg`.
 
 > Make one small edit to the attached aquarium cutaway illustration (the image whose lower-right room is an open concrete bay with a yellow forklift and a stack of crates) and return it at exactly the same size and framing. Work only inside the narrow red box marked 05 on the reference sheet (close-up attached, yellow outline), on the right-hand outer wall of that lower-right room. That wall is the building's exterior wall, and this is where the loading dock door is. Inside the box the wall already has a break between an upper and a lower wall segment; make that break read clearly as an open dock doorway through the exterior wall: a clean rectangular opening the full height of the wall, with a simple dark steel frame, the room's concrete floor running out through it as a threshold, and the dark exterior visible beyond. Leave it open: no shutter, no door leaf, no gate, no curtain. Remove the dark vertical strip of old wall face on the room side of the box so the floor meets the wall cleanly. Keep the wall segments above and below the opening, their white caps and the wall light as they are. No text, numbers, signage, people, vehicles or logos. Everything outside the box must stay pixel-identical, with no shift, rescale, re-crop or change of perspective. Match the existing viewing angle (walls extrude up and to the right), lighting and rendering style. If anything here conflicts with the image, tell me before painting rather than working around it.
+
+## Paste-ready prompt for GPT (region 05, zoomed crop, against v7)
+
+Attach `zoom-05-dock-door-v7.png` (the image to edit), `zoom-guide-05-dock-door-v7.png` (the same image with a yellow outline) and `canvas-3x2-L1-v7.png` (style reference only).
+
+> The first image is an enlarged close-up from an aquarium cutaway illustration: the right-hand outer wall of a concrete receiving bay, seen from above, with a yellow forklift at the left. Edit this close-up and return it at exactly the same size and framing (1024 × 1536, portrait). The second image is the same close-up with a yellow outline: change only what is inside that outline. The third image is the whole illustration, for style reference only; do not edit or return it. Inside the outline, the white-capped exterior wall has a break between its upper and lower segments. That break is the building's loading dock doorway. Make it read clearly as an open doorway through the exterior wall: a clean rectangular opening the full height of the wall at the break, with a restrained dark steel frame, the room's concrete floor running out through it as a threshold, and the dark exterior visible beyond. Leave it open: no shutter, no door leaf, no gate, no curtain. Also remove the dark vertical panel on the room side of the upper wall segment, so that wall's inner face is plain light grey like the lower segment and the concrete floor meets the wall cleanly. Keep both wall segments, their white caps and their positions exactly where they are, and keep the warm wall light on the lower segment. Do not add lights, signs, text, numbers, markings, people or vehicles. Everything outside the yellow outline must stay identical, with no shift, zoom, re-crop or change of perspective; the returned image must not contain the yellow outline. Match the existing lighting and rendering style. If anything here conflicts with the image, tell me before painting rather than working around it.

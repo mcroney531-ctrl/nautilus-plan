@@ -181,3 +181,7 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
 - **Fit:** within limits but the loosest yet: scale 1.01, offset −2 / +1 px, and the editor redrew 36.1% of the picture outside the mask.
 - **Result:** every pixel outside the mask unchanged (asserted), but the composite is broken inside it. The editor painted the doorway frame about 10 px left of the mask, so the frame is cut off; a wall light it added is sliced at the mask's top edge; part of the old dark strip remains.
 - **Cause:** the method, not the brief. The editor places small features to within about 10 px across a 1600 px picture. That is invisible in a 200 px room and fatal in a 56 px wall box. Regions 07 and 08 are 36 px wide and would fail the same way.
+
+### Zoomed-crop workflow for small regions (Nov 10)
+
+`spikes/cutaway/zoomcrop.py` and `composite.py --zoom`: the editor works on an enlargement of the region (05: 190 × 285 px at 5.39×) and the script restores it to its exact coordinates. Masks, rules O1 to O5, the outside-mask assertion and the refusal limits are unchanged. `spikes/cutaway/test-zoom.py` passes five synthetic cases (exact, resized, shifted and scaled within limits, shifted beyond limits refused, re-framed refused), and full-frame mode reproduces v6 and v7 pixel for pixel. Region 05 is the first test; 07 and 08 follow only if it passes. Fallback, authorised in principle: openings rendered from the engine geometry, reviewed separately before use.
