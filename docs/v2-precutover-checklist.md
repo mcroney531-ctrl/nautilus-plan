@@ -37,5 +37,6 @@ Cutover (Phase 08: `index.html` serves V2, V1 retired) waits until every item be
 
 ## Polish still open after Phase 07
 
-- [ ] Responsive spacing and hierarchy pass across all stages (Phase 07 fixed the map, lens and N/A marker; general spacing was not reworked).
+- [ ] Responsive spacing and hierarchy pass across all stages: deferred until the cutaway map's visual weight is known (Nov 10).
+- [ ] Cutaway map (approved direction): see `v2-map-cutaway-feasibility.md`. The lens circle still extends past the map edge at edge doors; revisit with the new map.
 - [ ] Logo lockup whitespace is trimmed in CSS; a tightly cropped lockup SVG would be cleaner.
