@@ -185,3 +185,10 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
 ### Zoomed-crop workflow for small regions (Nov 10)
 
 `spikes/cutaway/zoomcrop.py` and `composite.py --zoom`: the editor works on an enlargement of the region (05: 190 × 285 px at 5.39×) and the script restores it to its exact coordinates. Masks, rules O1 to O5, the outside-mask assertion and the refusal limits are unchanged. `spikes/cutaway/test-zoom.py` passes five synthetic cases (exact, resized, shifted and scaled within limits, shifted beyond limits refused, re-framed refused), and full-frame mode reproduces v6 and v7 pixel for pixel. Region 05 is the first test; 07 and 08 follow only if it passes. Fallback, authorised in principle: openings rendered from the engine geometry, reviewed separately before use.
+
+### Region 05 zoomed crop (Nov 10): REFUSED; master stays `master-L1-v7.png`
+
+- The returned crop was the right size and aspect, but the editor re-rendered the scene: new floor tiles, a wider upper wall, an added ceiling light, the forklift moved. Best fit: scale 1.0325, offset −12 / −5 px, and a ring error of 16.8 even after fitting (earlier passes: 4 to 8). The script refused it; it was not forced.
+- **Conclusion:** the chat image editor regenerates whatever it is given. Enlarging a small region makes it regenerate that region's surroundings too. The zoomed-crop tooling works (synthetic test), but this editor cannot make a local edit at this scale. Regions 07 and 08 were not sent.
+- **Engine-derived rendering, first draft: not usable.** Drawing the wall segments, frame and threshold from the engine geometry inside each mask gives exact geometry but reads as a flat sticker: the painted walls sit a few pixels from the engine's and carry painted light that a flat fill does not. The draft was not kept in the repo and nothing was integrated.
+- **State of the three openings in v7:** each already has a break in the painted wall at the engine's opening. What remains is cosmetic: a dark panel beside the dock opening (05) and dark, unclear gaps at the two Reef Tunnel passages (07, 08).

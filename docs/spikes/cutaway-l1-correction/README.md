@@ -134,7 +134,7 @@ Full-frame mode is unchanged: re-running passes 04b and 06 through the new scrip
 | 03 Seasonal | PASS (Nov 10), first composite, with the mask widened before editing to (1184, 493)–(1383, 643). Two exhibit features, no teal accent. | `master-L1-v4.png` |
 | 04 Atrium | Mask widened before editing to (816, 716)–(1254, 922): pipes crossed the original box's top and right edges, and old floor would have remained at the left and front. PASS (Nov 10), first composite. Accepted: a bench and planter stand just inside the West Gallery passage. | `master-L1-v5.png` |
 | 04b Atrium, West Gallery approach | Targeted edit inside 04, (818, 778)–(948, 906): remove the bench in the path from the passage. PASS (Nov 10), first composite. | `master-L1-v6.png` |
-| 05 Dock door | Box tightened to (1544, 716)–(1599, 880) to pass O3 and clear the forklift. Open doorway, no hazard stripes. First return REVISE (Nov 10), discarded: the editor's doorway sat about 10 px off, so the 56 px mask clipped its frame and a wall light. Re-sent as a zoomed crop against v7. | |
+| 05 Dock door | Box tightened to (1544, 716)–(1599, 880) to pass O3 and clear the forklift. Open doorway, no hazard stripes. First return REVISE (Nov 10), discarded: the editor's doorway sat about 10 px off, so the 56 px mask clipped its frame and a wall light. Zoomed crop REFUSED (Nov 10): the editor re-rendered the whole crop (3.25% scale, −12 / −5 px). Open. | |
 | 06 Receiving interior | PASS (Nov 10), first composite, box (1288, 694)–(1543, 922), interior kind. | `master-L1-v7.png` |
 | 07, 08 Reef passages | Boxes pass the opening rules unchanged. Not sent. | |
 
