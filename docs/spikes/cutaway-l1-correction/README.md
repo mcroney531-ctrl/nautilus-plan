@@ -77,12 +77,16 @@ Order: 01 first, then 02, 03, 04, then 05 to 08. Do one region per pass. Never c
 
 > Edit this aquarium cutaway illustration (attached at 1600 × 1004 px; return it at exactly the same size and framing). Change only the room inside the amber box marked 01 on the reference sheet (close-up attached): it is the Living Shore, a public touch-pool gallery, but it is currently painted as a storage room with crates and carts. Repaint its interior as a shallow, open touch pool at low height, with rockwork, sand and coastal habitat (anemones, sea stars, kelp fronds), and a simple rail at visitor height. It should be warm, inviting and public. Keep the existing walls, wall caps, ceiling lights and door openings exactly as they are; everything outside the box must stay pixel-identical, with no shift, rescale, re-crop or change of perspective. Match the existing viewing angle (walls extrude up and to the right), lighting direction and colour temperature. No text, signage, numbers, people or logos. If you think the box is too small for a convincing touch pool, or something in this brief conflicts with the image, tell me before painting rather than working around it.
 
+## Checking a mask against the engine
+
+`python3 spikes/cutaway/maskcheck.py NN [x0 y0 x1 y1]` renders the engine's architecture alone (every wall face, side face and cap, with no openings cut, so door openings and passages count too) and fails if the region's box, or a proposed box, holds any of those pixels. It also prints the clearance on each side and the largest clear box. Run it before a mask is used or changed. A mask protects architecture; it does not have to preserve leftovers of a wrong room, so before a region is sent, compare its crop with the largest clear box and widen the mask if old contents touch its edge.
+
 ## Status
 
 | NN | Result | Master |
 | --- | --- | --- |
 | 01 Living Shore | PASS (Nov 10). Accepted deviations: illegible poster and stand marks, stone coping instead of a rail, a faint tonal ring. | `master-L1-v2.png` |
-| 02 Jelly Room | Sent for editing against v2. | |
+| 02 Jelly Room | PASS (Nov 10), with the mask revised to (1184, 286)–(1383, 436). The original inset kept pump-room pixels at the room's edges. | `master-L1-v3.png` |
 
 ## Paste-ready prompt for GPT (region 02, against v2)
 

@@ -122,3 +122,11 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
   - no visitor rail; the pool has a stone coping instead;
   - a soft tonal ring where the warm repaint meets the master's cooler floor at the mask inset, visible at 4× zoom only.
 - **For later passes:** the prompt now has to say "no posters, wall graphics or interpretive stands", not only "no text".
+
+### Correction pass 02, Jelly Room (Nov 10): PASS, promoted to `master-L1-v3.png`
+
+- **First composite, original mask: REVISE.** The art was right, but the mask's inset kept pipe stubs along the top and left and a strip of the old blue tank on the right. Discarded.
+- **Mask revised** to (1184, 286)–(1383, 436) and checked against the engine with the new `spikes/cutaway/maskcheck.py`: 0 wall, cap or opening pixels inside; clearance 1 px left, 6 top, 0 right, 2 bottom. One more pixel to the right fails, so this is the room's full clear width.
+- **Second composite, same returned image:** identity fit, 28,621 pixels changed inside, every pixel outside unchanged (asserted), remnants gone.
+- **Function and overlays:** reads as a jellyfish gallery at 320 / 400 / desktop, the coolest room on the level. Granted, it is bright blue; not granted, it dims with the other rooms and the tanks still glow. Footprint, markers, walk and lens register unchanged. No posters or text.
+- **Openings:** 12 of 15, no regressions.

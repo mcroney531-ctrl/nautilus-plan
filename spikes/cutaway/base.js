@@ -10,7 +10,9 @@ const E = require('../../src/engine.js');
 const VARIANTS = { A: { k: 0.78, hI: 6, hE: 24, hF: 2, hT: 30, sh: 0 }, B: { k: 0.62, hI: 8, hE: 36, hF: 2, hT: 46, sh: 0 }, C: { k: 0.68, hI: 9, hE: 34, hF: 2, hT: 42, sh: 0.5 } };
 const geom = v => { const g = VARIANTS[v], off = g.hE + 6; return { ...g, h: g.hI, off, W: 400, H: Math.ceil(off + 300 * g.k + 6) }; };
 
-function baseSVG(level, v, treated) {
+/* arch = true: architecture only, white on black, with no openings cut. That is every wall face, side face and cap plus
+   the wall span each opening sits in: the pixels a correction mask must never touch (maskcheck.py). */
+function baseSVG(level, v, treated, arch) {
   const { k, hI, hE, hF, hT, sh, off, W, H } = geom(v), Y = y => off + k * y, t = 2.2, h = hI; // wall thickness (plan units)
   const wallH = (o, val) => o === 'h' ? (val <= 12 ? hE : val >= 288 ? hF : hI) : (val <= 12 || val >= 388 ? hE * 0.6 : hI);
   const ids = Object.keys(E.SPACES).filter(id => E.SPACES[id].l === level);
@@ -19,7 +21,7 @@ function baseSVG(level, v, treated) {
   // ground plate under the building
   s += `<rect x="10" y="${Y(10) - hE - 2}" width="380" height="${Y(290) - Y(10) + hE + 4}" rx="3" fill="#13232d"/>`;
   // openings: doors on this level and open passages between spaces on this level
-  const opens = [...Object.entries(E.DOORS).filter(([d]) => E.doorLevel(d) === level).map(([, o]) => ({ p: o.p, w: 11 })),
+  const opens = arch ? [] : [...Object.entries(E.DOORS).filter(([d]) => E.doorLevel(d) === level).map(([, o]) => ({ p: o.p, w: 11 })),
     ...E.LINKS.filter(l => l[2] && E.SPACES[l[0]].l === level && E.SPACES[l[1]].l === level).map(l => ({ p: l[2], w: 15 }))];
   // floors (+ treated floor finish)
   for (const id of ids) { const sp = E.SPACES[id];
@@ -55,6 +57,7 @@ function baseSVG(level, v, treated) {
     <linearGradient id="surf" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6fd0e4"/><stop offset=".5" stop-color="#a9eaf3"/><stop offset="1" stop-color="#5cc2db"/></linearGradient>
     <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9c38f"/><stop offset="1" stop-color="#9c7f4c"/></linearGradient>
     <radialGradient id="glow" cx=".5" cy="0" r=".9"><stop offset="0" stop-color="#57d4ee" stop-opacity=".55"/><stop offset="1" stop-color="#57d4ee" stop-opacity="0"/></radialGradient></defs>`;
+  if (arch) return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#000"/>${wallsSvg.replace(/fill="[^"]*"/g, 'fill="#fff"')}</svg>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${defs}${s}${wallsSvg}</svg>`;
 }
 

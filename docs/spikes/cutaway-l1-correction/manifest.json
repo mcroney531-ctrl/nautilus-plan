@@ -32,15 +32,22 @@
   },
   "02-jelly-room": {
    "box_px": [
+    1184,
+    286,
+    1383,
+    436
+   ],
+   "room": "Jelly Room (engine: jelly, public gallery)",
+   "brief": "Jellyfish gallery: dark room, glowing cylindrical or round tanks with jellies, soft blue and violet light. Public.",
+   "mask": "mask-02-jelly-room.png",
+   "crop": "crop-02-jelly-room.png",
+   "box_px_original": [
     1191,
     290,
     1371,
     435
    ],
-   "room": "Jelly Room (engine: jelly, public gallery)",
-   "brief": "Jellyfish gallery: dark room, glowing cylindrical or round tanks with jellies, soft blue and violet light. Public.",
-   "mask": "mask-02-jelly-room.png",
-   "crop": "crop-02-jelly-room.png"
+   "mask_note": "Revised Nov 10: the original inset left pump-room pixels at the room's edges. New box checked by spikes/cutaway/maskcheck.py: 0 protected (wall, cap, opening) pixels inside."
   },
   "03-seasonal": {
    "box_px": [
@@ -150,6 +157,29 @@
    "from": "master-L1-v1.png",
    "to": "master-L1-v2.png",
    "compare": "compare-01-v2.png"
+  },
+  {
+   "region": "02-jelly-room",
+   "returned": "jelly02.png",
+   "returned_size": [
+    1536,
+    1024
+   ],
+   "base_mapping": "canvas-3x2",
+   "correction_applied": {
+    "scale": 1.0,
+    "dx_px": 0,
+    "dy_px": 0
+   },
+   "ring_mad_plain": 4.4,
+   "ring_mad_fit": 4.4,
+   "pixels_changed_inside": 28621,
+   "pixels_inside": 30200,
+   "outside_mask_unchanged": true,
+   "editor_redrew_outside_pct": 5.4,
+   "from": "master-L1-v2.png",
+   "to": "master-L1-v3.png",
+   "compare": "compare-02-v3.png"
   }
  ]
 }
