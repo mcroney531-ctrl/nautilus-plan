@@ -70,10 +70,10 @@
   },
   "04-atrium": {
    "box_px": [
-    823,
+    816,
     716,
     1254,
-    897
+    922
    ],
    "room": "Atrium (engine: atrium, public; open to L2 above)",
    "brief": "Open central gathering space, visibly open to Level 2 above (light from above, the void edge), seating; no storage, no pipes.",
@@ -85,7 +85,7 @@
     1243,
     897
    ],
-   "mask_note": "Revised Nov 10, before editing: the pipes run above the original box's top edge and to its right edge. Checked by spikes/cutaway/maskcheck.py: 0 protected pixels inside."
+   "mask_note": "Revised Nov 10, before editing: pipes ran above the original box's top and to its right edge, and the box left 8 px of old floor on the left and 30 px at the front, which a new floor finish would leave as a grey band. Checked by spikes/cutaway/maskcheck.py: 0 protected pixels inside."
   },
   "05-dock-door": {
    "box_px": [
