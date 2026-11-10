@@ -51,27 +51,41 @@
   },
   "03-seasonal": {
    "box_px": [
+    1184,
+    493,
+    1383,
+    643
+   ],
+   "room": "Seasonal (engine: seasonal, public gallery)",
+   "brief": "Flexible temporary exhibit gallery: display cases or plinths, blank panels (no text), track lighting. Public.",
+   "mask": "mask-03-seasonal.png",
+   "crop": "crop-03-seasonal.png",
+   "box_px_original": [
     1191,
     496,
     1371,
     642
    ],
-   "room": "Seasonal (engine: seasonal, public gallery)",
-   "brief": "Flexible temporary exhibit gallery: display cases or plinths, blank panels (no text), track lighting. Public.",
-   "mask": "mask-03-seasonal.png",
-   "crop": "crop-03-seasonal.png"
+   "mask_note": "Revised Nov 10, before editing: the office furniture touches the original box on the left, right and top. Checked by spikes/cutaway/maskcheck.py: 0 protected pixels inside."
   },
   "04-atrium": {
    "box_px": [
     823,
-    725,
-    1243,
+    716,
+    1254,
     897
    ],
    "room": "Atrium (engine: atrium, public; open to L2 above)",
    "brief": "Open central gathering space, visibly open to Level 2 above (light from above, the void edge), seating; no storage, no pipes.",
    "mask": "mask-04-atrium.png",
-   "crop": "crop-04-atrium.png"
+   "crop": "crop-04-atrium.png",
+   "box_px_original": [
+    823,
+    725,
+    1243,
+    897
+   ],
+   "mask_note": "Revised Nov 10, before editing: the pipes run above the original box's top edge and to its right edge. Checked by spikes/cutaway/maskcheck.py: 0 protected pixels inside."
   },
   "05-dock-door": {
    "box_px": [
