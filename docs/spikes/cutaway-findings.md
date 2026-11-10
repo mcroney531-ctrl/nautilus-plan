@@ -192,3 +192,36 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
 - **Conclusion:** the chat image editor regenerates whatever it is given. Enlarging a small region makes it regenerate that region's surroundings too. The zoomed-crop tooling works (synthetic test), but this editor cannot make a local edit at this scale. Regions 07 and 08 were not sent.
 - **Engine-derived rendering, first draft: not usable.** Drawing the wall segments, frame and threshold from the engine geometry inside each mask gives exact geometry but reads as a flat sticker: the painted walls sit a few pixels from the engine's and carry painted light that a flat fill does not. The draft was not kept in the repo and nothing was integrated.
 - **State of the three openings in v7:** each already has a break in the painted wall at the engine's opening. What remains is cosmetic: a dark panel beside the dock opening (05) and dark, unclear gaps at the two Reef Tunnel passages (07, 08).
+
+---
+
+## Level 1 review on `master-L1-v7.png` (Nov 10)
+
+Views and tap results: `docs/spikes/cutaway-shots/l1-review/` (24 views and `l1-review.json`), made by `spikes/cutaway/l1-review.js`. At 320 px, 400 px and desktop: not granted, granted, walk complete, walk denied, the denied door inspected, the dock door inspected, and the lens over each Reef Tunnel passage.
+
+### Recommendation: GO for L1 as the visual foundation, with three conditions for integration
+
+**What holds**
+
+- **Room function:** every room now shows what the engine says it is. Public rooms read as exhibits, Receiving as back of house. At 320 px only Kelp Hall, Classroom and Atrium get a label; the Jelly Room and Kelp Hall are identifiable from the art alone, Living Shore and Seasonal are small warm rooms that need a tap to name.
+- **Granted against not granted:** clear at all three widths. The veil dims floors and the exhibits stay recognisable under it.
+- **Interaction:** 21 of 21 real taps on L1 door markers (7 doors × 3 widths) select the right door. Footprint, markers, walk, denied stop, callout and lens register on the painting with no change to the overlay.
+- **Openings:** 15 of 15 engine openings have an opening in the painted wall at the right place; none is a solid wall. Twelve are clean. Three are cosmetically weak: a dark panel beside the dock opening (05) and dark gaps at the two Reef Tunnel passages (07, 08).
+- **Asset:** the painted L1 is 164 KB as WebP.
+
+**Do the three weak openings confuse a learner or get in the way? No.**
+
+- **Dock door (05):** the live marker sits on it at every width, and at 320 px the paint under the marker is about 10 px. The learner finds this door by its marker and its name, not by the paint.
+- **Reef passages (07, 08):** open passages with no reader, so no marker and nothing to inspect. At 320 px each gap is 2 to 3 px wide. They do not block or mislead any interaction. Not tested: a walk route through them, because the spike only has Elena's walk, which does not use them.
+
+**Conditions (all overlay or layout, none needs new art)**
+
+1. **Canvas margin.** The dock door marker sits on the map's right edge and is cut at 320 px; its lens and the "Above · L2" caption are cut at every width. The West Staff Entrance marker and its denied ring are cut at the bottom edge at 320 px. This is the margin already listed as a condition of the technical GO; the review shows it is required, not optional.
+2. **Labels at 320 px.** Five L1 rooms have no label at 320 px, and the door markers overlap "Classroom" and the route overlaps "Kelp Hall". Pre-existing overlay behaviour, more noticeable now that the art is rich.
+3. **Tapping a passage does nothing.** A tap exactly on an open passage falls on the wall line and selects neither a door nor a room. Now that passages are painted as doorways, a learner may tap one. It should select the room beyond, or say that it is an open passage with no reader.
+
+**Backlog (art)**
+
+- Openings 05, 07, 08: cosmetic cleanup, by a mask-based editor if one is used later.
+- **Service spine and West service hall still read as public space** (ocean mural, plants, a bench). They are staff corridors. This was logged as minor in the first review and was never one of the eight regions. It is the same kind of error as the four rooms that were fixed, in a weaker form, and it is the largest remaining gap in instructional accuracy on L1.
+- Living Shore: illegible poster marks.

@@ -1,0 +1,30 @@
+{
+ "taps": {
+  "320": {
+   "doors": 7,
+   "wrong": []
+  },
+  "400": {
+   "doors": 7,
+   "wrong": []
+  },
+  "desktop": {
+   "doors": 7,
+   "wrong": []
+  }
+ },
+ "passages": {
+  "320": {
+   "reef-jelly": "null",
+   "reef-seasonal": "null"
+  },
+  "400": {
+   "reef-jelly": "null",
+   "reef-seasonal": "null"
+  },
+  "desktop": {
+   "reef-jelly": "null",
+   "reef-seasonal": "null"
+  }
+ }
+}
