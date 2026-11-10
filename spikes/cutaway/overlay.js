@@ -17,7 +17,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 function draw() { const t0 = performance.now(), gg = g(), t = ticket(), fp = E.footprint(t.world, t.person), l = st.level, H = gg.H;
   svg.setAttribute('viewBox', `0 0 400 ${H}`); base.setAttribute('viewBox', `0 0 400 ${H}`);
-  base.innerHTML = `<image href="${IMG[`${st.v}-L${l}${st.art === 'treated' && l === 1 ? '-treated' : ''}`]}" width="400" height="${H}"/>`;
+  const art = l === 1 && st.art !== 'blockout' ? (st.art === 'painted' && IMG[`${st.v}-L1-painted`] ? '-painted' : '-treated') : '';
+  base.innerHTML = `<image href="${IMG[`${st.v}-L${l}${art}`]}" width="400" height="${H}" preserveAspectRatio="none"/>`;
   const rectP = r => { const [x, y] = P(r[0], r[1]); return [x, y, r[2], gg.k * r[3]]; };
   const lit = [...fp.spaces].filter(k => E.SPACES[k].l === l);
   /* the veil dims the floors of rooms outside the granted footprint; walls, the back wall and exhibits stay lit (architecture) */
@@ -70,10 +71,10 @@ $('pick').addEventListener('change', e => { const d = e.target.value; if (!d) re
 function walk() { clearTimeout(st.timer); const t = ticket(); st.walk = F.buildWalk(S.elena, t); st.level = 1; st.inspect = false; sync(); draw();
   const tick = () => { const w = st.walk; if (w.i >= w.pts.length - 1) { w.running = false; $('wstat').textContent = w.res.stop ? `Walk stopped at ${E.DOORS[w.res.stop.door].n}.` : 'Walk complete: reached every stop.'; return; }
     w.i++; st.level = w.pts[w.i].l; draw(); st.timer = setTimeout(tick, 170); }; st.timer = setTimeout(tick, 150); }
-function sync() { for (const [id, k, v] of [['vA', 'v', 'A'], ['vB', 'v', 'B'], ['vC', 'v', 'C'], ['artT', 'art', 'treated'], ['artB', 'art', 'blockout'], ['lv1', 'level', 1], ['lv2', 'level', 2]]) $(id).setAttribute('aria-pressed', st[k] === v);
+function sync() { for (const [id, k, v] of [['vA', 'v', 'A'], ['vB', 'v', 'B'], ['vC', 'v', 'C'], ['artT', 'art', 'treated'], ['artB', 'art', 'blockout'], ['artP', 'art', 'painted'], ['lv1', 'level', 1], ['lv2', 'level', 2]]) $(id).setAttribute('aria-pressed', st[k] === v);
   $('insp').setAttribute('aria-pressed', st.inspect); $('hits').setAttribute('aria-pressed', st.hits); }
 const on = (id, fn) => $(id).addEventListener('click', () => { fn(); sync(); draw(); });
-on('vA', () => st.v = 'A'); on('vB', () => st.v = 'B'); on('vC', () => st.v = 'C'); on('artT', () => st.art = 'treated'); on('artB', () => st.art = 'blockout');
+on('vA', () => st.v = 'A'); on('vB', () => st.v = 'B'); on('vC', () => st.v = 'C'); on('artT', () => st.art = 'treated'); on('artP', () => st.art = 'painted'); on('artB', () => st.art = 'blockout');
 on('lv1', () => st.level = 1); on('lv2', () => st.level = 2); on('insp', () => { st.inspect = !st.inspect; if (st.inspect && !st.lens) st.lens = P(143, 88); }); on('hits', () => st.hits = !st.hits);
 $('badge').addEventListener('change', e => { st.badge = e.target.value; st.walk = null; $('wstat').textContent = ''; draw(); });
 $('walk').addEventListener('click', walk);

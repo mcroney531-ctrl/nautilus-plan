@@ -65,3 +65,44 @@ Also, for the art brief:
 ## Not done (out of scope for the spike)
 
 Change-review outlines over art (same mechanism as the footprint; not exercised), L2 treatment, keyboard lens movement, integration into V2's single map region, any production art.
+
+---
+
+## Painted concept review (Nov 10): first painted cutaway over the variant C blockout
+
+Registered copy: `spikes/cutaway/out/C-L1-painted.webp` (1600 × 1004, 136 KB). In the spike page as "Painted (C)". Review views: `docs/spikes/cutaway-shots/painted-*`. Masks for corrections: `docs/spikes/cutaway-masks/`.
+
+### Alignment against the engine geometry
+
+- **Frame:** a global search over scale (±6%) and offset (±12 px) finds the best fit at **identity**. The painting occupies the blockout's exact frame.
+- **Room boundaries:** within about one wall thickness everywhere (`painted-0-engine-geometry-overlay.png`). Painted interior walls have the variant C height (about 9 units) and the right-hand shear. The Reef Tunnel circle matches the engine ellipse top and bottom; the Kelp Hall tank sits inside Kelp Hall. (An automated edge search reported 30–40 px "drift" on most edges; it was locking onto the painted wall *tops*, about 9 units above the floor lines, which is the specified wall height, not drift.)
+- **Openings:** 15 checked (`painted-0-openings.png`).
+  - **12 match:** West Staff Entrance, staff–gallery connector, Living Shore gate, Classroom door, both core doors, and six passages.
+  - **Loading dock is wrong:** solid wall where the engine's dock door is (east exterior wall); a roll-up door was painted on Receiving's north wall instead.
+  - **Ambiguous:** Reef Tunnel to Jelly Room and to Seasonal show a dark slot, not a clear opening.
+- **Live overlays on the painting:** footprint rims, labels, door markers, walk route, door results, selection and the circular lens all register with no change to the overlay code, at 320 / 400 / desktop. Decode of the painted image: about 20–24 ms (phone emulation), 26–29 ms (desktop).
+
+### Room function (instructional accuracy)
+
+With the engine's labels on top, five rooms contradict the scenario. That matters more than any pixel drift: the map's job is to show what the badge grants, and public vs. back-of-house is part of that.
+
+| Room (engine) | Engine kind | Painted as | Should show |
+| --- | --- | --- | --- |
+| Living Shore | public gallery (Elena's touch pool) | storage room with crates and carts | a touch-pool exhibit: low open pool, rockwork, rail |
+| Jelly Room | public gallery | pump and filtration room | jellyfish gallery: cylindrical lit tanks, dark room |
+| Seasonal | public gallery | office | temporary exhibit gallery: display cases, signage blanks |
+| Atrium | public (open to L2 above) | storage with crates and pipes | open public atrium: light from above, seating, no storage |
+| Service spine | staff corridor | public promenade with mural, plants, bench | utilitarian staff corridor (minor) |
+
+The pump room and office belong on L2 (Life support above Receiving; Ops offices), so painting them on L1 also misleads about where restricted equipment is.
+
+### Verdict
+
+- **Technical: GO.** The painting registers to the engine frame with no correction, boundaries hold within wall thickness, and every live overlay works unchanged. A painted concept made from the blockout can be production-grade geometry.
+- **Visual quality: GO for the direction.** Materials, lighting, the Kelp Hall tank and the Reef Tunnel read as a real aquarium cut open; this is the mockup's quality, not an enhanced blueprint. At 320 px the art becomes texture, but the overlays stay legible over it.
+- **This image as a production asset: REVISE, by masked correction, not regeneration.**
+  1. Repaint the four room interiors with the right function, using `mask-living-shore.png`, `mask-jelly-room.png`, `mask-seasonal.png`, `mask-atrium.png` (engine-derived; walls and openings are outside the masks, so they cannot move). Optionally make the spine utilitarian.
+  2. `mask-openings.png`: open the dock door on Receiving's **east exterior** wall (plan 388, 250) and remove the roll-up door from its north wall; make the two Reef Tunnel passages (plan 289, 80 and 289, 157) clear openings.
+  3. Then I re-register it, re-run the opening check (target 15 of 15) and the label/function review.
+- **Process for the rest:** keep this controlled method. The shell (walls, floors, lighting) comes from the blockout-guided paint; room interiors are filled through engine-generated masks, one room at a time, and each pass is checked by the overlay and opening sheet. This avoids regenerating whole maps hoping one lands, and it is how L2 should be produced.
+- **L2 is now the visible gap:** the lens shows the grey L2 blockout beneath painted L1. L2 art (same method) is needed before the lens looks right.

@@ -18,7 +18,7 @@ body{{margin:0;font:14px/1.45 system-ui,sans-serif;background:#eef3f8;color:#0b2
 .info{{margin:8px;display:grid;gap:4px}} .note{{color:#4d6177;font-size:13px}}
 </style></head><body>
 <div class="bar"><b>Cutaway spike</b> (isolated proof of concept; not V2)
-  <button id="vA">Variant A</button><button id="vB">Variant B</button><button id="vC">Variant C</button><button id="artT">Treated</button><button id="artB">Blockout</button>
+  <button id="vA">Variant A</button><button id="vB">Variant B</button><button id="vC">Variant C</button><button id="artT">Treated</button><button id="artP">Painted (C)</button><button id="artB">Blockout</button>
   <button id="lv1">L1</button><button id="lv2">L2</button><button id="insp">Inspect</button><button id="hits">Show hit areas</button>
   <select id="badge" aria-label="Elena's badge"><option value="ok">All Staff + Education</option><option value="edu">Education only</option><option value="none">No groups</option></select>
   <button id="walk">Walk Elena in</button><label>Inspect a door <select id="pick"></select></label></div>
