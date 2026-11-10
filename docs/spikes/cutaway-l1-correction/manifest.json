@@ -87,29 +87,73 @@
    ],
    "mask_note": "Revised Nov 10, before editing: pipes ran above the original box's top and to its right edge, and the box left 8 px of old floor on the left and 30 px at the front, which a new floor finish would leave as a grey band. Checked by spikes/cutaway/maskcheck.py: 0 protected pixels inside."
   },
+  "04b-atrium-west-approach": {
+   "box_px": [
+    818,
+    778,
+    948,
+    906
+   ],
+   "room": "Atrium, floor inside the West Gallery passage (plan 197,271)",
+   "brief": "Remove the bench that stands in the path from the passage into the room; keep the planter, the floor, the wave inlay and the lighting.",
+   "check": {
+    "kind": "interior",
+    "within": "04-atrium"
+   },
+   "mask_note": "Added Nov 10: a targeted edit inside the locked Atrium region, to clear the walking path from the West Gallery passage.",
+   "mask": "mask-04b-atrium-west-approach.png",
+   "crop": "crop-04b-atrium-west-approach.png"
+  },
   "05-dock-door": {
    "box_px": [
+    1544,
+    716,
+    1599,
+    880
+   ],
+   "room": "Loading dock door D-DOCK (east exterior wall of Receiving, plan 388,250)",
+   "brief": "A dock door opening in the east exterior wall, centred at the marked point; the engine's dock reader is here.",
+   "mask": "mask-05-dock-door.png",
+   "crop": "crop-05-dock-door.png",
+   "check": {
+    "kind": "opening",
+    "o": "v",
+    "at": 388,
+    "opening": [
+     388,
+     250
+    ],
+    "width": 11
+   },
+   "box_px_original": [
     1534,
     701,
     1600,
     897
    ],
-   "room": "Loading dock door D-DOCK (east exterior wall of Receiving, plan 388,250)",
-   "brief": "A dock door opening in the east exterior wall, centred at the marked point; the engine's dock reader is here.",
-   "mask": "mask-05-dock-door.png",
-   "crop": "crop-05-dock-door.png"
+   "mask_note": "Revised Nov 10 to pass the opening rules: no further than 28 px from the engine opening, and clear of the forklift."
   },
   "06-receiving-north-wall": {
    "box_px": [
+    1288,
+    694,
+    1543,
+    922
+   ],
+   "room": "Receiving interior (engine: receiving, staff). The engine's north wall and its passage to the East service hall at plan 368,196 are outside the mask.",
+   "brief": "Remove the roll-up door and the tall wall face it is painted on: Receiving's floor runs back to the low north partition. Keep it a staff receiving bay (forklift, floor markings), with nothing that reads as a door on the north side.",
+   "mask": "mask-06-receiving-north-wall.png",
+   "crop": "crop-06-receiving-north-wall.png",
+   "box_px_original": [
     1294,
     649,
     1522,
     789
    ],
-   "room": "Receiving north wall (engine passage to East service hall at plan 368,196 stays)",
-   "brief": "Remove the roll-up door: plain wall with the existing passage. Receiving's dock door belongs on the east wall (region 05).",
-   "mask": "mask-06-receiving-north-wall.png",
-   "crop": "crop-06-receiving-north-wall.png"
+   "mask_note": "Revised Nov 10: the roll-up door is painted on a false tall wall standing on Receiving's floor, not on the engine's north wall, so this is an interior region covering Receiving's floor. The north wall and the passage at 368,196 are outside it.",
+   "check": {
+    "kind": "interior"
+   }
   },
   "07-reef-to-jelly": {
    "box_px": [
@@ -121,7 +165,17 @@
    "room": "Passage Reef Tunnel to Jelly Room (plan 289,80)",
    "brief": "A clear open passage through the wall at the marked point (about 15 units wide), no door leaf.",
    "mask": "mask-07-reef-to-jelly.png",
-   "crop": "crop-07-reef-to-jelly.png"
+   "crop": "crop-07-reef-to-jelly.png",
+   "check": {
+    "kind": "opening",
+    "o": "v",
+    "at": 289,
+    "opening": [
+     289,
+     80
+    ],
+    "width": 15
+   }
   },
   "08-reef-to-seasonal": {
    "box_px": [
@@ -133,7 +187,17 @@
    "room": "Passage Reef Tunnel to Seasonal (plan 289,157)",
    "brief": "A clear open passage through the wall at the marked point (about 15 units wide), no door leaf.",
    "mask": "mask-08-reef-to-seasonal.png",
-   "crop": "crop-08-reef-to-seasonal.png"
+   "crop": "crop-08-reef-to-seasonal.png",
+   "check": {
+    "kind": "opening",
+    "o": "v",
+    "at": 289,
+    "opening": [
+     289,
+     157
+    ],
+    "width": 15
+   }
   }
  },
  "canvas_3x2": {

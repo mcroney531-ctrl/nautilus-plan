@@ -151,3 +151,11 @@ The pump room and office belong on L2 (Life support above Receiving; Ops offices
   - two planters were not in the brief;
   - a 6 px strip of the old darker floor remains along the front wall and reads as the wall's shadow.
 - **Openings:** 12 of 15, no regressions. All four room interiors are done; 05 to 08 remain.
+
+### Before the opening corrections (Nov 10)
+
+- **Atrium circulation:** v5 stays the baseline. A targeted region, 04b, (818, 778)–(948, 906), covers the bench and planter inside the West Gallery passage; the edit removes the bench and keeps the planter. Prepared, not sent.
+- **Mask rules for 05 to 08** are in `maskcheck.py` and the correction README: interior masks hold no architecture; opening masks touch one named wall line only, contain the whole engine opening, reach no more than 28 px past it, and never overlap a locked region.
+- **Region 06 is an interior region, not a wall edit.** The roll-up door is painted on a false tall wall standing on Receiving's floor; the engine's north wall is above it and already correct. Its mask is now Receiving's floor, (1288, 694)–(1543, 922).
+- **Region 05** was tightened to (1544, 716)–(1599, 880). The painting already has a break in the east wall near the engine's dock opening; the pass has to make it read as a dock door.
+- All nine regions pass their rules. Nothing was composited; the master is still v5.

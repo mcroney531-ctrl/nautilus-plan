@@ -10,8 +10,10 @@ const E = require('../../src/engine.js');
 const VARIANTS = { A: { k: 0.78, hI: 6, hE: 24, hF: 2, hT: 30, sh: 0 }, B: { k: 0.62, hI: 8, hE: 36, hF: 2, hT: 46, sh: 0 }, C: { k: 0.68, hI: 9, hE: 34, hF: 2, hT: 42, sh: 0.5 } };
 const geom = v => { const g = VARIANTS[v], off = g.hE + 6; return { ...g, h: g.hI, off, W: 400, H: Math.ceil(off + 300 * g.k + 6) }; };
 
-/* arch = true: architecture only, white on black, with no openings cut. That is every wall face, side face and cap plus
-   the wall span each opening sits in: the pixels a correction mask must never touch (maskcheck.py). */
+/* arch: architecture only, white on black (maskcheck.py). arch = true draws every wall face, side face and cap with no
+   openings cut, so the wall span of each opening counts too: the pixels a room mask must never touch.
+   arch = { o: 'v' | 'h', at, invert, cut } narrows it to one wall line (orientation o within 2.5 units of at), or with
+   invert to every wall except that line; cut = true keeps the openings cut. */
 function baseSVG(level, v, treated, arch) {
   const { k, hI, hE, hF, hT, sh, off, W, H } = geom(v), Y = y => off + k * y, t = 2.2, h = hI; // wall thickness (plan units)
   const wallH = (o, val) => o === 'h' ? (val <= 12 ? hE : val >= 288 ? hF : hI) : (val <= 12 || val >= 388 ? hE * 0.6 : hI);
@@ -21,7 +23,8 @@ function baseSVG(level, v, treated, arch) {
   // ground plate under the building
   s += `<rect x="10" y="${Y(10) - hE - 2}" width="380" height="${Y(290) - Y(10) + hE + 4}" rx="3" fill="#13232d"/>`;
   // openings: doors on this level and open passages between spaces on this level
-  const opens = arch ? [] : [...Object.entries(E.DOORS).filter(([d]) => E.doorLevel(d) === level).map(([, o]) => ({ p: o.p, w: 11 })),
+  const keepWall = (o, val) => !arch || arch === true || !arch.o || ((o === arch.o && Math.abs(val - arch.at) <= 2.5) !== !!arch.invert);
+  const opens = arch && !arch.cut ? [] : [...Object.entries(E.DOORS).filter(([d]) => E.doorLevel(d) === level).map(([, o]) => ({ p: o.p, w: 11 })),
     ...E.LINKS.filter(l => l[2] && E.SPACES[l[0]].l === level && E.SPACES[l[1]].l === level).map(l => ({ p: l[2], w: 15 }))];
   // floors (+ treated floor finish)
   for (const id of ids) { const sp = E.SPACES[id];
@@ -33,11 +36,11 @@ function baseSVG(level, v, treated, arch) {
   const cut = (a0, a1, pts) => { let segs = [[a0, a1]]; for (const [c, w] of pts) segs = segs.flatMap(([u0, u1]) => c - w / 2 > u1 || c + w / 2 < u0 ? [[u0, u1]] : [[u0, c - w / 2], [c + w / 2, u1]].filter(([p, q]) => q - p > 0.5)); return segs; };
   for (const id of ids) for (const r of E.SPACES[id].r) {
     const [x, y, w, hh] = r;
-    for (const yy of [y, y + hh]) { const pts = opens.filter(o => Math.abs(o.p[1] - yy) < 4 && o.p[0] > x - 1 && o.p[0] < x + w + 1).map(o => [o.p[0], o.w]);
+    for (const yy of [y, y + hh]) { if (!keepWall('h', yy)) continue; const pts = opens.filter(o => Math.abs(o.p[1] - yy) < 4 && o.p[0] > x - 1 && o.p[0] < x + w + 1).map(o => [o.p[0], o.w]);
       const wh = wallH('h', yy);
       for (const [a, b] of cut(x, x + w, pts)) { const B0 = Y(yy), dx = sh * wh, ct = k * t;
         walls.push({ key: yy, svg: `<polygon points="${a},${B0} ${b},${B0} ${b + dx},${B0 - wh} ${a + dx},${B0 - wh}" fill="url(#wallf)"/><polygon points="${a + dx},${B0 - wh} ${b + dx},${B0 - wh} ${b + dx + sh * ct},${B0 - wh - ct} ${a + dx + sh * ct},${B0 - wh - ct}" fill="#eef3f5"/>` }); } }
-    for (const xx of [x, x + w]) { const pts = opens.filter(o => Math.abs(o.p[0] - xx) < 4 && o.p[1] > y - 1 && o.p[1] < y + hh + 1).map(o => [o.p[1], o.w]);
+    for (const xx of [x, x + w]) { if (!keepWall('v', xx)) continue; const pts = opens.filter(o => Math.abs(o.p[0] - xx) < 4 && o.p[1] > y - 1 && o.p[1] < y + hh + 1).map(o => [o.p[1], o.w]);
       const wv = wallH('v', xx);
       for (const [a, b] of cut(y, y + hh, pts)) { const dx = sh * wv, Ya = Y(a), Yb = Y(b);
         walls.push({ key: b, svg: (sh ? `<polygon points="${xx},${Ya} ${xx},${Yb} ${xx + dx},${Yb - wv} ${xx + dx},${Ya - wv}" fill="#97a3aa"/>` : '') +

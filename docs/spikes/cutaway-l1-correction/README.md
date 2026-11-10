@@ -79,7 +79,27 @@ Order: 01 first, then 02, 03, 04, then 05 to 08. Do one region per pass. Never c
 
 ## Checking a mask against the engine
 
-`python3 spikes/cutaway/maskcheck.py NN [x0 y0 x1 y1]` renders the engine's architecture alone (every wall face, side face and cap, with no openings cut, so door openings and passages count too) and fails if the region's box, or a proposed box, holds any of those pixels. It also prints the clearance on each side and the largest clear box. Run it before a mask is used or changed. A mask protects architecture; it does not have to preserve leftovers of a wrong room, so before a region is sent, compare its crop with the largest clear box and widen the mask if old contents touch its edge.
+`python3 spikes/cutaway/maskcheck.py NN [x0 y0 x1 y1] [--sheet out.png]` renders the engine's architecture alone and checks the region's box, or a proposed box, against it. Run it before a mask is used or changed; a mask that fails is not sent. `--sheet` writes a picture of the mask (red), the engine opening (green) and the walls it must not touch (blue).
+
+A mask protects architecture. It does not have to preserve leftovers of a wrong room, so before a region is sent, compare its crop with the largest clear box and widen the mask if old contents touch its edge.
+
+**Interior regions** (rooms and floors: 01 to 04, 04b, 06)
+
+- I1: the mask holds no architecture pixel: no wall face, side face or cap, and no wall span of a door opening or passage.
+
+**Opening regions** (masks that have to repaint part of one wall: 05, 07, 08). Each names its target in the manifest: the wall line, the engine opening's plan point and its width.
+
+- O1: the mask holds no pixel of any wall other than the target wall line.
+- O2: the mask contains the whole engine opening: the gap the engine cuts in that wall, with the wall's height and shear.
+- O3: the mask reaches no more than 28 px beyond that opening on any side.
+
+**All regions**
+
+- O4: the mask does not overlap a region that has already been composited, so an approved room cannot change. A targeted re-edit of a locked region (04b) names that region as `within`: it may overlap that region only, and (O5) must stay inside its box.
+
+After an opening region is composited, the opening count is re-run: the target opening must match, and no other opening may regress.
+
+Region 06 changed kind. The roll-up door is not on the engine's north wall: it is painted on a false tall wall that stands on Receiving's floor. Removing it is an interior repaint of Receiving, and the north wall with its passage to the East service hall stays outside the mask.
 
 ## Status
 
@@ -89,6 +109,10 @@ Order: 01 first, then 02, 03, 04, then 05 to 08. Do one region per pass. Never c
 | 02 Jelly Room | PASS (Nov 10), with the mask revised to (1184, 286)–(1383, 436). The original inset kept pump-room pixels at the room's edges. | `master-L1-v3.png` |
 | 03 Seasonal | PASS (Nov 10), first composite, with the mask widened before editing to (1184, 493)–(1383, 643). Two exhibit features, no teal accent. | `master-L1-v4.png` |
 | 04 Atrium | Mask widened before editing to (816, 716)–(1254, 922): pipes crossed the original box's top and right edges, and old floor would have remained at the left and front. PASS (Nov 10), first composite. Accepted: a bench and planter stand just inside the West Gallery passage. | `master-L1-v5.png` |
+| 04b Atrium, West Gallery approach | Targeted edit inside 04, (818, 778)–(948, 906): remove the bench in the path from the passage. Prepared, not sent. | |
+| 05 Dock door | Box tightened to (1544, 716)–(1599, 880) to pass O3 and clear the forklift. Not sent. | |
+| 06 Receiving interior | Box changed to (1288, 694)–(1543, 922), interior kind. Not sent. | |
+| 07, 08 Reef passages | Boxes pass the opening rules unchanged. Not sent. | |
 
 ## Paste-ready prompt for GPT (region 02, against v2)
 
@@ -107,3 +131,9 @@ Attach `canvas-3x2-L1-v3.png`, `crop-03-seasonal.png` and `reference-regions-v3.
 Attach `canvas-3x2-L1-v4.png`, `crop-04-atrium.png` and `reference-regions-v4.jpg`. The source must be the v4 canvas: the Jelly Room shows jellyfish tanks and the Seasonal room shows a pale gallery.
 
 > Edit the attached aquarium cutaway illustration (the image where the upper-right room holds glowing blue jellyfish tanks and the room below it is a pale gallery with a coral case) and return it at exactly the same size and framing. Change only the large room inside the amber box marked 04 on the reference sheet (close-up attached, yellow outline). It is the Atrium, the aquarium's open central gathering space, but it is currently painted as back-of-house storage. Remove the crates, the cart, the pallets and every pipe and valve, including the pipes along the top edge of the box. Repaint the whole floor inside the box, edge to edge, as polished pale stone or terrazzo, and make the room a calm, welcoming, spacious public atrium: one or two low curved benches, and most of the floor left empty. The floor above this room is open, so show that with light only: a broad, soft pool of cool daylight falling from above onto the middle of the floor, with gentle reflections in the polished stone. A restrained inlaid floor motif of flowing wave or ripple lines is welcome if it stays subtle; do not draw a manta ray or any animal, because the round room above already has one. This is not an exhibit and not a tank: no water, no glass cases, no plinths. Do not draw stairs, steps, ramps, elevators, escalators, balconies, railings, mezzanine edges, columns, doors or any new opening; nothing here may suggest a way up. Keep the existing wall-mounted and floor light fixtures where they are. Keep every object inside the box; nothing may rise over the wall caps or cover an opening. No text, pseudo-text, signage, people or logos. Do not change the walls, wall caps, openings or any other room; everything outside the box must stay pixel-identical, with no shift, rescale, re-crop or change of perspective. Match the existing viewing angle (walls extrude up and to the right) and rendering style. If anything here conflicts with the image, tell me before painting rather than working around it.
+
+## Paste-ready prompt for GPT (region 04b, against v5)
+
+Attach `canvas-3x2-L1-v5.png`, `crop-04b-atrium-west-approach.png` and `reference-regions-v5.jpg`.
+
+> Make one small edit to the attached aquarium cutaway illustration (the image whose large lower room is a pale atrium with two curved wooden benches and two potted plants) and return it at exactly the same size and framing. Work only inside the amber box marked 04b on the reference sheet (close-up attached, yellow outline), at the left end of the atrium. Remove the curved bench inside that box, with its shadow, and leave empty polished floor where it stood. Keep the potted plant in the box where it is. Continue the existing floor exactly: the same pale stone, the same pale blue wave inlay lines running through the box without a break, the same reflections and light. Do not add anything in its place: no bench, no object, no rug, no marking. Everything else in the atrium stays as it is: the other bench and plant, the daylight pool, the wave inlay, the floor and the lights. Everything outside the box must stay pixel-identical, with no shift, rescale, re-crop or change of perspective. No text, signage, people or logos. If anything here conflicts with the image, tell me before painting rather than working around it.
