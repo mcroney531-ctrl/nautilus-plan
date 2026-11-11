@@ -358,3 +358,22 @@ Option A approved. `docs/spikes/cutaway-l2/master-L2-v0.png` is the corrected bl
 - **West zone:** REFUSED (scale 0.985, −6 px) with a missing-wall tile at the West mezzanine / Ops boundary.
 - **First return, whole level:** HOLD, four failed tiles.
 - **Consequence:** no part of this return is usable as architecture. Its room interiors are usable as environments: a scratch trial composited Quarantine, Food prep, Dive locker, Life support and both parts of the East mezzanine through their engine-derived interior masks onto the blockout's walls, with the global fit applied. Walls, door gaps and the passage are then the engine's by construction, and the stair cores stay as the blockout draws them, without the invented doorways.
+
+### L2 Stage 1 prototype, engine-walls approach (Nov 11): for review; nothing promoted
+
+`spikes/cutaway/l2rooms.py --preview DIR` (promotion is disabled in the script). Source: `docs/spikes/cutaway-l2/source-shell-return-2.png`.
+
+- **Masks, from the engine:** every visible floor pixel of the room, plus the face of its own back wall below the cap, so things standing against that wall are not cut. One continuous mask for the East mezzanine. In all five masks: 0 cap pixels, 0 opening-span pixels, 0 scripted pixels. The back-wall face is an approved-in-principle extension of the interior rule that needs sign-off: the editor's paint covers that wall's face, never its cap or position.
+- **Room fit:** each room's painted walls are located from its caps and the room is resampled onto the engine's. Stretch applied: Quarantine 7% in y; Dive locker 17% in x; Life support 7% in x; East mezzanine west part 15% in x; Food prep under 1%.
+- **Mechanical checks on the prototype:** `shellreg.py` PASS at identity with recall 1.0 (the walls are the engine's); `connectivity.py` both spaces open; nothing outside the room masks and the wall-finish pixels changed, and no cap or scripted pixel changed (asserted).
+
+| Item | Verdict | Notes |
+| --- | --- | --- |
+| Quarantine | PASS | Isolation tanks, pipework on the back wall, sink. Shelving at the east wall ends at the floor line. |
+| Food prep | PASS | Counters, sinks, fridge, shelving; fills the room; door gap clear. |
+| Dive locker | PASS, with a caveat | Wetsuits, cylinders, lockers, bench. Squeezed 17% horizontally (not obvious); a sink at the east wall is cut. |
+| Life support | PASS | Plant room fills the floor; the control cabinet's right edge is cut at the east wall. |
+| East mezzanine | REVISE | One continuous L-shaped floor, but a strip of the editor's own wall shows beside the Dive locker's east wall, and equipment along the east wall is cut. |
+| Wall finish | REVISE | Tone sits with the caps and the rooms, but it is flat: no shading from the room lights, and the scripted wall lights barely register. Reads as unfinished next to painted interiors. |
+
+Not yet done: West mezzanine and Ops offices (Stage 2), stair-core landings, overlay and tap checks at three widths.
