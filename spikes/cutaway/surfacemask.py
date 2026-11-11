@@ -1,7 +1,7 @@
 """Mask for a "surface" region: the face of one engine wall line, for repainting what is painted on it (a mural, wall-mounted
 or wall-painted furnishings) without moving the wall.
 Usage: python3 spikes/cutaway/surfacemask.py NN
-Reads region NN's "check" ({"kind": "surface", "o", "at"}) from the manifest and writes its mask file and box_px (the mask's
+Reads region NN's "check" ({"kind": "surface", "o", "at", optional "xrange": [x0, x1] for one part of a long wall}) from the manifest and writes its mask file and box_px (the mask's
 bounding box). Mask = the target wall line, 2 px inside its outline, minus every other wall (grown 3 px), minus painted wall
 caps (neutral near-white pixels in the master, grown 2 px), minus the manifest's locked boxes. Check it with maskcheck.py."""
 import json, re, subprocess, sys
@@ -26,6 +26,7 @@ if c.get("fringe_px"):
     mural = (a[..., 2] - a[..., 0] > 22) & (a[..., 1] - a[..., 0] > 10); n = int(c["fringe_px"])
     near = np.asarray(Image.fromarray((M * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(2 * n + 1))) > 0; add = mural & near & ~O & ~caps & ~M; M |= add; print("fringe pixels added:", int(add.sum()))
 for l in man.get("locked", []): b = l["box_px"]; M[b[1]:b[3] + 1, b[0]:b[2] + 1] = False
+if c.get("xrange"): M[:, :c["xrange"][0]] = False; M[:, c["xrange"][1] + 1:] = False   # one part of a long wall, for a separate pass
 ys, xs = np.nonzero(M); reg["box_px"] = [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]; reg.setdefault("mask", f"mask-{name}.png"); reg.setdefault("crop", f"crop-{name}.png")
 m = Image.fromarray((M * 255).astype(np.uint8)); m.save(pkg / reg["mask"]); cv = Image.new("L", tuple(man["canvas_3x2"]["size"]), 0); cv.paste(m, (0, 0)); cv.save(pkg / f"canvas-3x2-mask-{name}.png")
 (pkg / "manifest.json").write_text(json.dumps(man, indent=1)); print(name, "box", reg["box_px"], "mask pixels", int(M.sum()))

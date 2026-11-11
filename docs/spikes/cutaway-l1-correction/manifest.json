@@ -212,54 +212,47 @@
     "width": 15
    }
   },
-  "09-north-wall-face": {
-   "room": "North exterior wall face behind the Service spine and both cores (engine: wall line y = 12)",
-   "brief": "A plain working back wall: remove the ocean mural, the bench and the two plants painted on it; painted concrete or block, cable tray or pipe run, plain utility lights. No doors.",
+  "09a-north-wall-west": {
+   "room": "North exterior wall face, west part: behind the west core and the Service spine, up to the middle of the Kelp Hall tank (engine: wall line y = 12)",
+   "brief": "A plain working back wall: no mural, no plant. Painted concrete or block, a cable tray or pipe run, plain utility wall lights.",
    "check": {
     "kind": "surface",
     "o": "h",
-    "at": 12
+    "at": 12,
+    "xrange": [
+     0,
+     656
+    ]
    },
-   "status": "proposed",
    "box_px": [
     95,
+    60,
+    656,
+    190
+   ],
+   "mask": "mask-09a-north-wall-west.png",
+   "crop": "crop-09a-north-wall-west.png"
+  },
+  "09b-north-wall-east": {
+   "room": "North exterior wall face, east part: from the middle of the Kelp Hall tank, behind the Service spine and the east core (engine: wall line y = 12)",
+   "brief": "A plain working back wall: no mural, no bench, no plant. Painted concrete or block, a cable tray or pipe run, plain utility wall lights.",
+   "check": {
+    "kind": "surface",
+    "o": "h",
+    "at": 12,
+    "xrange": [
+     657,
+     1599
+    ]
+   },
+   "box_px": [
+    657,
     59,
     1599,
     190
    ],
-   "mask": "mask-09-north-wall-face.png",
-   "crop": "crop-09-north-wall-face.png",
-   "material": {
-    "target": [
-     126,
-     123,
-     120
-    ],
-    "full_band": true,
-    "band_top": 0,
-    "band_bottom": 149,
-    "objects": [
-     [
-      244,
-      82,
-      332,
-      190
-     ],
-     [
-      974,
-      124,
-      1062,
-      189
-     ],
-     [
-      1296,
-      78,
-      1402,
-      190
-     ]
-    ],
-    "cap_shadow": true
-   }
+   "mask": "mask-09b-north-wall-east.png",
+   "crop": "crop-09b-north-wall-east.png"
   },
   "10-west-hall-furnishings": {
    "box_px": [
