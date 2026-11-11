@@ -1,5 +1,5 @@
 """Composite one corrected region back into the L1 master without moving the master's geometry.
-Usage: python3 spikes/cutaway/composite.py NN <returned image> [--zoom] [--master PATH] [--force]
+Usage: python3 spikes/cutaway/composite.py NN <returned image> [--zoom] [--match-tone] [--master PATH] [--force]
   NN        region number from docs/spikes/cutaway-l1-correction/manifest.json (01 to 08)
   returned  the editor's output: the master (1600 x 1004), the 3:2 canvas (any 3:2 size), or the master stretched to any size
 
@@ -11,6 +11,8 @@ The master is never scaled or shifted. Only the returned image is brought into t
 --zoom: the returned image is the region's zoomed crop (zoomcrop.py), at any size of the same aspect. It is scaled back
 to the crop rectangle recorded in the manifest and placed at its original coordinates; steps 2 and 3, the limits and the
 assertion are the same, in master pixels, and the fit is scored inside the rectangle only.
+--match-tone: before compositing, the returned image is scaled per colour channel so that its median on the unedited ring
+equals the master's (limited to 0.8 to 1.25). For editors that re-light the whole picture. The gain is logged.
 Refuses (unless --force) when the residual fit is over 6 px or 1.5%: the editor moved the picture, not just the region.
 Writes master-L1-v<N+1>.png, compare-NN-v<N+1>.png (before | after | returned, cropped) and a history entry in manifest.json."""
 import json, re, sys
@@ -21,7 +23,7 @@ from PIL import Image, ImageFilter
 import os
 root = Path(__file__).resolve().parents[2]; pkg = Path(os.environ.get("CUTAWAY_PKG", root / "docs/spikes/cutaway-l1-correction"))  # override for tests
 W, H, CW, CH = 1600, 1004, 1600, 1067
-args = sys.argv[1:]; force = "--force" in args; zoom = "--zoom" in args; args = [a for a in args if a not in ("--force", "--zoom")]
+args = sys.argv[1:]; force = "--force" in args; zoom = "--zoom" in args; tone = "--match-tone" in args; args = [a for a in args if a not in ("--force", "--zoom", "--match-tone")]
 mpath = None
 if "--master" in args: i = args.index("--master"); mpath = Path(args[i + 1]); del args[i:i + 2]
 nn, ret_path = args[0].zfill(2), Path(args[1])
@@ -87,6 +89,10 @@ report = {"region": name, "returned": str(ret_path.name), "returned_size": [rw, 
 if (abs(s - 1) > 0.015 or max(abs(dx), abs(dy)) > 6) and not force:
     print(json.dumps(report, indent=1)); sys.exit("REFUSED: the returned picture moved more than 6 px or 1.5% around the region. Check it, or rerun with --force.")
 
+if tone:
+    ra, rm = np.asarray(aligned, np.float32)[ring & inrect], np.asarray(master, np.float32)[ring & inrect]
+    gain = np.clip(np.median(rm, axis=0) / np.maximum(np.median(ra, axis=0), 1), 0.8, 1.25); report["tone_gain_rgb"] = [round(float(g), 3) for g in gain]
+    aligned = Image.fromarray(np.clip(np.asarray(aligned, np.float32) * gain + 0.5, 0, 255).astype(np.uint8))
 # composite: inward feather only, so alpha is zero everywhere outside the mask
 alpha = mask.filter(ImageFilter.MinFilter(7)).filter(ImageFilter.GaussianBlur(1.5))
 a = np.minimum(np.asarray(alpha, np.float32), np.asarray(mask, np.float32))[..., None] / 255
