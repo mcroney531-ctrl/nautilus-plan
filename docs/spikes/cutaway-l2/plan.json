@@ -1,0 +1,555 @@
+{
+ "size": [
+  1600,
+  1004
+ ],
+ "projection": {
+  "variant": "C",
+  "k": 0.68,
+  "hI": 9,
+  "hE": 34,
+  "hF": 2,
+  "hT": 42,
+  "sh": 0.5,
+  "h": 9,
+  "off": 40,
+  "W": 400,
+  "H": 251
+ },
+ "rooms": {
+  "westCore2": {
+   "name": "West core \u00b7 L2",
+   "kind": "core",
+   "rects": [
+    [
+     12,
+     12,
+     40,
+     30
+    ]
+   ]
+  },
+  "westMezz": {
+   "name": "West mezzanine",
+   "kind": "staff",
+   "rects": [
+    [
+     12,
+     44,
+     84,
+     96
+    ]
+   ]
+  },
+  "quarantine": {
+   "name": "Quarantine",
+   "kind": "restricted",
+   "rects": [
+    [
+     98,
+     44,
+     90,
+     66
+    ]
+   ]
+  },
+  "topside": {
+   "name": "Tank-top catwalks",
+   "kind": "staff",
+   "rects": [
+    [
+     98,
+     112,
+     100,
+     20
+    ],
+    [
+     198,
+     44,
+     98,
+     158
+    ]
+   ]
+  },
+  "food": {
+   "name": "Food prep",
+   "kind": "staff",
+   "rects": [
+    [
+     98,
+     134,
+     90,
+     66
+    ]
+   ]
+  },
+  "admin": {
+   "name": "Ops offices",
+   "kind": "staff",
+   "rects": [
+    [
+     12,
+     142,
+     84,
+     90
+    ]
+   ]
+  },
+  "eastCore2": {
+   "name": "East core \u00b7 L2",
+   "kind": "core",
+   "rects": [
+    [
+     348,
+     12,
+     40,
+     30
+    ]
+   ]
+  },
+  "eastMezz": {
+   "name": "East mezzanine",
+   "kind": "staff",
+   "rects": [
+    [
+     348,
+     44,
+     40,
+     150
+    ],
+    [
+     298,
+     120,
+     50,
+     74
+    ]
+   ]
+  },
+  "dive": {
+   "name": "Dive locker",
+   "kind": "staff",
+   "rects": [
+    [
+     298,
+     44,
+     48,
+     74
+    ]
+   ]
+  },
+  "life": {
+   "name": "Life support",
+   "kind": "restricted",
+   "rects": [
+    [
+     316,
+     196,
+     72,
+     92
+    ]
+   ]
+  }
+ },
+ "doors": {
+  "D-WM": {
+   "name": "West mezzanine",
+   "from": "westCore2",
+   "into": "westMezz",
+   "plan": [
+    32,
+    43
+   ],
+   "px": [
+    128,
+    277
+   ],
+   "groups": [
+    "Exhibit Operations",
+    "Temporary Exhibit AV"
+   ]
+  },
+  "D-QUAR": {
+   "name": "Quarantine",
+   "from": "westMezz",
+   "into": "quarantine",
+   "plan": [
+    97,
+    77
+   ],
+   "px": [
+    388,
+    369
+   ],
+   "groups": [
+    "Exhibit Operations"
+   ]
+  },
+  "D-TOPW": {
+   "name": "Tank-top \u00b7 west",
+   "from": "westMezz",
+   "into": "topside",
+   "plan": [
+    97,
+    122
+   ],
+   "px": [
+    388,
+    492
+   ],
+   "groups": [
+    "Exhibit Operations",
+    "Temporary Exhibit AV"
+   ]
+  },
+  "D-FOOD": {
+   "name": "Food prep",
+   "from": "topside",
+   "into": "food",
+   "plan": [
+    143,
+    133
+   ],
+   "px": [
+    572,
+    522
+   ],
+   "groups": [
+    "Exhibit Operations"
+   ]
+  },
+  "D-EM": {
+   "name": "East mezzanine",
+   "from": "eastCore2",
+   "into": "eastMezz",
+   "plan": [
+    368,
+    43
+   ],
+   "px": [
+    1472,
+    277
+   ],
+   "groups": [
+    "Dive Crew"
+   ]
+  },
+  "D-DIVE": {
+   "name": "Dive locker",
+   "from": "eastMezz",
+   "into": "dive",
+   "plan": [
+    322,
+    119
+   ],
+   "px": [
+    1288,
+    484
+   ],
+   "groups": [
+    "Dive Crew"
+   ]
+  },
+  "D-TOPE": {
+   "name": "Tank-top \u00b7 east",
+   "from": "eastMezz",
+   "into": "topside",
+   "plan": [
+    297,
+    157
+   ],
+   "px": [
+    1188,
+    587
+   ],
+   "groups": [
+    "Dive Crew"
+   ]
+  },
+  "D-LIFE": {
+   "name": "Life support",
+   "from": "eastMezz",
+   "into": "life",
+   "plan": [
+    368,
+    195
+   ],
+   "px": [
+    1472,
+    690
+   ],
+   "groups": []
+  }
+ },
+ "passages": [
+  {
+   "between": [
+    "westMezz",
+    "admin"
+   ],
+   "plan": [
+    54,
+    141
+   ],
+   "px": [
+    216,
+    544
+   ]
+  }
+ ],
+ "voids": [
+  {
+   "n": "Open to classroom",
+   "r": [
+    98,
+    202,
+    90,
+    50
+   ]
+  },
+  {
+   "n": "Open to atrium",
+   "r": [
+    198,
+    204,
+    116,
+    84
+   ]
+  },
+  {
+   "n": "Open to west gallery",
+   "r": [
+    96,
+    254,
+    100,
+    34
+   ]
+  }
+ ],
+ "masks": {
+  "01-westCore2": {
+   "room": "westCore2",
+   "rect": [
+    12,
+    12,
+    40,
+    30
+   ],
+   "box_px": null,
+   "kind": "none",
+   "note": "stair core: 26 px of visible floor under the tall back wall; painted with the shell, no mask"
+  },
+  "02-westMezz": {
+   "room": "westMezz",
+   "rect": [
+    12,
+    44,
+    84,
+    96
+   ],
+   "box_px": [
+    102,
+    290,
+    371,
+    495
+   ],
+   "size_px": [
+    270,
+    206
+   ],
+   "kind": "interior",
+   "I1_architecture_pixels_inside": 0
+  },
+  "03-quarantine": {
+   "room": "quarantine",
+   "rect": [
+    98,
+    44,
+    90,
+    66
+   ],
+   "box_px": [
+    423,
+    290,
+    739,
+    413
+   ],
+   "size_px": [
+    317,
+    124
+   ],
+   "kind": "interior",
+   "I1_architecture_pixels_inside": 0
+  },
+  "04-topside-a": {
+   "room": "topside",
+   "rect": [
+    98,
+    112,
+    100,
+    20
+   ],
+   "box_px": null,
+   "kind": "none",
+   "note": "too thin for an interior mask once the wall insets are taken; stays as blockout floor"
+  },
+  "05-topside-b": {
+   "room": "topside",
+   "rect": [
+    198,
+    44,
+    98,
+    158
+   ],
+   "box_px": [
+    823,
+    290,
+    1171,
+    663
+   ],
+   "size_px": [
+    349,
+    374
+   ],
+   "kind": "interior",
+   "I1_architecture_pixels_inside": 0
+  },
+  "06-food": {
+   "room": "food",
+   "rect": [
+    98,
+    134,
+    90,
+    66
+   ],
+   "box_px": [
+    423,
+    534,
+    739,
+    658
+   ],
+   "size_px": [
+    317,
+    125
+   ],
+   "kind": "interior",
+   "I1_architecture_pixels_inside": 0
+  },
+  "07-admin": {
+   "room": "admin",
+   "rect": [
+    12,
+    142,
+    84,
+    90
+   ],
+   "box_px": [
+    102,
+    556,
+    371,
+    745
+   ],
+   "size_px": [
+    270,
+    190
+   ],
+   "kind": "interior",
+   "I1_architecture_pixels_inside": 0
+  },
+  "08-eastCore2": {
+   "room": "eastCore2",
+   "rect": [
+    348,
+    12,
+    40,
+    30
+   ],
+   "box_px": null,
+   "kind": "none",
+   "note": "stair core: 26 px of visible floor under the tall back wall; painted with the shell, no mask"
+  },
+  "09-eastMezz-a": {
+   "room": "eastMezz",
+   "rect": [
+    348,
+    44,
+    40,
+    150
+   ],
+   "box_px": [
+    1423,
+    290,
+    1539,
+    642
+   ],
+   "size_px": [
+    117,
+    353
+   ],
+   "kind": "interior",
+   "I1_architecture_pixels_inside": 0
+  },
+  "10-eastMezz-b": {
+   "room": "eastMezz",
+   "rect": [
+    298,
+    120,
+    50,
+    74
+   ],
+   "box_px": [
+    1223,
+    496,
+    1379,
+    642
+   ],
+   "size_px": [
+    157,
+    147
+   ],
+   "kind": "interior",
+   "I1_architecture_pixels_inside": 0
+  },
+  "11-dive": {
+   "room": "dive",
+   "rect": [
+    298,
+    44,
+    48,
+    74
+   ],
+   "box_px": [
+    1223,
+    290,
+    1371,
+    435
+   ],
+   "size_px": [
+    149,
+    146
+   ],
+   "kind": "interior",
+   "I1_architecture_pixels_inside": 0
+  },
+  "12-life": {
+   "room": "life",
+   "rect": [
+    316,
+    196,
+    72,
+    92
+   ],
+   "box_px": [
+    1295,
+    703,
+    1539,
+    897
+   ],
+   "size_px": [
+    245,
+    195
+   ],
+   "kind": "interior",
+   "I1_architecture_pixels_inside": 0
+  }
+ }
+}

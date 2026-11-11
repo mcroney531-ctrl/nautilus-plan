@@ -301,3 +301,7 @@ Views: `docs/spikes/cutaway-shots/l1-review/` and `painted-*`. Painted L1: 155 K
 - **Openings:** 15 of 15 present at the engine's positions; 05, 07 and 08 remain cosmetically weak (backlog).
 - **Known and accepted:** illegible poster marks in Living Shore; two wall lights added in the West service hall; thin teal line at the tank rim; about 2 px of plant-pot base on the spine floor under where each plant stood.
 - **Not art, still required at integration:** canvas margin, 320 px labels, open-passage identification.
+
+### L1 locked; L2 planning (Nov 11)
+
+L1 artwork approved and locked at `master-L1-v10.png`. L2 plan for review: `docs/spikes/cutaway-l2/PLAN.md`, with `reference-L2.jpg`, `blockout-L2.png` and `plan.json` from `spikes/cutaway/l2plan.py`. Found while planning: the blockout draws walls inside single engine spaces, which also left a solid painted wall inside L1's West gallery (plan x = 96, y = 254 to 288), between its main hall and the leg that leads to the Atrium.
