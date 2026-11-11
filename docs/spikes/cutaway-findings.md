@@ -272,3 +272,10 @@ Plan approved with refinements: order 10, 09, 11; 09 and 11 as scripted material
 - **Region 09, scripted treatment: REVISE after five iterations.** The mural recolours cleanly along the whole wall and the tank is untouched. Still wrong at full size: the places where the bench and plants stood show as lighter rectangles with an invented fan of light; the lamps' immediate surroundings are blotchy and some housing lines are lost; a few teal specks remain by two lamps. Removing painted objects and rebuilding the lit wall round each lamp is the part a script does badly.
 
 - **Decision (Nov 11):** region 09 goes to the editor as two ordinary full-frame passes, 09a west and 09b east of the middle of the Kelp Hall tank; the lights are repainted. The tank stays locked out of both masks. Order: 10, 09a, 09b, 11. Two pixels of each plant pot sit below the wall-face mask on the corridor floor and will remain.
+
+### Correction pass 10, West hall furnishings (Nov 11): PASS, promoted to `master-L1-v8.png`
+
+- **Composite:** fit 0.5% scale, no offset (limit 1.5%); 11,647 pixels changed inside; every pixel outside unchanged (asserted). The editor repainted all the staff corridors in this one image (37.4% of the picture outside the mask); only region 10's pixels were taken.
+- **Result:** plants, planter and bench gone; the tiled floor continues with its joints. Accepted deviation: two wall lights added on the west wall where the plants stood. A faintly lighter column in the floor is visible at 2× zoom only.
+- **Overlays:** unchanged at 320 / 400 / desktop; 21 of 21 door taps correct. Openings: no regressions.
+- **The same returned image also contains a repainted north wall.** Trial in a scratch copy, nothing promoted: it registers at identity on regions 09a and 09b, and with one refined mask for the whole wall (lamp housings no longer mistaken for wall caps; inside the Kelp Hall tank's box only dark mural pixels are editable) it gives a clean concrete wall with pipe runs and the lights in place. Awaiting a decision on using it in place of two new passes.

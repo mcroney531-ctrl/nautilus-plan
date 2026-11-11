@@ -147,7 +147,7 @@ Full-frame mode is unchanged: re-running passes 04b and 06 through the new scrip
 | 07, 08 Reef passages | Boxes pass the opening rules unchanged. Not sent. | |
 | 09a North wall, west | Surface region, x up to 656 (the middle of the Kelp Hall tank); box (95, 60)–(656, 190), 58,281 px. Scripted treatment dropped after a REVISE preview; goes to the editor as an ordinary full-frame pass, lights repainted. Prepared against v7. | |
 | 09b North wall, east | Surface region, x from 657; box (657, 59)–(1599, 190), 104,769 px. Same method, after 09a. Prepared against v7. | |
-| 10 West hall furnishings | Approved. Interior region (95, 392)–(144, 692). Sent for editing against v7. | |
+| 10 West hall furnishings | PASS (Nov 11), first composite, interior region (95, 392)–(144, 692). Accepted: the editor added two wall lights on the west wall. | `master-L1-v8.png` |
 | 11 West wall face | Approved as a scripted recolour with the fringe exception (10 px, empty background only). Box (40, 186)–(88, 927), 26,370 px. Preview is clean at full size and at phone scale; waits its turn after 10 and 09. | |
 
 ## Paste-ready prompt for GPT (region 02, against v2)

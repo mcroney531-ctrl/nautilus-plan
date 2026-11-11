@@ -448,6 +448,29 @@
    "from": "master-L1-v6.png",
    "to": "master-L1-v7.png",
    "compare": "compare-06-v7.png"
+  },
+  {
+   "region": "10-west-hall-furnishings",
+   "returned": "corr10.png",
+   "returned_size": [
+    1536,
+    1024
+   ],
+   "base_mapping": "canvas-3x2",
+   "correction_applied": {
+    "scale": 0.995,
+    "dx_px": 0,
+    "dy_px": 0
+   },
+   "ring_mad_plain": 18.49,
+   "ring_mad_fit": 17.95,
+   "pixels_changed_inside": 11647,
+   "pixels_inside": 15050,
+   "outside_mask_unchanged": true,
+   "editor_redrew_outside_pct": 37.4,
+   "from": "master-L1-v7.png",
+   "to": "master-L1-v8.png",
+   "compare": "compare-10-v8.png"
   }
  ],
  "locked": [
