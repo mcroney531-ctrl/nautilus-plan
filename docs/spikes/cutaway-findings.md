@@ -335,3 +335,10 @@ Option A approved. `docs/spikes/cutaway-l2/master-L2-v0.png` is the corrected bl
 ### L2 scripted catwalks and shell handoff (Nov 11)
 
 `master-L2-v1.png`: scripted grating and a railed bridge joining the catwalk room's two real ways in; five engine connectivity conditions checked before drawing; 14,671 locked pixels changed by the bridge, 0 elsewhere. The shell paint (region 00) is prepared for the editor: `docs/spikes/cutaway-l2/README.md`. No L2 art generated yet.
+
+### L2 shell paint, first return (Nov 11): REFUSED, discarded; master stays `master-L2-v1.png`
+
+- The compositor refused it: best fit 3% scale, 4 / 3 px, against limits of 1.5% and 6 px.
+- **Cause: it is painted on Level 1's walls.** 96% of its white wall-cap pixels lie on the L1 engine walls, 64% on L2's. It has L1's Service spine along the top (L2 has nothing there), L1's two west corridors where L2 has one wide West mezzanine, and L1's east side. The editor took the layout from the full L1 image attached as a style reference, not from the blockout.
+- Room content was right (quarantine tanks, plant room, dive locker, food prep, offices), so the briefs work.
+- **Change:** the style reference is now `style-swatches-L1.jpg`, three small samples that show no building layout, and the prompt states how this floor's layout differs.

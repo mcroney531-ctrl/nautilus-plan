@@ -15,13 +15,15 @@ Spike material, not V2. Plan and decisions: `PLAN.md`. Same tools and rules as t
 
 `CUTAWAY_PKG=docs/spikes/cutaway-l2 python3 spikes/cutaway/composite.py 00 <returned image>` fits the return on the scripted pixels (water, bridge, grating, void views), refuses a shift over 6 px or 1.5%, takes everything outside them and asserts they are unchanged. Then: room function with engine labels, the opening count (8 doors, 1 passage), `connectivity.py 2`, overlays and taps at 320 / 400 / desktop, and the lens both ways. Rooms that are wrong are corrected one masked region per pass.
 
-## Paste-ready prompt for GPT (region 00, shell paint, against v1)
+## Paste-ready prompt for GPT (region 00, shell paint, second attempt, against v1)
 
-Attach, in this order: `canvas-3x2-L2-v1.png` (the image to paint), `reference-L2.jpg` (room names), `../cutaway-l1-correction/canvas-3x2-L1-v11.png` (style reference only).
+First return (Nov 11) REFUSED and discarded: it painted the L2 rooms onto Level 1's wall layout, copied from the full L1 image given as a style reference. The style reference is now three small samples, not the building.
 
-> Paint this architectural cutaway. The first image is a grey 3D blockout of the upper level (Level 2) of a fictional public aquarium: the staff-only working floor, seen from above with the front walls cut away. Return it at exactly the same size and framing, with every wall, wall cap, doorway gap and room exactly where the blockout has it. Do not move, add, remove, thicken or re-angle any wall; do not add doors or openings; do not change the perspective (walls rise up and to the right).
+Attach, in this order: `canvas-3x2-L2-v1.png` (the image to paint), `reference-L2.jpg` (room names), `style-swatches-L1.jpg` (style only).
+
+> Paint this architectural cutaway. The first image is a grey 3D blockout of the upper level (Level 2) of a fictional public aquarium: the staff-only working floor, seen from above with the front walls cut away. Return it at exactly the same size and framing, with every wall, wall cap, doorway gap and room exactly where the blockout has it. This floor's layout is different from any other floor of the building: the upper-left is one wide room with no corridor walls inside it, there is no corridor along the top between the two corner stair cores (that strip is empty and dark), and the right side is one L-shaped room. Do not move, add, remove, thicken or re-angle any wall; do not add doors or openings; do not change the perspective (walls rise up and to the right).
 >
-> The second image names each room. The third image is the finished lower level of the same building: match its rendering style exactly (same camera, same white wall caps and grey wall faces, same warm practical lighting, same level of detail), but this floor is back-of-house: sealed and epoxy floors, stainless steel, exposed pipe and cable runs, task lighting, equipment in use. Working and clean, not sinister.
+> The second image names each room. The third image is a strip of three small style samples cut from another floor of the same building. Use it for rendering style only: the white wall caps and grey wall faces, the warm practical lighting, the level of detail. It shows nothing about this floor's layout; the layout comes only from the first image. This floor is back-of-house: sealed and epoxy floors, stainless steel, exposed pipe and cable runs, task lighting, equipment in use. Working and clean, not sinister.
 >
 > Four things in the first image are already finished and must stay pixel-identical: (1) the large round pool of blue water with the manta ray, its dark rim, and the steel bridge across it; (2) the dark steel grating floor around that pool and in the narrow corridor leading to it from the left; (3) the three rectangular windows at the bottom that look down onto the level below; (4) the dark background outside the building.
 >
