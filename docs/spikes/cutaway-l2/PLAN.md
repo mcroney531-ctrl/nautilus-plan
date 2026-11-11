@@ -95,7 +95,7 @@ Two rooms beside the west exterior wall (02, 07) needed a wider inset than L1's 
 
 1. **Walls inside single engine spaces: fixed in the blockout (Nov 11).** `base.js` no longer draws a wall on a boundary shared by two rectangles of one space; `test-geometry.js` covers L1 West gallery, L2 Tank-top catwalks and L2 East mezzanine, and `connectivity.py` checks paintings for the same fault. `blockout-L2.png` is regenerated. L1's painted West gallery wall is correction region 12 in the L1 package.
 2. **Voids: decided.** A railed edge with a dimmed view of the L1 floor below, cut by script from the L1 master so the levels agree exactly. No stairs, ramps or anything that reads as a way down.
-3. **Catwalks over the Reef Tunnel: proposal for review, see section 7.** Not yet approved.
+3. **Catwalks over the Reef Tunnel: Option A approved (Nov 11), see section 7.**
 4. **Quarantine sits above Kelp Hall,** whose L1 tank is painted rising well above the walls. Under the lens the tall tank is replaced by a room. Accept: the lens swaps levels, it does not stack them.
 5. **Walls do not line up between levels on the east side.** Dive locker's west wall is at x = 298; the Jelly Room below starts at x = 290. The East mezzanine's west part overhangs Seasonal the same way. The lens will show an 8-unit step. This is the engine's geometry and stays.
 6. **Low back walls.** With nothing north of y = 44 on L2, the back walls of Quarantine, the catwalks and the Dive locker are partition height (9 units), not the tall exterior wall L1 had for its mural and pipes. Wall-mounted equipment has little wall to sit on; equipment goes on the floor.
@@ -128,6 +128,19 @@ Mocks (script-drawn, for the decision only, not art): `proposal-reef-catwalks.jp
 
 **Not proposed:** repainting L1's Reef Tunnel as a glass tunnel through water. It would be more literal and would reopen the largest room of a locked level.
 
-**If A is approved,** two things are fixed before the shell paint: the ellipse on L2 is locked like the Kelp Hall tank was on L1 (its silhouette can never be in an editor's mask), and the L2 catwalk brief says "no ladders, stairs or hatches down into the water".
+**Decision (Nov 11): Option A approved, on these conditions.**
+
+1. The ellipse, ring and manta come from the L1 master by script, pixel-aligned. The editor never paints inside the ellipse: its silhouette is locked out of every editor mask, as the Kelp Hall tank was on L1.
+2. The editor paints only the surrounding catwalk world: railed walkways, service decking, equipment and maintenance context, the Dive locker's adjacency. No decorative or public-gallery cues.
+3. The footprint and walk routes may cross open water. That is schematic overlay behaviour, accepted as the touch-pool crossing was on L1; the art does not try to fix it.
+4. No lid, no enclosed roof, no door-state or status-light storytelling, nothing that makes the room read as dry. No ladders, stairs or hatches down into the water.
+
+## 8. Order of work (approved Nov 11)
+
+1. Finish L1 region 12 (West gallery internal wall).
+2. Lock the corrected L1 master. The L2 scripted layers are cut from that master: the void over the West gallery's south leg shows the very floor region 12 repairs.
+3. Build the L2 shell base: the corrected blockout with the scripted Reef ellipse and the scripted void views in place.
+4. One focused catwalk reference before any broader L2 painting.
+5. L2 room passes.
 
 Fictional facility and procedures; subject-matter review required before any real use.
