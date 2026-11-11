@@ -222,13 +222,44 @@
    },
    "status": "proposed",
    "box_px": [
-    97,
-    61,
+    95,
+    59,
     1599,
-    189
+    190
    ],
    "mask": "mask-09-north-wall-face.png",
-   "crop": "crop-09-north-wall-face.png"
+   "crop": "crop-09-north-wall-face.png",
+   "material": {
+    "target": [
+     126,
+     123,
+     120
+    ],
+    "full_band": true,
+    "band_top": 0,
+    "band_bottom": 149,
+    "objects": [
+     [
+      244,
+      82,
+      332,
+      190
+     ],
+     [
+      974,
+      124,
+      1062,
+      189
+     ],
+     [
+      1296,
+      78,
+      1402,
+      190
+     ]
+    ],
+    "cap_shadow": true
+   }
   },
   "10-west-hall-furnishings": {
    "box_px": [
@@ -252,17 +283,26 @@
    "check": {
     "kind": "surface",
     "o": "v",
-    "at": 12
+    "at": 12,
+    "fringe_px": 10
    },
    "status": "proposed",
    "box_px": [
-    51,
-    196,
-    87,
-    925
+    40,
+    186,
+    88,
+    927
    ],
    "mask": "mask-11-west-wall-face.png",
-   "crop": "crop-11-west-wall-face.png"
+   "crop": "crop-11-west-wall-face.png",
+   "material": {
+    "target": [
+     128,
+     125,
+     124
+    ]
+   },
+   "mask_note": "Approved exception (Nov 11): the painted west wall is about 6 px wider than the engine's on its outer side, so mural-coloured pixels up to 10 px past the wall line, on empty background only, are in the mask."
   }
  },
  "canvas_3x2": {
@@ -421,9 +461,9 @@
   {
    "name": "Kelp Hall tank (painted exhibit, overlaps the north wall face)",
    "box_px": [
-    490,
-    118,
-    818,
+    497,
+    130,
+    815,
     196
    ]
   }

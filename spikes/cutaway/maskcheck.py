@@ -14,7 +14,8 @@ opening (a mask that has to repaint part of one wall):  "check": {"kind": "openi
   O4  the mask does not overlap any region already composited (the manifest history), so approved rooms cannot change.
 surface (a mask that repaints the face of one wall without moving it: a mural, or furnishings painted onto a wall face):
         "check": {"kind": "surface", "o": "v"|"h", "at": wall coordinate}; the mask is the region's mask file, not its box
-  S1  every mask pixel is on the target wall line (2 px inside its outline);
+  S1  every mask pixel is on the target wall line (2 px inside its outline). With "fringe_px": N in the check (an approved,
+      documented exception) pixels up to N px past the line are allowed if they are on that wall's outline or on empty background;
   S2  the mask holds no pixel of any other wall;
   S3  the mask holds no painted wall cap (neutral near-white pixels in the master), so the wall's top edge cannot change.
 Every region also gets O4, and "locked" boxes in the manifest (painted exhibits that overlap a wall) count as locked regions. A targeted re-edit of a locked region sets "within": that region's key; it may overlap that
@@ -61,7 +62,11 @@ if chk["kind"] == "interior":
 elif chk["kind"] == "surface":
     line = {"o": chk["o"], "at": chk["at"]}; other = arch({**line, "invert": True}, "C-L1-arch-other.png"); T = arch(line, "C-L1-arch-line.png"); F = np.zeros_like(T)
     inner = np.asarray(Image.fromarray((T * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(5))) > 0
-    res["rules"]["S1 pixels off the target wall face"] = int((M & ~inner).sum()); res["rules"]["S2 other wall pixels inside"] = int((M & other).sum())
+    off = M & ~inner; res["rules"]["S2 other wall pixels inside"] = int((M & other).sum())
+    if chk.get("fringe_px"):  # approved exception: pixels past the wall line are allowed only on the wall line's own outline or on empty background, close to the wall
+        n = int(chk["fringe_px"]) + 3; nearT = np.asarray(Image.fromarray((T * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(2 * n + 1))) > 0
+        res["exception_pixels_past_wall_line"] = int(off.sum()); res["exception_pixels_on_empty_background"] = int((off & ~T).sum()); off = off & ~(nearT & ~other)
+    res["rules"]["S1 pixels off the target wall face"] = int(off.sum())
     res["rules"]["S3 painted wall-cap pixels inside"] = int((M & painted_caps()).sum()); res["mask_pixels"] = int(M.sum())
 else:
     line = {"o": chk["o"], "at": chk["at"]}

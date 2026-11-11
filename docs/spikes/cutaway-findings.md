@@ -262,3 +262,11 @@ All three pass their rules (`proposal-corridors-north.jpg`, `proposal-corridors-
 - **Order:** 10 first (ordinary interior pass), then 09, then 11.
 
 Screenshot evidence was trimmed from 23 MB to 9.5 MB: every state at 320 px, three desktop views and two contact sheets are kept; the 400 px set and five desktop views that showed nothing the others do not were removed. Tap tests still run at all three widths.
+
+### Staff corridors, first working session (Nov 11)
+
+Plan approved with refinements: order 10, 09, 11; 09 and 11 as scripted material treatments, lights kept exactly, Kelp Hall tank excluded, a fringe exception for 11. Master is still `master-L1-v7.png`; nothing was promoted.
+
+- **Region 10:** handoff prepared (full frame, against v7). The box is 50 px wide, the size class where the editor has slipped before; here it only has to continue a floor.
+- **Region 11, scripted recolour: preview is clean.** The mural and silhouette are gone, the wall keeps its top-to-bottom shading and grain, both wall lights are untouched, and the blue fringe is gone. Fringe exception: 2,954 px past the wall line, 1,932 of them on empty background, none on another wall or a cap; S1 to S3 and O4 pass. Reads correctly at phone map scale.
+- **Region 09, scripted treatment: REVISE after five iterations.** The mural recolours cleanly along the whole wall and the tank is untouched. Still wrong at full size: the places where the bench and plants stood show as lighter rectangles with an invented fan of light; the lamps' immediate surroundings are blotchy and some housing lines are lost; a few teal specks remain by two lamps. Removing painted objects and rebuilding the lit wall round each lamp is the part a script does badly.

@@ -99,6 +99,8 @@ A mask protects architecture. It does not have to preserve leftovers of a wrong 
 - S2: the mask holds no pixel of any other wall.
 - S3: the mask holds no painted wall cap (neutral near-white pixels in the master), so the wall's top edge cannot change.
 
+- Exception, per region and documented in the manifest (`fringe_px`): where the painted wall is wider than the engine's, mural-coloured pixels up to that many px past the wall line are added, only on that wall's outline or on empty background. Region 11 uses 10 px (2,954 px added, 1,932 of them on background).
+
 **All regions**
 
 - O4: the mask does not overlap a region that has already been composited, so an approved room cannot change. A targeted re-edit of a locked region (04b) names that region as `within`: it may overlap that region only, and (O5) must stay inside its box.
@@ -143,9 +145,9 @@ Full-frame mode is unchanged: re-running passes 04b and 06 through the new scrip
 | 05 Dock door | Box tightened to (1544, 716)–(1599, 880) to pass O3 and clear the forklift. Open doorway, no hazard stripes. First return REVISE (Nov 10), discarded: the editor's doorway sat about 10 px off, so the 56 px mask clipped its frame and a wall light. Zoomed crop REFUSED (Nov 10): the editor re-rendered the whole crop (3.25% scale, −12 / −5 px). Open. | |
 | 06 Receiving interior | PASS (Nov 10), first composite, box (1288, 694)–(1543, 922), interior kind. | `master-L1-v7.png` |
 | 07, 08 Reef passages | Boxes pass the opening rules unchanged. Not sent. | |
-| 09 North wall face | **Proposed, not approved.** Surface region on the north exterior wall behind the Service spine and both cores; box (97, 61)–(1599, 189), 156,830 px; the Kelp Hall tank is locked out. | |
-| 10 West hall furnishings | **Proposed, not approved.** Interior region (95, 392)–(144, 692) on the West service hall floor. | |
-| 11 West wall face | **Proposed, not approved.** Surface region on the west exterior wall; box (51, 196)–(87, 925), 22,620 px. | |
+| 09 North wall face | Approved as a scripted material treatment (`material.py`), lights kept, Kelp Hall tank locked out. **Preview is REVISE (Nov 11):** the mural recolours cleanly, but the removed bench and plants and the areas round the lamps still show as patches. Not promoted. | |
+| 10 West hall furnishings | Approved. Interior region (95, 392)–(144, 692). Sent for editing against v7. | |
+| 11 West wall face | Approved as a scripted recolour with the fringe exception (10 px, empty background only). Box (40, 186)–(88, 927), 26,370 px. Preview is clean at full size and at phone scale; waits its turn after 10 and 09. | |
 
 ## Paste-ready prompt for GPT (region 02, against v2)
 
@@ -188,3 +190,13 @@ Attach `canvas-3x2-L1-v7.png`, `crop-05-dock-door.png` and `reference-regions-v7
 Attach `zoom-05-dock-door-v7.png` (the image to edit), `zoom-guide-05-dock-door-v7.png` (the same image with a yellow outline) and `canvas-3x2-L1-v7.png` (style reference only).
 
 > The first image is an enlarged close-up from an aquarium cutaway illustration: the right-hand outer wall of a concrete receiving bay, seen from above, with a yellow forklift at the left. Edit this close-up and return it at exactly the same size and framing (1024 × 1536, portrait). The second image is the same close-up with a yellow outline: change only what is inside that outline. The third image is the whole illustration, for style reference only; do not edit or return it. Inside the outline, the white-capped exterior wall has a break between its upper and lower segments. That break is the building's loading dock doorway. Make it read clearly as an open doorway through the exterior wall: a clean rectangular opening the full height of the wall at the break, with a restrained dark steel frame, the room's concrete floor running out through it as a threshold, and the dark exterior visible beyond. Leave it open: no shutter, no door leaf, no gate, no curtain. Also remove the dark vertical panel on the room side of the upper wall segment, so that wall's inner face is plain light grey like the lower segment and the concrete floor meets the wall cleanly. Keep both wall segments, their white caps and their positions exactly where they are, and keep the warm wall light on the lower segment. Do not add lights, signs, text, numbers, markings, people or vehicles. Everything outside the yellow outline must stay identical, with no shift, zoom, re-crop or change of perspective; the returned image must not contain the yellow outline. Match the existing lighting and rendering style. If anything here conflicts with the image, tell me before painting rather than working around it.
+
+## Scripted material treatment (surface regions)
+
+`python3 spikes/cutaway/material.py NN [--preview DIR]` turns what is painted on a wall face into plain service-wall material with no image generation: mural pixels are recoloured to the region's target colour, keeping the painting's broad shading, grain and the lamps' warm light; the manifest's `objects` boxes are removed; lamps and their housings are never written. It asserts that nothing outside the mask and no fixture pixel changed. `--preview` writes to a folder and leaves the package alone. A flat or visibly patched result is a REVISE.
+
+## Paste-ready prompt for GPT (region 10, against v7)
+
+Attach `canvas-3x2-L1-v7.png`, `crop-10-west-hall-furnishings.png` and `reference-regions-v7.jpg`.
+
+> Make one small edit to the attached aquarium cutaway illustration and return it at exactly the same size and framing. Work only inside the narrow amber box marked 10 on the reference sheet (close-up attached, yellow outline): a strip of floor in the long corridor at the far left of the building, beside its left-hand wall. That corridor is a staff service hall, not a public gallery. Inside the box there are potted plants, a planter and a small wooden bench against the wall: remove all of them, with their shadows, and leave empty floor. Continue the corridor's existing grey tiled concrete floor through the box exactly: the same tile size and joint lines, the same colour, the same soft light from the wall lights. Add nothing in their place: no furniture, no equipment, no markings. Do not touch the white wall edge at the left of the box or the blue wall beyond it. Everything outside the box must stay pixel-identical, with no shift, rescale, re-crop or change of perspective. No text, signage, people or logos. If anything here conflicts with the image, tell me before painting rather than working around it.
