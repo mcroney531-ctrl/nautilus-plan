@@ -327,3 +327,7 @@ L1 artwork approved and locked at `master-L1-v10.png`. L2 plan for review: `docs
 - **Composite:** scale 0.995, −1 / 0 px; 10,621 pixels changed; every pixel outside the mask unchanged (asserted); the change is confined to (340, 802)–(481, 956).
 - **Result:** the false wall is gone; the floor runs through in the same grey; the horizontal wall with its lamp and the wall above the junction are intact; the front cap is continuous. Accepted: the West gallery's east wall ends in a blunt end face at the old junction, and a slightly brighter patch on the front cap.
 - **Checks:** `connectivity.py` reports the boundary open; all thirteen region masks pass; 21 of 21 door taps; overlays unchanged at 320 / 400 / desktop; 9 geometry tests and 26 engine tests pass.
+
+### L2 shell base (Nov 11)
+
+Option A approved. `docs/spikes/cutaway-l2/master-L2-v0.png` is the corrected blockout with the scripted Reef tank top and void views cut from `master-L1-v11.png`; `lock-L2.png` keeps editors out of them. The correction tools now work on either level. No L2 art generated. Open question for review: the catwalk room is 85% locked water, so its remaining corners are better done by script (`reference-catwalks.jpg`, PLAN.md section 9).

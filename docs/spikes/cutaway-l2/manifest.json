@@ -1,0 +1,173 @@
+{
+ "level": 2,
+ "master": "master-L2-v0.png",
+ "size": [
+  1600,
+  1004
+ ],
+ "projection": {
+  "variant": "C",
+  "k": 0.68,
+  "hI": 9,
+  "hE": 34,
+  "hF": 2,
+  "hT": 42,
+  "sh": 0.5,
+  "h": 9,
+  "off": 40,
+  "W": 400,
+  "H": 251
+ },
+ "locked_files": [
+  "lock-L2.png"
+ ],
+ "regions": {
+  "02-westMezz": {
+   "box_px": [
+    102,
+    290,
+    371,
+    495
+   ],
+   "room": "West mezzanine (engine: westMezz, staff)",
+   "brief": "West mezzanine: sealed floor, carts or lockers against walls, clear paths.",
+   "mask": "mask-02-westMezz.png",
+   "crop": "crop-02-westMezz.png",
+   "check": {
+    "kind": "interior"
+   }
+  },
+  "03-quarantine": {
+   "box_px": [
+    423,
+    290,
+    739,
+    413
+   ],
+   "room": "Quarantine (engine: quarantine, restricted)",
+   "brief": "Quarantine: isolation tanks in rows on stands with their own filters and lids, floor drain, stainless bench, cool clinical light.",
+   "mask": "mask-03-quarantine.png",
+   "crop": "crop-03-quarantine.png",
+   "check": {
+    "kind": "interior"
+   }
+  },
+  "05-topside-b": {
+   "box_px": [
+    823,
+    290,
+    1171,
+    663
+   ],
+   "room": "Tank-top catwalks (engine: topside, staff)",
+   "brief": "Tank-top catwalks: steel grating walkways with rails around the open reef tank top, feeding stations, a hoist, maintenance gear. The round water and its rim are fixed and not to be painted.",
+   "mask": "mask-05-topside-b.png",
+   "crop": "crop-05-topside-b.png",
+   "check": {
+    "kind": "interior",
+    "mask_file": true
+   }
+  },
+  "06-food": {
+   "box_px": [
+    423,
+    534,
+    739,
+    658
+   ],
+   "room": "Food prep (engine: food, staff)",
+   "brief": "Food prep: stainless counters, sinks, chopping stations, buckets.",
+   "mask": "mask-06-food.png",
+   "crop": "crop-06-food.png",
+   "check": {
+    "kind": "interior"
+   }
+  },
+  "07-admin": {
+   "box_px": [
+    102,
+    556,
+    371,
+    745
+   ],
+   "room": "Ops offices (engine: admin, staff)",
+   "brief": "Ops offices: desks, monitors with blank screens, shelving.",
+   "mask": "mask-07-admin.png",
+   "crop": "crop-07-admin.png",
+   "check": {
+    "kind": "interior"
+   }
+  },
+  "09-eastMezz-a": {
+   "box_px": [
+    1423,
+    290,
+    1539,
+    642
+   ],
+   "room": "East mezzanine (engine: eastMezz, staff)",
+   "brief": "East mezzanine: sealed floor, a trolley of dive gear, clear paths.",
+   "mask": "mask-09-eastMezz-a.png",
+   "crop": "crop-09-eastMezz-a.png",
+   "check": {
+    "kind": "interior"
+   }
+  },
+  "10-eastMezz-b": {
+   "box_px": [
+    1223,
+    496,
+    1379,
+    642
+   ],
+   "room": "East mezzanine (engine: eastMezz, staff)",
+   "brief": "East mezzanine: sealed floor, a trolley of dive gear, clear paths.",
+   "mask": "mask-10-eastMezz-b.png",
+   "crop": "crop-10-eastMezz-b.png",
+   "check": {
+    "kind": "interior"
+   }
+  },
+  "11-dive": {
+   "box_px": [
+    1223,
+    290,
+    1371,
+    435
+   ],
+   "room": "Dive locker (engine: dive, staff)",
+   "brief": "Dive locker: wetsuit rack, cylinder rack, a rinse tank, a bench.",
+   "mask": "mask-11-dive.png",
+   "crop": "crop-11-dive.png",
+   "check": {
+    "kind": "interior"
+   }
+  },
+  "12-life": {
+   "box_px": [
+    1295,
+    703,
+    1539,
+    897
+   ],
+   "room": "Life support (engine: life, restricted)",
+   "brief": "Life support: pumps, sand filters, a protein skimmer column, a chiller, a pipe manifold with valves, control cabinets with blank faces.",
+   "mask": "mask-12-life.png",
+   "crop": "crop-12-life.png",
+   "check": {
+    "kind": "interior"
+   }
+  }
+ },
+ "canvas_3x2": {
+  "file": "canvas-3x2-L2-v0.png",
+  "size": [
+   1600,
+   1067
+  ],
+  "master_at": [
+   0,
+   0
+  ]
+ }
+}

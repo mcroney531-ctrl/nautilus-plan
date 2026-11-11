@@ -30,10 +30,10 @@ nn, ret_path = args[0].zfill(2), Path(args[1])
 man = json.loads((pkg / "manifest.json").read_text())
 name = next(k for k in man["regions"] if k.startswith(nn + "-")); reg = man["regions"][name]
 if mpath is None:
-    vs = sorted(pkg.glob("master-L1-v*.png"), key=lambda p: int(re.search(r"v(\d+)", p.stem).group(1))); mpath = vs[-1]
+    vs = sorted(pkg.glob("master-L*-v*.png"), key=lambda p: int(re.search(r"v(\d+)", p.stem).group(1))); mpath = vs[-1]
 ver = int(re.search(r"v(\d+)", mpath.stem).group(1))
 master = Image.open(mpath).convert("RGB"); assert master.size == (W, H), f"master is {master.size}, expected {(W, H)}"
-mask = Image.open(pkg / reg["mask"]).convert("L"); ret = Image.open(ret_path).convert("RGB"); rw, rh = ret.size
+W, H = master.size; mask = Image.open(pkg / reg["mask"]).convert("L"); ret = Image.open(ret_path).convert("RGB"); rw, rh = ret.size
 
 rect = None
 if zoom:
@@ -102,11 +102,11 @@ o, m0, inside = np.asarray(out), np.asarray(master), np.asarray(mask) > 0
 assert (o[~inside] == m0[~inside]).all(), "pixels outside the mask changed"
 report |= {"pixels_changed_inside": int((np.abs(o.astype(np.int16) - m0).max(axis=2)[inside] > 8).sum()), "pixels_inside": int(inside.sum()),
            "outside_mask_unchanged": True, "editor_redrew_outside_pct": round(float((np.abs(np.asarray(aligned, np.int16) - m0).max(axis=2)[~inside & inrect] > 24).mean() * 100), 1)}
-nv = ver + 1; out.save(pkg / f"master-L1-v{nv}.png")
+nv = ver + 1; stem = mpath.stem.rsplit("-v", 1)[0]; out.save(pkg / f"{stem}-v{nv}.png")
 pad = 60; box = (max(0, b[0] - pad), max(0, b[1] - pad), min(W, b[2] + pad), min(H, b[3] + pad)); cw, ch = box[2] - box[0], box[3] - box[1]
 cmp = Image.new("RGB", (cw * 3 + 20, ch), (10, 24, 34))
 for i, im in enumerate((master, out, aligned)): cmp.paste(im.crop(box), (i * (cw + 10), 0))
 cmp.save(pkg / f"compare-{nn}-v{nv}.png")
-report |= {"from": mpath.name, "to": f"master-L1-v{nv}.png", "compare": f"compare-{nn}-v{nv}.png"}
+report |= {"from": mpath.name, "to": f"{stem}-v{nv}.png", "compare": f"compare-{nn}-v{nv}.png"}
 man.setdefault("history", []).append(report); (pkg / "manifest.json").write_text(json.dumps(man, indent=1))
 print(json.dumps(report, indent=1))

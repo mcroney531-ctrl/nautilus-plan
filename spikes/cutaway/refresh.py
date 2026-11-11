@@ -2,12 +2,12 @@
 Usage: python3 spikes/cutaway/refresh.py
 Writes canvas-3x2-L1-v<N>.png, reference-regions-v<N>.jpg (pending regions only) and re-cuts crop-NN-*.png for every
 region not yet in the manifest history. Masks, boxes and the manifest's regions are engine-derived and never change here."""
-import json, re
+import json, os, re
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
-pkg = Path(__file__).resolve().parents[2] / "docs/spikes/cutaway-l1-correction"
-man = json.loads((pkg / "manifest.json").read_text())
-mp = max(pkg.glob("master-L1-v*.png"), key=lambda p: int(re.search(r"v(\d+)", p.stem).group(1))); v = re.search(r"v(\d+)", mp.stem).group(1)
+pkg = Path(os.environ.get("CUTAWAY_PKG", Path(__file__).resolve().parents[2] / "docs/spikes/cutaway-l1-correction"))
+man = json.loads((pkg / "manifest.json").read_text()); LV = man.get("level", 1)
+mp = max(pkg.glob("master-L*-v*.png"), key=lambda p: int(re.search(r"v(\d+)", p.stem).group(1))); v = re.search(r"v(\d+)", mp.stem).group(1)
 master = Image.open(mp).convert("RGB"); W, H = master.size
 done = {h["region"] for h in man.get("history", [])}; pending = {k: r for k, r in man["regions"].items() if k not in done}
 font = lambda n: ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", n)
@@ -23,5 +23,5 @@ ld.text((20, 12), "Amber: repaint the room interior to its real function.  Red: 
 for i, (name, r) in enumerate(pending.items()):
     ld.text((20, 52 + i * 46), f"{name.split('-')[0]}  {r['room']}", fill=(255, 220, 120) if name[:2] <= "04" else (255, 140, 140), font=font(19))
 sheet = Image.new("RGB", (W, H + LH)); sheet.paste(ref, (0, 0)); sheet.paste(leg, (0, H)); sheet.save(pkg / f"reference-regions-v{v}.jpg", quality=88)
-cs = man["canvas_3x2"]["size"]; canvas = Image.new("RGB", tuple(cs), (10, 24, 34)); canvas.paste(master, (0, 0)); canvas.save(pkg / f"canvas-3x2-L1-v{v}.png")
+cs = man["canvas_3x2"]["size"]; canvas = Image.new("RGB", tuple(cs), (10, 24, 34)); canvas.paste(master, (0, 0)); canvas.save(pkg / f"canvas-3x2-L{LV}-v{v}.png")
 print(f"refreshed from {mp.name}: canvas-3x2-L1-v{v}.png, reference-regions-v{v}.jpg, crops for", ", ".join(k.split("-")[0] for k in pending))

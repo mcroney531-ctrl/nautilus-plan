@@ -143,4 +143,16 @@ Mocks (script-drawn, for the decision only, not art): `proposal-reef-catwalks.jp
 4. One focused catwalk reference before any broader L2 painting.
 5. L2 room passes.
 
+## 9. Shell base and catwalk reference (Nov 11)
+
+Built by `spikes/cutaway/l2base.py` from the corrected blockout and `master-L1-v11.png`; no image generation.
+
+- `master-L2-v0.png`: the blockout with the Reef tank top (L1's own blue field and manta inside the engine ellipse, treated as lit water, with a rim and rail) and the three void views (L1's own pixels, dimmed, behind a rim and rail). L2 walls that stand in front of either layer are kept.
+- `lock-L2.png`: those scripted pixels, 305,854 of them. `maskcheck.py` rule O4 fails any editor mask that holds one.
+- `manifest.json`, `mask-NN-*.png`: the nine planned regions in the L1 tools' format. `composite.py`, `maskcheck.py`, `refresh.py` and `bundle.py` now take either level (`CUTAWAY_PKG=docs/spikes/cutaway-l2`). All nine masks pass; `connectivity.py` reports both multi-rectangle spaces open.
+
+**Finding: the catwalk room has almost no catwalk.** The engine's ellipse is 88 × 152 units in a 98 × 158 room. With the water locked, the editor's mask for region 05 is 19,918 px of a 130,526 px box: four curved corner pieces, each about 80 px across, and a walkway 5 units wide at the sides. That is the size and shape the chat editor handles worst, and there is little for it to paint. `reference-catwalks.jpg` shows the room four ways: L1, the shell base, the editable area, and a scripted treatment (steel grating on the corners, lit from the water, and one railed bridge clear of the manta).
+
+Recommendation: finish this room by script (grating, rail, bridge), as a flat-surface job like L1's west wall, and spend the editor on the rooms where it is strong. The bridge is the one element inside the locked ellipse; it is drawn by script over the water, not by the editor.
+
 Fictional facility and procedures; subject-matter review required before any real use.
