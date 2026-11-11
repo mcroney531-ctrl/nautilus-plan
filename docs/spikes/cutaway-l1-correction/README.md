@@ -93,6 +93,8 @@ A mask protects architecture. It does not have to preserve leftovers of a wrong 
 - O2: the mask contains the whole engine opening: the gap the engine cuts in that wall, with the wall's height and shear.
 - O3: the mask reaches no more than 28 px beyond that opening on any side.
 
+- I1 exception, internal walls (region 12): a false wall painted on a boundary inside one engine space may be removed. Its mask (`internalwall.py`) is a floor box plus that wall's own silhouette; real architecture hidden behind the silhouette is exempt, and (I2) no mask pixel lies outside the box and the silhouette.
+
 **Surface regions** (masks that repaint what is painted on the face of one wall, without moving the wall: 09, 11). The mask is generated from the engine by `spikes/cutaway/surfacemask.py NN`, not drawn as a box.
 
 - S1: every mask pixel is on the target wall line, 2 px inside its outline.
@@ -149,6 +151,7 @@ Full-frame mode is unchanged: re-running passes 04b and 06 through the new scrip
 | 09 North wall face | PASS (Nov 11). One surface mask for the whole wall, box (95, 59)–(1599, 190), 164,621 px; Kelp Hall tank silhouette locked. Composited from the image returned for region 10. | `master-L1-v9.png` |
 | 10 West hall furnishings | PASS (Nov 11), first composite, interior region (95, 392)–(144, 692). Accepted: the editor added two wall lights on the west wall. | `master-L1-v8.png` |
 | 11 West wall face | PASS (Nov 11). Scripted recolour (`material.py`) with the fringe exception (10 px, empty background only); box (40, 186)–(88, 927), 26,441 px. | `master-L1-v10.png` |
+| 12 West gallery internal wall | L1 lock reopened for this defect only (Nov 11). Box (340, 858)–(480, 926) plus the false wall's silhouette, 11,593 px. Prepared against v10, not sent. | |
 
 ## Paste-ready prompt for GPT (region 02, against v2)
 
@@ -201,3 +204,14 @@ Attach `zoom-05-dock-door-v7.png` (the image to edit), `zoom-guide-05-dock-door-
 Attach `canvas-3x2-L1-v7.png`, `crop-10-west-hall-furnishings.png` and `reference-regions-v7.jpg`.
 
 > Make one small edit to the attached aquarium cutaway illustration and return it at exactly the same size and framing. Work only inside the narrow amber box marked 10 on the reference sheet (close-up attached, yellow outline): a strip of floor in the long corridor at the far left of the building, beside its left-hand wall. That corridor is a staff service hall, not a public gallery. Inside the box there are potted plants, a planter and a small wooden bench against the wall: remove all of them, with their shadows, and leave empty floor. Continue the corridor's existing grey tiled concrete floor through the box exactly: the same tile size and joint lines, the same colour, the same soft light from the wall lights. Add nothing in their place: no furniture, no equipment, no markings. Do not touch the white wall edge at the left of the box or the blue wall beyond it. Everything outside the box must stay pixel-identical, with no shift, rescale, re-crop or change of perspective. No text, signage, people or logos. If anything here conflicts with the image, tell me before painting rather than working around it.
+
+## Same-space connectivity
+
+- `node spikes/cutaway/test-geometry.js`: the blockout draws no wall on a boundary shared by two rectangles of one engine space (found from the engine, both levels, both renders), while walls between different spaces and door-width openings stay.
+- `python3 spikes/cutaway/connectivity.py LEVEL <painting>`: looks in a painting for a white wall cap along each such boundary and fails if one runs along more than 30% of it. Run it on every new master and every shell paint. On `master-L1-v10.png` it reports the West gallery as DIVIDED.
+
+## Paste-ready prompt for GPT (region 12, against v10)
+
+Attach `canvas-3x2-L1-v10.png`, `crop-12-west-gallery-internal-wall.png` and `reference-regions-v10.jpg`.
+
+> Make one small edit to the attached aquarium cutaway illustration and return it at exactly the same size and framing. Work only inside the box marked 12 on the reference sheet (close-up attached, yellow outline), at the bottom of the building, left of centre. Inside the box a short white-capped wall runs from the back of the box down to the front edge of the building, with a dark side face on its left. That wall should not exist: the tiled corridor on its left and the tiled corridor on its right are one continuous public gallery. Remove that short wall completely, with its dark side face, its white cap and its shadow, and continue the grey tiled floor straight through where it stood, with the same tile size, joint lines, colour and soft warm light as the floor on either side. Where the wall met the low white wall along the front edge of the building, continue that front wall's white cap in a straight unbroken line. Where it met the white-capped walls at the back of the box, leave those walls exactly as they are, ending in a clean corner. Add nothing in its place: no door, no gate, no post, no furniture, no floor marking. Everything outside the box must stay pixel-identical, with no shift, rescale, re-crop or change of perspective. No text, signage, people or logos. If anything here conflicts with the image, tell me before painting rather than working around it.

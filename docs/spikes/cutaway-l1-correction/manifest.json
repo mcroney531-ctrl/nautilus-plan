@@ -272,6 +272,26 @@
     ]
    },
    "mask_note": "Approved exception (Nov 11): the painted west wall is about 6 px wider than the engine's on its outer side, so mural-coloured pixels up to 10 px past the wall line, on empty background only, are in the mask."
+  },
+  "12-west-gallery-internal-wall": {
+   "box_px": [
+    340,
+    858,
+    480,
+    926
+   ],
+   "room": "West gallery (engine: westGal, public): the boundary between its main hall and its south leg, plan x = 96, y = 254 to 288",
+   "brief": "Remove the wall that divides the gallery from its south leg: one continuous floor, clear path to the Atrium.",
+   "check": {
+    "kind": "interior",
+    "internal_wall": {
+     "at": 96,
+     "a": 254,
+     "b": 288
+    }
+   },
+   "mask": "mask-12-west-gallery-internal-wall.png",
+   "crop": "crop-12-west-gallery-internal-wall.png"
   }
  },
  "canvas_3x2": {

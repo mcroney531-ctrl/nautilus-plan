@@ -16,3 +16,12 @@ def locked_mask(man, a):
         if "silhouette" in l: s = l["silhouette"]; sil = box & (a[..., 1] > s["min_g"]) & (a[..., 2] > s["min_b"]); out |= grow(shrink(grow(sil, 3), 3), 3) & grow(box, 3)
         else: out |= box
     return out
+def wall_silhouette(p, w, shape, grow_px=4):
+    """Screen silhouette (variant C, 4 px per unit) of a partition-height north-south wall at plan x = w["at"], y = w["a"]..w["b"]:
+    side face, cap and the end face towards the viewer, grown by grow_px."""
+    from PIL import ImageDraw
+    s, k, off, h, sh, t = 4, p["k"], p["off"], p["hI"], p["sh"], 2.2; X = lambda x: x * s; Y = lambda y: (off + k * y) * s
+    xx, ya, yb, dx, dy = X(w["at"]), Y(w["a"]), Y(w["b"]), sh * h * s, h * s; ht = t * s / 2; im = Image.new("L", (shape[1], shape[0]), 0); d = ImageDraw.Draw(im)
+    d.polygon([(xx - ht, ya), (xx + ht, ya), (xx + ht, yb), (xx + ht + dx, yb - dy), (xx + ht + dx, ya - dy), (xx - ht + dx, ya - dy)], fill=255)
+    d.polygon([(xx - ht, ya), (xx - ht, yb), (xx + ht, yb), (xx + ht + dx, yb - dy), (xx - ht + dx, yb - dy)], fill=255)
+    return grow(np.asarray(im) > 0, grow_px)

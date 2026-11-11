@@ -5,6 +5,9 @@ The architecture is rendered from base.js (arch mode). Two kinds of region, set 
 
 interior (default; rooms, floors):
   I1  the mask holds no architecture pixel: no wall face, side face or cap, and no wall span of any opening.
+      With "internal_wall": {"at": x, "a": y0, "b": y1} (a false wall painted on a boundary inside one space) the mask is the
+      region's mask file: its box plus that wall's silhouette. Architecture behind the silhouette is exempt from I1, and
+  I2  no mask pixel lies outside the box and the silhouette.
 
 opening (a mask that has to repaint part of one wall):  "check": {"kind": "opening", "o": "v"|"h", "at": wall coordinate,
                                                                    "opening": [x, y], "width": plan units}
@@ -40,7 +43,7 @@ man = json.loads((pkg / "manifest.json").read_text()); nn = args[0].zfill(2)
 name = next(k for k in man["regions"] if k.startswith(nn + "-")); reg = man["regions"][name]
 box = [int(v) for v in args[1:5]] or reg["box_px"]; x0, y0, x1, y1 = box; chk = reg.get("check", {"kind": "interior"})
 H, W = man["size"][1], man["size"][0]; M = np.zeros((H, W), bool); M[y0:y1 + 1, x0:x1 + 1] = True  # boxes are inclusive, as PIL draws them
-if chk["kind"] == "surface": M = np.asarray(Image.open(pkg / reg["mask"]).convert("L")) > 0
+if chk["kind"] == "surface" or chk.get("internal_wall"): M = np.asarray(Image.open(pkg / reg["mask"]).convert("L")) > 0
 # the painting the mask is judged against: the master the region was composited from, or the latest if it has not been yet
 done = [h for h in man.get("history", []) if h["region"] == name]
 src = pkg / done[-1]["from"] if done else max(pkg.glob("master-L1-v*.png"), key=lambda q: int(re.search(r"v(\d+)", q.stem).group(1)))
@@ -51,8 +54,12 @@ for h in man.get("history", []):
     if h["region"] not in (name, chk.get("within")) and man["regions"][h["region"]].get("check", {}).get("within") != name: b = man["regions"][h["region"]]["box_px"]; locked[b[1]:b[3] + 1, b[0]:b[2] + 1] = True
 locked |= locked_mask(man, painting)
 if chk["kind"] == "interior":
-    A = arch(True, "C-L1-arch.png"); other = A; F = np.zeros_like(A)
-    res["rules"]["I1 no architecture inside"] = int((A & M).sum())
+    A = arch(True, "C-L1-arch.png"); other = A
+    F = np.zeros_like(A)
+    if chk.get("internal_wall"):  # a false wall painted on a boundary inside one space: its silhouette may be repainted, whatever is behind it
+        from masklib import wall_silhouette; F = wall_silhouette(man["projection"], chk["internal_wall"], A.shape); res["architecture_pixels_behind_the_false_wall"] = int((A & M & F).sum())
+        res["rules"]["I2 mask pixels outside the box and the false wall"] = int((M & ~F & ~np.pad(np.ones((y1 - y0 + 1, x1 - x0 + 1), bool), ((y0, H - y1 - 1), (x0, W - x1 - 1)))).sum())
+    res["rules"]["I1 no architecture inside"] = int((A & M & ~F).sum())
     def clear(side):
         n = 0
         while n < 200:

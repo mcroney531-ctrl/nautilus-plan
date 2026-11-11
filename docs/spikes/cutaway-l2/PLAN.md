@@ -93,9 +93,9 @@ Two rooms beside the west exterior wall (02, 07) needed a wider inset than L1's 
 
 ## 5. Conflicts and risks to settle before art
 
-1. **The blockout draws solid walls inside single engine spaces.** `base.js` puts a wall on every rectangle edge, including the edge shared by the two rectangles of one space. On L2 that walls the catwalk strip off from the main catwalk (at x = 198) and splits the East mezzanine in two (at x = 348), although each is one space the walk passes through freely. **The same defect is in locked L1:** the West gallery's main hall and its south leg (the way to the Atrium) are separated by a painted wall with no opening, at plan x = 96, y = 254 to 288. The 15-opening check never saw it, because it is not a door or a link. Recommendation: fix `base.js` to skip edges shared within a space before any L2 art; treat the L1 wall as a known issue to judge at integration (it is a 110 px wall, in the editor's reliable size range, if it is to be opened).
-2. **Voids.** The blockout paints the three voids as dark holes. Under the lens from L1, the Atrium then shows a black rectangle. Options: (a) dark, as now; (b) a railed edge with a dimmed view of the L1 floor below, cut from `master-L1-v10` by script, so the two levels agree exactly. Recommendation: (b), scripted, because an editor would invent a different atrium.
-3. **Catwalks over the Reef Tunnel.** L2 says there is a tank top above the Reef Tunnel. L1 paints the Reef Tunnel as a round room with a manta on the floor, not as a tunnel through water. A catwalk over open water on L2 is right by the engine's names and will not match what L1 shows below it. Recommendation: paint L2 to the engine (open water, round, matching the L1 ellipse) and accept the mismatch; do not reopen L1.
+1. **Walls inside single engine spaces: fixed in the blockout (Nov 11).** `base.js` no longer draws a wall on a boundary shared by two rectangles of one space; `test-geometry.js` covers L1 West gallery, L2 Tank-top catwalks and L2 East mezzanine, and `connectivity.py` checks paintings for the same fault. `blockout-L2.png` is regenerated. L1's painted West gallery wall is correction region 12 in the L1 package.
+2. **Voids: decided.** A railed edge with a dimmed view of the L1 floor below, cut by script from the L1 master so the levels agree exactly. No stairs, ramps or anything that reads as a way down.
+3. **Catwalks over the Reef Tunnel: proposal for review, see section 7.** Not yet approved.
 4. **Quarantine sits above Kelp Hall,** whose L1 tank is painted rising well above the walls. Under the lens the tall tank is replaced by a room. Accept: the lens swaps levels, it does not stack them.
 5. **Walls do not line up between levels on the east side.** Dive locker's west wall is at x = 298; the Jelly Room below starts at x = 290. The East mezzanine's west part overhangs Seasonal the same way. The lens will show an 8-unit step. This is the engine's geometry and stays.
 6. **Low back walls.** With nothing north of y = 44 on L2, the back walls of Quarantine, the catwalks and the Dive locker are partition height (9 units), not the tall exterior wall L1 had for its mural and pipes. Wall-mounted equipment has little wall to sit on; equipment goes on the floor.
@@ -108,5 +108,26 @@ Two rooms beside the west exterior wall (02, 07) needed a wider inset than L1's 
 ## 6. Carried forward (accepted, not implemented)
 
 Integration requirements: canvas margin for markers, rings and lenses; selective labels and tap-to-identify at 320 px; open passages identified on interaction (L2 has one, West mezzanine ↔ Ops offices). L1 backlog: openings 05, 07, 08. Cutover (Phase 08) is not authorised.
+
+## 7. Proposal: how the tank-top catwalks and L1's Reef Tunnel relate
+
+Mocks (script-drawn, for the decision only, not art): `proposal-reef-catwalks.jpg`, `proposal-reef-lens.jpg`.
+
+**The reading that makes both levels true.** L1's Reef Tunnel is already painted as a round blue field with a manta in it, inside a steel ring. Read from L1 it is the tunnel's floor; nothing in it says "dry room". So L2 can show the same ring from above as the open top of the reef tank: the same ellipse (engine: centre 243,123, radii 44 × 76), the same manta in the same place, now under rippling lit water, with grating catwalks filling the rest of the room and one railed bridge across. Under the lens the ring and the manta stay put and only the surface changes, which says "same tank, one level up" without a word.
+
+**Option A, open tank top (recommended).**
+
+- The water and manta inside the ellipse are produced by script from the L1 master (colour and ripple treatment), so the two levels agree to the pixel. The editor paints only the catwalks, rails and equipment around it, through a mask that excludes the ellipse.
+- Fits the engine's name (Tank-top catwalks), the Dive Crew's access (D-TOPE) and the Dive locker next door.
+- Cost: the whole rectangle is one walkable staff space in the engine, so the footprint and veil cover the water as well as the catwalks, and a walk route may be drawn straight across open water. Routes are schematic and L1's already cross the touch pool; the bridge gives the eye a path.
+
+**Option B, closed service deck.**
+
+- The ellipse is a covered deck with hatches. Every pixel is walkable, so footprint and routes are literally true.
+- Loses the tank, contradicts "tank-top" and the dive operation, and under the lens the manta disappears beneath a grey lid.
+
+**Not proposed:** repainting L1's Reef Tunnel as a glass tunnel through water. It would be more literal and would reopen the largest room of a locked level.
+
+**If A is approved,** two things are fixed before the shell paint: the ellipse on L2 is locked like the Kelp Hall tank was on L1 (its silhouette can never be in an editor's mask), and the L2 catwalk brief says "no ladders, stairs or hatches down into the water".
 
 Fictional facility and procedures; subject-matter review required before any real use.

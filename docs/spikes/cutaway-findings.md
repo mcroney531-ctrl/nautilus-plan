@@ -305,3 +305,10 @@ Views: `docs/spikes/cutaway-shots/l1-review/` and `painted-*`. Painted L1: 155 K
 ### L1 locked; L2 planning (Nov 11)
 
 L1 artwork approved and locked at `master-L1-v10.png`. L2 plan for review: `docs/spikes/cutaway-l2/PLAN.md`, with `reference-L2.jpg`, `blockout-L2.png` and `plan.json` from `spikes/cutaway/l2plan.py`. Found while planning: the blockout draws walls inside single engine spaces, which also left a solid painted wall inside L1's West gallery (plan x = 96, y = 254 to 288), between its main hall and the leg that leads to the Atrium.
+
+### Internal-wall defect (Nov 11)
+
+- **Blockout fixed:** `base.js` skips boundaries shared inside one engine space. `node spikes/cutaway/test-geometry.js` (9 tests) proves it on both levels and that walls between different spaces and door-width openings are unchanged; the tests fail on the old code. Blockout assets and the spike page are regenerated; all thirteen L1 region masks still pass.
+- **Painted-connectivity check added:** `connectivity.py` reports L1's West gallery as DIVIDED on `master-L1-v10.png` (a cap along 75% of the boundary) and both L2 cases as open on the new blockout.
+- **L1 repair prepared, not applied:** region 12, a floor box (340, 858)–(480, 926) plus the false wall's own silhouette, 11,593 px. I1 passes with the documented exception (1,391 real-architecture pixels are hidden behind the false wall and will be repainted); I2 and O4 pass. Pass criteria: `connectivity.py` reports the boundary open, the front wall cap is continuous, no seam, overlays and 21 taps unchanged. L1's lock is reopened for this region only.
+- **L2:** voids decided (scripted view of L1 below); the Reef Tunnel and catwalk relationship is proposed in `docs/spikes/cutaway-l2/PLAN.md` section 7.

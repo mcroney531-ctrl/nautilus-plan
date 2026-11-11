@@ -14,7 +14,18 @@ const geom = v => { const g = VARIANTS[v], off = g.hE + 6; return { ...g, h: g.h
    openings cut, so the wall span of each opening counts too: the pixels a room mask must never touch.
    arch = { o: 'v' | 'h', at, invert, cut } narrows it to one wall line (orientation o within 2.5 units of at), or with
    invert to every wall except that line; cut = true keeps the openings cut. */
-function baseSVG(level, v, treated, arch) {
+/* A space made of several rectangles is one room: the stretch of an edge that two of its rectangles share is not a wall.
+   Returns those stretches for one edge of rectangle r, as [centre, width] cuts along the edge. */
+function sharedCuts(rects, r, o, at) {
+  const cuts = [];
+  for (const q of rects) { if (q === r) continue;
+    const [lo, hi, qlo, qhi, qEdges] = o === 'v' ? [r[1], r[1] + r[3], q[1], q[1] + q[3], [q[0], q[0] + q[2]]] : [r[0], r[0] + r[2], q[0], q[0] + q[2], [q[1], q[1] + q[3]]];
+    if (!qEdges.some(e => Math.abs(e - at) < 0.01)) continue;
+    const a = Math.max(lo, qlo), b = Math.min(hi, qhi); if (b - a > 0.5) cuts.push([(a + b) / 2, b - a]); }
+  return cuts;
+}
+/* out, if given, receives out.segs: every wall segment drawn, as { id, o, at, a, b } in plan units (for the geometry tests) */
+function baseSVG(level, v, treated, arch, out) {
   const { k, hI, hE, hF, hT, sh, off, W, H } = geom(v), Y = y => off + k * y, t = 2.2, h = hI; // wall thickness (plan units)
   const wallH = (o, val) => o === 'h' ? (val <= 12 ? hE : val >= 288 ? hF : hI) : (val <= 12 || val >= 388 ? hE * 0.6 : hI);
   const ids = Object.keys(E.SPACES).filter(id => E.SPACES[id].l === level);
@@ -32,23 +43,24 @@ function baseSVG(level, v, treated, arch) {
     if (sp.ellipse) { const [cx, cy, rx, ry] = sp.ellipse; s += `<ellipse cx="${cx}" cy="${Y(cy)}" rx="${rx}" ry="${ry * k}" fill="#9fb4bf" stroke="#7f949e" stroke-width="1"/>`; } }
   if (level === 2) for (const v2 of E.VOIDS) s += `<rect x="${v2.r[0]}" y="${Y(v2.r[1])}" width="${v2.r[2]}" height="${k * v2.r[3]}" fill="#0f1d26" stroke="#2a3c47" stroke-dasharray="2 2"/>`;
   // walls: every rectangle edge, split around openings, drawn back to front
-  const walls = [];
+  const walls = [], segs = [];
   const cut = (a0, a1, pts) => { let segs = [[a0, a1]]; for (const [c, w] of pts) segs = segs.flatMap(([u0, u1]) => c - w / 2 > u1 || c + w / 2 < u0 ? [[u0, u1]] : [[u0, c - w / 2], [c + w / 2, u1]].filter(([p, q]) => q - p > 0.5)); return segs; };
   for (const id of ids) for (const r of E.SPACES[id].r) {
     const [x, y, w, hh] = r;
-    for (const yy of [y, y + hh]) { if (!keepWall('h', yy)) continue; const pts = opens.filter(o => Math.abs(o.p[1] - yy) < 4 && o.p[0] > x - 1 && o.p[0] < x + w + 1).map(o => [o.p[0], o.w]);
+    for (const yy of [y, y + hh]) { if (!keepWall('h', yy)) continue; const pts = opens.filter(o => Math.abs(o.p[1] - yy) < 4 && o.p[0] > x - 1 && o.p[0] < x + w + 1).map(o => [o.p[0], o.w]).concat(sharedCuts(E.SPACES[id].r, r, 'h', yy));
       const wh = wallH('h', yy);
-      for (const [a, b] of cut(x, x + w, pts)) { const B0 = Y(yy), dx = sh * wh, ct = k * t;
+      for (const [a, b] of cut(x, x + w, pts)) { segs.push({ id, o: 'h', at: yy, a, b }); const B0 = Y(yy), dx = sh * wh, ct = k * t;
         walls.push({ key: yy, svg: `<polygon points="${a},${B0} ${b},${B0} ${b + dx},${B0 - wh} ${a + dx},${B0 - wh}" fill="url(#wallf)"/><polygon points="${a + dx},${B0 - wh} ${b + dx},${B0 - wh} ${b + dx + sh * ct},${B0 - wh - ct} ${a + dx + sh * ct},${B0 - wh - ct}" fill="#eef3f5"/>` }); } }
-    for (const xx of [x, x + w]) { if (!keepWall('v', xx)) continue; const pts = opens.filter(o => Math.abs(o.p[0] - xx) < 4 && o.p[1] > y - 1 && o.p[1] < y + hh + 1).map(o => [o.p[1], o.w]);
+    for (const xx of [x, x + w]) { if (!keepWall('v', xx)) continue; const pts = opens.filter(o => Math.abs(o.p[0] - xx) < 4 && o.p[1] > y - 1 && o.p[1] < y + hh + 1).map(o => [o.p[1], o.w]).concat(sharedCuts(E.SPACES[id].r, r, 'v', xx));
       const wv = wallH('v', xx);
-      for (const [a, b] of cut(y, y + hh, pts)) { const dx = sh * wv, Ya = Y(a), Yb = Y(b);
+      for (const [a, b] of cut(y, y + hh, pts)) { segs.push({ id, o: 'v', at: xx, a, b }); const dx = sh * wv, Ya = Y(a), Yb = Y(b);
         walls.push({ key: b, svg: (sh ? `<polygon points="${xx},${Ya} ${xx},${Yb} ${xx + dx},${Yb - wv} ${xx + dx},${Ya - wv}" fill="#97a3aa"/>` : '') +
           `<rect x="${xx - t / 2 + dx}" y="${Ya - wv}" width="${t}" height="${Yb - Ya}" fill="#eef3f5"/><polygon points="${xx - t / 2},${Yb} ${xx + t / 2},${Yb} ${xx + t / 2 + dx},${Yb - wv} ${xx - t / 2 + dx},${Yb - wv}" fill="#8f9aa1"/>` }); } }
   }
   // treated exhibit (Kelp Hall): a tall kelp tank whose front glass faces the viewer
   let tank = '';
   if (treated && level === 1) tank = kelpTank(Y, k, hT, sh);
+  if (out) out.segs = segs;
   walls.sort((a, b) => a.key - b.key);
   const tankKey = 118; // tank front edge (plan y): draw it among the walls in depth order
   let wallsSvg = '', placed = false;
@@ -90,4 +102,4 @@ function kelpTank(Y, k, hT, sh = 0) {
   g += sh ? `<g transform="matrix(1 0 ${-sh} 1 ${sh * fy} 0)">${front}</g>` : front;
   return g;
 }
-module.exports = { VARIANTS, geom, baseSVG };
+module.exports = { VARIANTS, geom, baseSVG, sharedCuts };
