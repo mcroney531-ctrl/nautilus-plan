@@ -350,3 +350,11 @@ Option A approved. `docs/spikes/cutaway-l2/master-L2-v0.png` is the corrected bl
 - **East of plan x = 98** (Quarantine, Food prep, catwalk surround, Dive locker, East mezzanine, Life support, east core): room functions right, walls on the engine's by eye, 6 of 6 doors there have a gap at the engine point, `connectivity.py` reports both multi-rectangle spaces open on a scratch trial.
 - **West block is wrong:** the West mezzanine has plants, a curved bench and a wave floor (public cues, copied from the Atrium seen through the void); the wall between it and Ops offices is about 55 px too far south, so the open passage is misplaced; Ops offices runs down to the building's front edge, over an area where L2 has no space; a railed balcony and a wall ladder were invented.
 - **Both stair cores** show a dark doorway at the back of the landing, which the engine does not have.
+
+### L2 shell, second return: registration result (Nov 11): east zone HOLD; nothing promoted
+
+- **`shellreg.py`** added and self-tested (six cases, all as expected).
+- **East zone (x from 418):** global fit is good (scale 1.005, 1 / −2 px, the same as approved L1), recall 0.78. **Structure fails in three tiles:** the wall between the catwalk room and the Dive locker / East mezzanine is painted about 30 px too far west, and Life support's west wall about 20 px. Those are Level 1's positions (Jelly Room and Seasonal start at plan x = 290; the L2 rooms above them start at 298), the mismatch flagged in the plan as conflict 5. Visual inspection had passed these walls.
+- **West zone:** REFUSED (scale 0.985, −6 px) with a missing-wall tile at the West mezzanine / Ops boundary.
+- **First return, whole level:** HOLD, four failed tiles.
+- **Consequence:** no part of this return is usable as architecture. Its room interiors are usable as environments: a scratch trial composited Quarantine, Food prep, Dive locker, Life support and both parts of the East mezzanine through their engine-derived interior masks onto the blockout's walls, with the global fit applied. Walls, door gaps and the passage are then the engine's by construction, and the stair cores stay as the blockout draws them, without the invented doorways.
