@@ -155,4 +155,19 @@ Built by `spikes/cutaway/l2base.py` from the corrected blockout and `master-L1-v
 
 Recommendation: finish this room by script (grating, rail, bridge), as a flat-surface job like L1's west wall, and spend the editor on the rooms where it is strong. The bridge is the one element inside the locked ellipse; it is drawn by script over the water, not by the editor.
 
+## 10. Scripted catwalks and bridge (Nov 11): PASS, `master-L2-v1.png`
+
+`spikes/cutaway/l2catwalk.py`, no image generation. The ellipse, water and manta are unchanged from v0.
+
+- **Grating:** every visible floor pixel of the engine space `topside` outside the water (37,604 px): the four corners, the east and west margins and the strip.
+- **Bridge, placed from the engine:** deck at plan y = 113.5 to 118.5, from x = 198 to 288.3. Its west end is on the boundary the catwalk strip shares with the main room (x = 198, y = 112 to 132), the way in from D-TOPW and D-FOOD. Its east end lands on the east margin beside the water, which runs to D-TOPE at (297, 157) and is 9.0 units wide at its narrowest. No badge door is on the bridge or within 10 units of either end, and both ends are in one engine space, so no door is bypassed. The script checks these five conditions and refuses to draw if one fails.
+- **Look:** open grating the water shows through, six support legs into the water, a post-and-rail on each side, a soft shadow on the water. It crosses the manta's leading wing; the body, tail and both wing tips stay clear.
+- **Lock exception:** the bridge, rails and shadow change 14,671 of the 305,854 locked pixels, recorded in `bridge-exception-L2.png`. 0 locked pixels changed outside it (checked), and the script asserts nothing outside the catwalk floor and the bridge changed.
+- **Checks:** `connectivity.py 2` reports both multi-rectangle spaces open; all L2 masks pass; overlays register on L2 at 320 px and desktop; under the L1 lens the ring and manta stay in place.
+- **At 320 px** the deck is about 3 px with a lighter rail line above it: it reads as a thin walkway between the corridor and the east side, not as a bar. The legs are not visible at that size.
+
+## 11. Shell paint (prepared, not generated)
+
+Region `00-shell`: everything except the scripted pixels (water, bridge, grating, void views) and the finished catwalk room, 1,242,459 of 1,606,400 px. Prompt and return procedure: `README.md`. A dry run with the master returned unchanged composites at identity with 0 pixels changed.
+
 Fictional facility and procedures; subject-matter review required before any real use.

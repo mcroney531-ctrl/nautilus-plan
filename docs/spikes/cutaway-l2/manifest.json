@@ -22,6 +22,21 @@
   "lock-L2.png"
  ],
  "regions": {
+  "00-shell": {
+   "box_px": [
+    0,
+    0,
+    1599,
+    1003
+   ],
+   "room": "Whole level: first paint over the blockout",
+   "brief": "Paint every room to its brief; keep the scripted water, bridge, catwalk grating and void views.",
+   "mask": "mask-00-shell.png",
+   "crop": "crop-00-shell.png",
+   "check": {
+    "kind": "shell"
+   }
+  },
   "02-westMezz": {
    "box_px": [
     102,
@@ -169,5 +184,34 @@
    0,
    0
   ]
- }
+ },
+ "history": [
+  {
+   "region": "05-topside-b",
+   "method": "scripted catwalks and bridge (no image generation)",
+   "grating_pixels": 37604,
+   "bridge_plan": {
+    "y": [
+     113.5,
+     118.5
+    ],
+    "x": [
+     198,
+     288.3
+    ]
+   },
+   "locked_pixels_changed_by_the_bridge": 14671,
+   "locked_pixels_total": 305854,
+   "locked_pixels_unchanged_elsewhere": true,
+   "connectivity": {
+    "west end on the boundary the strip shares with the main room": true,
+    "east end on floor of the same space, outside the water": true,
+    "east margin between the bridge and D-TOPE is walkable (narrowest 9.0 units, need 6)": true,
+    "no badge door lies on the bridge or within 10 units of either end": true,
+    "both ends are in one engine space (no door is bypassed)": true
+   },
+   "from": "master-L2-v0.png",
+   "to": "master-L2-v1.png"
+  }
+ ]
 }

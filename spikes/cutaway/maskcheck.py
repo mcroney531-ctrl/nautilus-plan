@@ -9,6 +9,9 @@ interior (default; rooms, floors):
       region's mask file: its box plus that wall's silhouette. Architecture behind the silhouette is exempt from I1, and
   I2  no mask pixel lies outside the box and the silhouette.
 
+shell (the first whole-level paint over the blockout): the mask is everything except locked and finished pixels; only O4 applies.
+      The painted walls are checked after compositing: frame registration, the opening count and connectivity.py.
+
 opening (a mask that has to repaint part of one wall):  "check": {"kind": "opening", "o": "v"|"h", "at": wall coordinate,
                                                                    "opening": [x, y], "width": plan units}
   O1  the mask holds no pixel of any wall other than the target wall line;
@@ -70,6 +73,8 @@ if chk["kind"] == "interior":
         return n
     c = {s: clear(s) for s in ("left", "top", "right", "bottom")} if not (A & M).any() else None
     if c: res["clear_px"] = c; res["largest_clear_box"] = [x0 - c["left"], y0 - c["top"], x1 + c["right"], y1 + c["bottom"]]
+elif chk["kind"] == "shell":   # the first whole-level paint: everything except scripted and finished pixels. Walls are judged afterwards, against the engine
+    other = F = np.zeros((H, W), bool); M = np.asarray(Image.open(pkg / reg["mask"]).convert("L")) > 0
 elif chk["kind"] == "surface":
     line = {"o": chk["o"], "at": chk["at"]}; other = arch({**line, "invert": True}, "C-L1-arch-other.png"); T = arch(line, "C-L1-arch-line.png"); F = np.zeros_like(T)
     inner = np.asarray(Image.fromarray((T * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(5))) > 0

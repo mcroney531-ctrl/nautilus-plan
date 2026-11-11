@@ -331,3 +331,7 @@ L1 artwork approved and locked at `master-L1-v10.png`. L2 plan for review: `docs
 ### L2 shell base (Nov 11)
 
 Option A approved. `docs/spikes/cutaway-l2/master-L2-v0.png` is the corrected blockout with the scripted Reef tank top and void views cut from `master-L1-v11.png`; `lock-L2.png` keeps editors out of them. The correction tools now work on either level. No L2 art generated. Open question for review: the catwalk room is 85% locked water, so its remaining corners are better done by script (`reference-catwalks.jpg`, PLAN.md section 9).
+
+### L2 scripted catwalks and shell handoff (Nov 11)
+
+`master-L2-v1.png`: scripted grating and a railed bridge joining the catwalk room's two real ways in; five engine connectivity conditions checked before drawing; 14,671 locked pixels changed by the bridge, 0 elsewhere. The shell paint (region 00) is prepared for the editor: `docs/spikes/cutaway-l2/README.md`. No L2 art generated yet.
