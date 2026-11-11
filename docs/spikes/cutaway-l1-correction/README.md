@@ -93,7 +93,7 @@ A mask protects architecture. It does not have to preserve leftovers of a wrong 
 - O2: the mask contains the whole engine opening: the gap the engine cuts in that wall, with the wall's height and shear.
 - O3: the mask reaches no more than 28 px beyond that opening on any side.
 
-- I1 exception, internal walls (region 12): a false wall painted on a boundary inside one engine space may be removed. Its mask (`internalwall.py`) is a floor box plus that wall's own silhouette; real architecture hidden behind the silhouette is exempt, and (I2) no mask pixel lies outside the box and the silhouette.
+- I1 exception, internal walls (region 12): a false wall painted on a boundary inside one engine space may be removed. Its mask (`internalwall.py`) is a floor box plus that wall's own silhouette; real architecture hidden behind the silhouette is exempt, and (I2) no mask pixel lies outside the box and the silhouette. The silhouette is grown 4 px by default; region 12 uses 12 px (`silhouette_grow_px`), an approved exception, because the painted wall is about 8 px wider on its right than the engine's and the 4 px silhouette left a strip of its cap and a notch in the front cap.
 
 **Surface regions** (masks that repaint what is painted on the face of one wall, without moving the wall: 09, 11). The mask is generated from the engine by `spikes/cutaway/surfacemask.py NN`, not drawn as a box.
 
@@ -151,7 +151,7 @@ Full-frame mode is unchanged: re-running passes 04b and 06 through the new scrip
 | 09 North wall face | PASS (Nov 11). One surface mask for the whole wall, box (95, 59)–(1599, 190), 164,621 px; Kelp Hall tank silhouette locked. Composited from the image returned for region 10. | `master-L1-v9.png` |
 | 10 West hall furnishings | PASS (Nov 11), first composite, interior region (95, 392)–(144, 692). Accepted: the editor added two wall lights on the west wall. | `master-L1-v8.png` |
 | 11 West wall face | PASS (Nov 11). Scripted recolour (`material.py`) with the fringe exception (10 px, empty background only); box (40, 186)–(88, 927), 26,441 px. | `master-L1-v10.png` |
-| 12 West gallery internal wall | L1 lock reopened for this defect only (Nov 11). Box (340, 858)–(480, 926) plus the false wall's silhouette, 11,593 px. First return REVISE, discarded: the editor re-lit the whole floor paler and also removed the real wall behind, so the composite showed a pale square and a cut wall stub. Re-sent with a tighter prompt. | |
+| 12 West gallery internal wall | PASS (Nov 11), second return. Box (340, 858)–(480, 926) plus the false wall's silhouette grown 12 px, 13,481 px. L1 relocked. | `master-L1-v11.png` |
 
 ## Paste-ready prompt for GPT (region 02, against v2)
 

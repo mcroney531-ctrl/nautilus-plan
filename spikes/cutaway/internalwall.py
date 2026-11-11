@@ -9,6 +9,6 @@ from PIL import Image
 from masklib import wall_silhouette
 pkg = Path(__file__).resolve().parents[2] / "docs/spikes/cutaway-l1-correction"; man = json.loads((pkg / "manifest.json").read_text()); nn = sys.argv[1].zfill(2)
 name = next(k for k in man["regions"] if k.startswith(nn + "-")); reg = man["regions"][name]; W, H = man["size"]; b = reg["box_px"]
-M = np.zeros((H, W), bool); M[b[1]:b[3] + 1, b[0]:b[2] + 1] = True; M |= wall_silhouette(man["projection"], reg["check"]["internal_wall"], (H, W))
+M = np.zeros((H, W), bool); M[b[1]:b[3] + 1, b[0]:b[2] + 1] = True; M |= wall_silhouette(man["projection"], reg["check"]["internal_wall"], (H, W), reg["check"].get("silhouette_grow_px", 4))
 m = Image.fromarray((M * 255).astype(np.uint8)); m.save(pkg / reg["mask"]); cv = Image.new("L", tuple(man["canvas_3x2"]["size"]), 0); cv.paste(m, (0, 0)); cv.save(pkg / f"canvas-3x2-mask-{name}.png")
 print(name, "mask pixels", int(M.sum()))

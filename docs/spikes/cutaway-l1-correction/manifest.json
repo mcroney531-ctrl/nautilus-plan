@@ -288,10 +288,12 @@
      "at": 96,
      "a": 254,
      "b": 288
-    }
+    },
+    "silhouette_grow_px": 12
    },
    "mask": "mask-12-west-gallery-internal-wall.png",
-   "crop": "crop-12-west-gallery-internal-wall.png"
+   "crop": "crop-12-west-gallery-internal-wall.png",
+   "mask_note": "Approved exception (Nov 11): the silhouette of the false wall is grown 12 px, not 4. The painted wall is about 8 px wider on its right side than the engine's, so the 4 px silhouette left a strip of its cap and a notch in the front cap."
   }
  },
  "canvas_3x2": {
@@ -502,6 +504,29 @@
    "from": "master-L1-v9.png",
    "to": "master-L1-v10.png",
    "compare": "compare-11-v10.png"
+  },
+  {
+   "region": "12-west-gallery-internal-wall",
+   "returned": "wg12b.png",
+   "returned_size": [
+    1536,
+    1024
+   ],
+   "base_mapping": "canvas-3x2",
+   "correction_applied": {
+    "scale": 0.995,
+    "dx_px": -1,
+    "dy_px": 0
+   },
+   "ring_mad_plain": 10.15,
+   "ring_mad_fit": 9.9,
+   "pixels_changed_inside": 10621,
+   "pixels_inside": 13481,
+   "outside_mask_unchanged": true,
+   "editor_redrew_outside_pct": 33.2,
+   "from": "master-L1-v10.png",
+   "to": "master-L1-v11.png",
+   "compare": "compare-12-v11.png"
   }
  ],
  "locked": [

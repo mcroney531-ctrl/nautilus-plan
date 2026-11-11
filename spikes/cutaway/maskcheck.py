@@ -57,7 +57,7 @@ if chk["kind"] == "interior":
     A = arch(True, "C-L1-arch.png"); other = A
     F = np.zeros_like(A)
     if chk.get("internal_wall"):  # a false wall painted on a boundary inside one space: its silhouette may be repainted, whatever is behind it
-        from masklib import wall_silhouette; F = wall_silhouette(man["projection"], chk["internal_wall"], A.shape); res["architecture_pixels_behind_the_false_wall"] = int((A & M & F).sum())
+        from masklib import wall_silhouette; F = wall_silhouette(man["projection"], chk["internal_wall"], A.shape, chk.get("silhouette_grow_px", 4)); res["architecture_pixels_behind_the_false_wall"] = int((A & M & F).sum())
         res["rules"]["I2 mask pixels outside the box and the false wall"] = int((M & ~F & ~np.pad(np.ones((y1 - y0 + 1, x1 - x0 + 1), bool), ((y0, H - y1 - 1), (x0, W - x1 - 1)))).sum())
     res["rules"]["I1 no architecture inside"] = int((A & M & ~F).sum())
     def clear(side):

@@ -319,3 +319,11 @@ L1 artwork approved and locked at `master-L1-v10.png`. L2 plan for review: `docs
 - **Visual fail.** The editor re-lit the whole building (41.2% redrawn): its floor is paler and warmer with a different tile grid, so the masked floor shows as a pale square. It also removed the real wall behind the false one (the south leg's north wall with its lamp), so the false wall's silhouette above the box filled with floor and left a cut white stub at the corner; the front cap has a break.
 - This is the case the mechanical checks cannot judge: the connectivity check passed on a result that is visibly wrong.
 - **Compositor:** added `--match-tone` (opt-in): scales the returned image per channel to the master's median on the unedited ring, for editors that re-light the picture. On this return it narrowed the tone gap but could not fix the different tile grid or the missing wall.
+
+### Correction pass 12, West gallery internal wall (Nov 11): PASS on the second return, promoted to `master-L1-v11.png`; L1 relocked
+
+- **Second return, original mask:** registration and floor tone good, real walls kept, but a strip of the false wall's cap and a notch in the front cap remained, because the painted wall is about 8 px wider than the engine's on its right side.
+- **Approved exception:** silhouette grown 12 px instead of 4. Mask check: 0 architecture pixels in the mask outside the silhouette (I1), 0 mask pixels outside the box and silhouette (I2), no overlap with locked regions (O4); 2,383 real-wall pixels behind the silhouette are repainted from the editor's image.
+- **Composite:** scale 0.995, −1 / 0 px; 10,621 pixels changed; every pixel outside the mask unchanged (asserted); the change is confined to (340, 802)–(481, 956).
+- **Result:** the false wall is gone; the floor runs through in the same grey; the horizontal wall with its lamp and the wall above the junction are intact; the front cap is continuous. Accepted: the West gallery's east wall ends in a blunt end face at the old junction, and a slightly brighter patch on the front cap.
+- **Checks:** `connectivity.py` reports the boundary open; all thirteen region masks pass; 21 of 21 door taps; overlays unchanged at 320 / 400 / desktop; 9 geometry tests and 26 engine tests pass.
