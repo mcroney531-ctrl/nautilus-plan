@@ -8,6 +8,7 @@ import json, re, subprocess, sys
 from pathlib import Path
 import numpy as np
 from PIL import Image, ImageFilter
+from masklib import grow, painted_caps, locked_mask
 root = Path(__file__).resolve().parents[2]; pkg = root / "docs/spikes/cutaway-l1-correction"; out = root / "spikes/cutaway/out"
 man = json.loads((pkg / "manifest.json").read_text()); nn = sys.argv[1].zfill(2); name = next(k for k in man["regions"] if k.startswith(nn + "-")); reg = man["regions"][name]; c = reg["check"]
 def arch(spec, f):
@@ -18,15 +19,17 @@ await pg.setContent(`<html><body style="margin:0;background:#000">${svg}</body><
 line = {"o": c["o"], "at": c["at"]}; T = np.asarray(arch(line, "C-L1-arch-line.png").filter(ImageFilter.MinFilter(5))) > 0
 O = np.asarray(arch({**line, "invert": True}, "C-L1-arch-other.png").filter(ImageFilter.MaxFilter(7))) > 0
 mp = max(pkg.glob("master-L1-v*.png"), key=lambda q: int(re.search(r"v(\d+)", q.stem).group(1))); a = np.asarray(Image.open(mp).convert("RGB")).astype(int)
-caps = (a.min(axis=2) > 185) & (a.max(axis=2) - a.min(axis=2) < 30); caps = np.asarray(Image.fromarray((caps * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5))) > 0
+Traw = np.asarray(Image.open(out / "C-L1-arch-line.png").convert("L")) > 0; caps = grow(painted_caps(a, Traw), 2)
 M = T & ~O & ~caps
 # approved exception (check["fringe_px"]): where the painted wall is a few px wider than the engine's, the mural's colour runs past
 # the wall line. Those pixels are added if they are mural-coloured, within fringe_px of the mask, on no other wall and not a cap.
+mural = (a[..., 2] - a[..., 0] > 22) & (a[..., 1] - a[..., 0] > 10)
 if c.get("fringe_px"):
-    mural = (a[..., 2] - a[..., 0] > 22) & (a[..., 1] - a[..., 0] > 10); n = int(c["fringe_px"])
-    near = np.asarray(Image.fromarray((M * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(2 * n + 1))) > 0; add = mural & near & ~O & ~caps & ~M; M |= add; print("fringe pixels added:", int(add.sum()))
-for l in man.get("locked", []): b = l["box_px"]; M[b[1]:b[3] + 1, b[0]:b[2] + 1] = False
-if c.get("xrange"): M[:, :c["xrange"][0]] = False; M[:, c["xrange"][1] + 1:] = False   # one part of a long wall, for a separate pass
+    add = mural & grow(M, int(c["fringe_px"])) & ~O & ~caps & ~M; M |= add; print("fringe pixels added:", int(add.sum()))
+# locked exhibits: never their silhouette; and inside a locked box only dark mural pixels are editable at all
+lock = locked_mask(man, a); boxes = np.zeros_like(M)
+for l in man.get("locked", []): b = l["box_px"]; boxes[b[1]:b[3] + 1, b[0]:b[2] + 1] = True
+M &= ~lock; M &= ~boxes | (mural & (a[..., 1] < 125) & (a[..., 0] < 60))
 ys, xs = np.nonzero(M); reg["box_px"] = [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]; reg.setdefault("mask", f"mask-{name}.png"); reg.setdefault("crop", f"crop-{name}.png")
 m = Image.fromarray((M * 255).astype(np.uint8)); m.save(pkg / reg["mask"]); cv = Image.new("L", tuple(man["canvas_3x2"]["size"]), 0); cv.paste(m, (0, 0)); cv.save(pkg / f"canvas-3x2-mask-{name}.png")
 (pkg / "manifest.json").write_text(json.dumps(man, indent=1)); print(name, "box", reg["box_px"], "mask pixels", int(M.sum()))

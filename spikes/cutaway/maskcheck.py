@@ -17,13 +17,15 @@ surface (a mask that repaints the face of one wall without moving it: a mural, o
   S1  every mask pixel is on the target wall line (2 px inside its outline). With "fringe_px": N in the check (an approved,
       documented exception) pixels up to N px past the line are allowed if they are on that wall's outline or on empty background;
   S2  the mask holds no pixel of any other wall;
-  S3  the mask holds no painted wall cap (neutral near-white pixels in the master), so the wall's top edge cannot change.
-Every region also gets O4, and "locked" boxes in the manifest (painted exhibits that overlap a wall) count as locked regions. A targeted re-edit of a locked region sets "within": that region's key; it may overlap that
+  S3  the mask holds no painted wall cap (neutral near-white pixels within 16 px of the wall's outline), so its edges cannot change.
+Every region also gets O4, and "locked" entries in the manifest (painted exhibits that overlap a wall) count as locked
+regions: the whole box, or with "silhouette" the exhibit's painted silhouette grown 3 px (masklib.py). A targeted re-edit of a locked region sets "within": that region's key; it may overlap that
 region only, and (O5) must stay inside its box. --sheet writes the master with the mask (red), the opening (green) and other walls (blue)."""
 import json, re, subprocess, sys
 from pathlib import Path
 import numpy as np
 from PIL import Image, ImageFilter
+from masklib import painted_caps, locked_mask
 REACH = 28
 root = Path(__file__).resolve().parents[2]; pkg = root / "docs/spikes/cutaway-l1-correction"; out = root / "spikes/cutaway/out"
 def arch(spec, name):
@@ -39,14 +41,15 @@ name = next(k for k in man["regions"] if k.startswith(nn + "-")); reg = man["reg
 box = [int(v) for v in args[1:5]] or reg["box_px"]; x0, y0, x1, y1 = box; chk = reg.get("check", {"kind": "interior"})
 H, W = man["size"][1], man["size"][0]; M = np.zeros((H, W), bool); M[y0:y1 + 1, x0:x1 + 1] = True  # boxes are inclusive, as PIL draws them
 if chk["kind"] == "surface": M = np.asarray(Image.open(pkg / reg["mask"]).convert("L")) > 0
-def painted_caps():
-    mp = max(pkg.glob("master-L1-v*.png"), key=lambda q: int(re.search(r"v(\d+)", q.stem).group(1))); a = np.asarray(Image.open(mp).convert("RGB")).astype(int)
-    return (a.min(axis=2) > 185) & (a.max(axis=2) - a.min(axis=2) < 30)
+# the painting the mask is judged against: the master the region was composited from, or the latest if it has not been yet
+done = [h for h in man.get("history", []) if h["region"] == name]
+src = pkg / done[-1]["from"] if done else max(pkg.glob("master-L1-v*.png"), key=lambda q: int(re.search(r"v(\d+)", q.stem).group(1)))
+painting = np.asarray(Image.open(src).convert("RGB")).astype(int)
 res = {"region": name, "box_px": box, "kind": chk["kind"], "rules": {}}
 locked = np.zeros((H, W), bool)
 for h in man.get("history", []):
     if h["region"] not in (name, chk.get("within")) and man["regions"][h["region"]].get("check", {}).get("within") != name: b = man["regions"][h["region"]]["box_px"]; locked[b[1]:b[3] + 1, b[0]:b[2] + 1] = True
-for l in man.get("locked", []): b = l["box_px"]; locked[b[1]:b[3] + 1, b[0]:b[2] + 1] = True
+locked |= locked_mask(man, painting)
 if chk["kind"] == "interior":
     A = arch(True, "C-L1-arch.png"); other = A; F = np.zeros_like(A)
     res["rules"]["I1 no architecture inside"] = int((A & M).sum())
@@ -67,7 +70,7 @@ elif chk["kind"] == "surface":
         n = int(chk["fringe_px"]) + 3; nearT = np.asarray(Image.fromarray((T * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(2 * n + 1))) > 0
         res["exception_pixels_past_wall_line"] = int(off.sum()); res["exception_pixels_on_empty_background"] = int((off & ~T).sum()); off = off & ~(nearT & ~other)
     res["rules"]["S1 pixels off the target wall face"] = int(off.sum())
-    res["rules"]["S3 painted wall-cap pixels inside"] = int((M & painted_caps()).sum()); res["mask_pixels"] = int(M.sum())
+    res["rules"]["S3 painted wall-cap pixels inside"] = int((M & painted_caps(painting, T)).sum()); res["mask_pixels"] = int(M.sum())
 else:
     line = {"o": chk["o"], "at": chk["at"]}
     other = arch({**line, "invert": True}, "C-L1-arch-other.png")

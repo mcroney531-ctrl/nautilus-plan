@@ -279,3 +279,25 @@ Plan approved with refinements: order 10, 09, 11; 09 and 11 as scripted material
 - **Result:** plants, planter and bench gone; the tiled floor continues with its joints. Accepted deviation: two wall lights added on the west wall where the plants stood. A faintly lighter column in the floor is visible at 2× zoom only.
 - **Overlays:** unchanged at 320 / 400 / desktop; 21 of 21 door taps correct. Openings: no regressions.
 - **The same returned image also contains a repainted north wall.** Trial in a scratch copy, nothing promoted: it registers at identity on regions 09a and 09b, and with one refined mask for the whole wall (lamp housings no longer mistaken for wall caps; inside the Kelp Hall tank's box only dark mural pixels are editable) it gives a clean concrete wall with pipe runs and the lights in place. Awaiting a decision on using it in place of two new passes.
+
+### Correction pass 09, North wall face (Nov 11): PASS, promoted to `master-L1-v9.png`
+
+- **Source:** the image the editor returned for region 10, which had also repainted the north wall. Approved in place of two new passes.
+- **Mask:** one surface mask for the whole wall. S1, S2, S3, O4 pass: 0 pixels on any other wall or opening span, 0 on a wall cap. Kelp Hall tank: silhouette of 21,794 px (water, glass and rim, grown 3 px), 0 mask pixels inside it; the 4,459 mask pixels inside the tank's box are all dark mural (brightest G 113, against the water's 150 and up).
+- **Composite:** identity fit; 149,020 pixels changed inside; every pixel outside unchanged (asserted).
+- **Result:** plain concrete wall with pipe runs and two junction boxes; mural, bench and both plants gone; wall lights at the existing positions (the floor-standing lamps on the ledge were not repainted). No seam. No lamp halos. A 1 to 2 px teal line remains along the tank rim and the two diagonal dividing walls; at 320 px it is not visible, and at full size it reads as the tank's edge.
+
+### Correction pass 11, West wall face (Nov 11): PASS, promoted to `master-L1-v10.png`
+
+- **Method:** scripted recolour, no image generation. Mask rules pass with the fringe exception (2,954 px past the wall line, 1,932 on empty background).
+- **Result:** 21,285 pixels changed; mural and silhouette gone, 0 mural pixels left in the mask; both wall lights untouched (1,373 fixture pixels asserted identical); every pixel outside unchanged (asserted). The wall keeps its shading and grain. It is paler than the editor's concrete on the north wall; the two walls do not meet, and at map scale both read as plain wall.
+
+## Level 1 visual review on `master-L1-v10.png` (Nov 11): ready for final approval
+
+Views: `docs/spikes/cutaway-shots/l1-review/` and `painted-*`. Painted L1: 155 KB as WebP.
+
+- **Regression:** 21 of 21 door taps correct at 320 / 400 / desktop; footprint, walk, denied stop, callout and lens register unchanged. All twelve region masks pass their rules. Engine tests: 26 pass.
+- **Public against staff:** Kelp Hall, Living Shore, Jelly Room, Seasonal, Reef Tunnel and Atrium read as visitor spaces. The Service spine, both service halls and Receiving read as working areas: plain walls, pipe runs, equipment, no visitor furnishings.
+- **Openings:** 15 of 15 present at the engine's positions; 05, 07 and 08 remain cosmetically weak (backlog).
+- **Known and accepted:** illegible poster marks in Living Shore; two wall lights added in the West service hall; thin teal line at the tank rim; about 2 px of plant-pot base on the spine floor under where each plant stood.
+- **Not art, still required at integration:** canvas margin, 320 px labels, open-passage identification.

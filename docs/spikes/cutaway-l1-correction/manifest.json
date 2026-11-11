@@ -212,47 +212,23 @@
     "width": 15
    }
   },
-  "09a-north-wall-west": {
-   "room": "North exterior wall face, west part: behind the west core and the Service spine, up to the middle of the Kelp Hall tank (engine: wall line y = 12)",
-   "brief": "A plain working back wall: no mural, no plant. Painted concrete or block, a cable tray or pipe run, plain utility wall lights.",
+  "09-north-wall-face": {
+   "room": "North exterior wall face behind the Service spine and both cores (engine: wall line y = 12)",
+   "brief": "A plain working back wall: no mural, bench or plants; painted concrete or block, pipe runs, plain utility lights. No doors.",
    "check": {
     "kind": "surface",
     "o": "h",
-    "at": 12,
-    "xrange": [
-     0,
-     656
-    ]
+    "at": 12
    },
+   "mask_note": "One mask for the whole wall (Nov 11), replacing 09a and 09b. Lamp housings are no longer treated as wall caps. The Kelp Hall tank's silhouette is locked; inside its box only dark mural pixels are editable.",
    "box_px": [
     95,
-    60,
-    656,
-    190
-   ],
-   "mask": "mask-09a-north-wall-west.png",
-   "crop": "crop-09a-north-wall-west.png"
-  },
-  "09b-north-wall-east": {
-   "room": "North exterior wall face, east part: from the middle of the Kelp Hall tank, behind the Service spine and the east core (engine: wall line y = 12)",
-   "brief": "A plain working back wall: no mural, no bench, no plant. Painted concrete or block, a cable tray or pipe run, plain utility wall lights.",
-   "check": {
-    "kind": "surface",
-    "o": "h",
-    "at": 12,
-    "xrange": [
-     657,
-     1599
-    ]
-   },
-   "box_px": [
-    657,
     59,
     1599,
     190
    ],
-   "mask": "mask-09b-north-wall-east.png",
-   "crop": "crop-09b-north-wall-east.png"
+   "mask": "mask-09-north-wall-face.png",
+   "crop": "crop-09-north-wall-face.png"
   },
   "10-west-hall-furnishings": {
    "box_px": [
@@ -471,17 +447,56 @@
    "from": "master-L1-v7.png",
    "to": "master-L1-v8.png",
    "compare": "compare-10-v8.png"
+  },
+  {
+   "region": "09-north-wall-face",
+   "returned": "corr10.png",
+   "returned_size": [
+    1536,
+    1024
+   ],
+   "base_mapping": "canvas-3x2",
+   "correction_applied": {
+    "scale": 1.0,
+    "dx_px": 0,
+    "dy_px": 0
+   },
+   "ring_mad_plain": 7.11,
+   "ring_mad_fit": 7.11,
+   "pixels_changed_inside": 149020,
+   "pixels_inside": 164621,
+   "outside_mask_unchanged": true,
+   "editor_redrew_outside_pct": 21.3,
+   "from": "master-L1-v8.png",
+   "to": "master-L1-v9.png",
+   "compare": "compare-09-v9.png"
+  },
+  {
+   "region": "11-west-wall-face",
+   "method": "scripted material treatment (no image generation)",
+   "pixels_in_mask": 26441,
+   "pixels_changed": 21285,
+   "fixture_pixels_kept": 1373,
+   "mural_pixels_left": 0,
+   "outside_mask_unchanged": true,
+   "from": "master-L1-v9.png",
+   "to": "master-L1-v10.png",
+   "compare": "compare-11-v10.png"
   }
  ],
  "locked": [
   {
    "name": "Kelp Hall tank (painted exhibit, overlaps the north wall face)",
    "box_px": [
-    497,
-    130,
-    815,
+    490,
+    118,
+    818,
     196
-   ]
+   ],
+   "silhouette": {
+    "min_g": 120,
+    "min_b": 120
+   }
   }
  ]
 }
