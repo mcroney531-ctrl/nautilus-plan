@@ -342,3 +342,11 @@ Option A approved. `docs/spikes/cutaway-l2/master-L2-v0.png` is the corrected bl
 - **Cause: it is painted on Level 1's walls.** 96% of its white wall-cap pixels lie on the L1 engine walls, 64% on L2's. It has L1's Service spine along the top (L2 has nothing there), L1's two west corridors where L2 has one wide West mezzanine, and L1's east side. The editor took the layout from the full L1 image attached as a style reference, not from the blockout.
 - Room content was right (quarantine tanks, plant room, dive locker, food prep, offices), so the briefs work.
 - **Change:** the style reference is now `style-swatches-L1.jpg`, three small samples that show no building layout, and the prompt states how this floor's layout differs.
+
+### L2 shell paint, second return (Nov 11): not promoted; master stays `master-L2-v1.png`
+
+- **Layout:** now Level 2's. No corridor along the top, one wide West mezzanine, the L-shaped East mezzanine. The swatch-only style reference fixed the first return's fault.
+- **Compositor: REFUSED** (3% scale, 3 / 10 px). That fit is not trustworthy for a shell: it is scored on the scripted pixels, and the editor repainted them (its own water and bridge), so there is nothing unchanged to fit on. Registration of a shell needs its own measure, against the engine's walls.
+- **East of plan x = 98** (Quarantine, Food prep, catwalk surround, Dive locker, East mezzanine, Life support, east core): room functions right, walls on the engine's by eye, 6 of 6 doors there have a gap at the engine point, `connectivity.py` reports both multi-rectangle spaces open on a scratch trial.
+- **West block is wrong:** the West mezzanine has plants, a curved bench and a wave floor (public cues, copied from the Atrium seen through the void); the wall between it and Ops offices is about 55 px too far south, so the open passage is misplaced; Ops offices runs down to the building's front edge, over an area where L2 has no space; a railed balcony and a wall ladder were invented.
+- **Both stair cores** show a dark doorway at the back of the landing, which the engine does not have.
