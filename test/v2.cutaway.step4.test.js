@@ -22,10 +22,10 @@ const geom = pg => ev(pg, () => { const s = vis('#nxMapSvg'), b = s.getBoundingC
 const canvasVB = pg => ev(pg, () => { const c = NxMap.cutaway.canvas(); return [c.x, c.y, c.w, c.h].join(' '); });
 /* Step 3's overlay with the two approved changes taken out: the quieter footprint pattern and the room labels */
 const norm = s => s.replace(/<pattern id="nx(?:Dots|Strp)Q[AB]"[\s\S]*?<\/pattern>/g, '').replace(/nxDotsQ/g, 'nxDots').replace(/nxStrpQ/g, 'nxStrp')
-  .replace(/(fill="url\(#nx(?:Dots|Strp)[AB]\)") opacity="1"/g, '$1 opacity=".8"').replace(/<g class="nx-rlabels"[^>]*>[\s\S]*?<\/g>/g, '');
+  .replace(/(fill="url\(#nx(?:Dots|Strp)[AB]\)") opacity="1"/g, '$1 opacity=".8"').replace(/<g class="nx-rlabels"[^>]*>[\s\S]*?<\/g>/g, '').replace(/<g data-delta="(?:added|removed)" data-space="[^"]+">[\s\S]*?<\/g>/g, '');   /* and Step 5's change-review outlines */
 
 const tests = {
-  async '1x overview: identical to Step 3 except the approved footprint pattern and room labels (Inspect off and on, both levels, three widths)'(b) {
+  async '1x overview: identical to Step 3 except the approved footprint pattern, room labels and (Step 5) change-review outlines (Inspect off and on, both levels, three widths)'(b) {
     const golden = JSON.parse(fs.readFileSync(path.join(__dirname, 'golden/cutaway-step3-overlay.json'), 'utf8')), snap = require('./v2.cutaway.snapshot.js');
     for (const size of W) { const now = await snap(b, size); for (const [k, v] of Object.entries(golden[size])) assert.strictEqual(norm(now[k]), v, `${size} ${k}`); } },
   async 'the footprint uses the quiet screen-pixel pattern: dots 12 px apart and stripes 10 px apart at every width, same rooms as before'(b) {
@@ -112,7 +112,7 @@ const tests = {
   async 'Find on the map: keyboard and focus; switching level announces "Level 2" then the identification, once; Escape closes the map dialog to the button that opened it'(b) {
     const pg = await open(b, PREVIEW, 320); await ticket(pg); await ev(pg, () => vis('#nxFind').focus()); await pg.keyboard.press('ArrowDown');   // keyboard selection on a closed select changes the value
     assert.strictEqual(await ev(pg, () => document.activeElement.id), 'nxFind'); await find(pg, 'room|quarantine|2');
-    assert.strictEqual(await live(pg), 'Level 2. Quarantine · restricted area · Level 2'); assert.strictEqual(await ev(pg, () => document.activeElement.id), 'nxFind', 'focus stays on the list');
+    assert.strictEqual(await live(pg), 'Level 2. Quarantine · restricted area'); assert.strictEqual(await ev(pg, () => document.activeElement.id), 'nxFind', 'focus stays on the list');
     assert.strictEqual(await ev(pg, () => vis('#nxLv2').getAttribute('aria-pressed')), 'true'); await find(pg, 'door|D-TOPW|2'); assert.strictEqual(await live(pg), 'Tank-top · west · door with a badge reader · Level 2', 'same level: no level announcement');
     assert.strictEqual(await ev(pg, () => vis('#nxIdent').textContent.replace(/\s+Inspect this door$/, '')), 'Tank-top · west · door with a badge reader · Level 2');
     await pg.keyboard.press('Escape'); await pg.waitForTimeout(80); const f = await ev(pg, () => document.activeElement.id); assert(f === 'nxMapBtn' || f === 'nxFind', 'Escape: ' + f);

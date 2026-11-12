@@ -388,7 +388,9 @@ mapRegion.addEventListener('click',e=>{if(!e.target.closest('#nxZoom')||route.sc
 /* Step 4: Find on the map, the equivalent of every tap target (switches level if needed, then names the thing; focus stays) */
 mapRegion.addEventListener('change',e=>{if(e.target.id!=='nxFind'||!e.target.value||walking())return;const [type,iid,L]=e.target.value.split('|'),l=+L,cur=route.screen==='ticket'?view[route.id].level:inboxLevel,sw=l!==cur;
   if(sw){if(route.screen==='ticket')view[route.id].level=l;else inboxLevel=l;}
-  const it={type,id:iid,l};identSet(it);renderMap();announce((sw?`Level ${l}. `:'')+NxMap.cutaway.plain(NxMap.cutaway.describe(it)));});
+  const it={type,id:iid,l},d=NxMap.cutaway.describe(it);identSet(it);renderMap();
+  /* switching level: say the level once, first, and drop it from the end of the line */
+  announce(sw?`Level ${l}. `+NxMap.cutaway.plain({...d,rest:d.rest.filter(r=>r!==`Level ${l}`)}):NxMap.cutaway.plain(d));});
 /* Step 4: "Inspect this door" on an identified door: Inspect on, lens on that door, as choosing it from the door list */
 mapRegion.addEventListener('click',e=>{if(!e.target.closest('[data-nx-act="identinspect"]')||route.screen!=='ticket'||walking())return;const id=route.id,v=view[id],g=v.ident;if(!g||g.type!=='door')return;
   v.inspect=true;v.ident=null;st[id].sel={door:g.id};v.level=E.doorLevel(g.id);v.lensP=[...E.DOORS[g.id].p];camFollow(true);render();inMap('#nxDoorPick').focus();announce(`Inspect on. Inspecting ${E.DOORS[g.id].n}`);});

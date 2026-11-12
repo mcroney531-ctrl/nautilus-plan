@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node test/test.js && node test/flow.test.js && node test/v2.css.test.js && node test/cutaway.assets.test.js",
     "build": "python build.py",
-    "test:ui": "python build.py && node test/ui.test.js && node test/v2.test.js && node test/v2.cutaway.test.js && node test/v2.cutaway.step4.test.js",
+    "test:ui": "python build.py && node test/ui.test.js && node test/v2.test.js && node test/v2.cutaway.test.js && node test/v2.cutaway.step4.test.js && node test/v2.cutaway.step5.test.js",
     "test:cutaway": "python tools/cutaway_assets.py --check --structure && node spikes/cutaway/test-geometry.js"
   }
 }

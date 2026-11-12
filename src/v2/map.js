@@ -103,7 +103,7 @@ const NxMap = ((E, F) => {
      route, the lens and the selection. Everything is still decided by the engine; only where it is drawn changes.
      Step 4: Inspect zoom (Whole building or 2x; the view follows the lens), the quieter footprint pattern (sized in screen
      pixels), room labels where they fit, and identify: a tap names what is under it from the engine's static data only.
-     Change-review outlines are Step 5. */
+     Step 5: change-review outlines (the engine's delta, as on the flat map); inspection evidence is the same panel as the flat map's. */
   const CUT = typeof NX_CUTAWAY === 'object' && NX_CUTAWAY ? NX_CUTAWAY : null;
   const cutawayOn = () => !!CUT && typeof location === 'object' && new URLSearchParams(location.search).get('map') === 'cutaway';
   const LENS_R = 56, PAD = 6, LENS_LABEL = 16;   // lens radius (map units, as on the flat map), breathing room, the lens's "ABOVE · L2" line
@@ -133,6 +133,11 @@ const NxMap = ((E, F) => {
     let s = `<g fill="#021019" opacity=".62" data-veil="${l}">${ids.filter(k => !fp.spaces.has(k)).map(k => crects(k)).join('')}</g>`;
     for (const k of lit) { const kd = E.SPACES[k].kind; if (kd === 'public' || kd === 'restricted') s += crects(k, `fill="url(#${kd === 'public' ? 'nxDotsQ' : 'nxStrpQ'}${sfx})" opacity="1" pointer-events="none"`); }
     s += lit.map(k => `<g data-lit="${k}">${crects(k, `fill="none" stroke="#a4ead0" stroke-width="${u(2)}"`, u(1))}</g>`).join('');
+    /* Step 5, change review: the engine's effective-permission difference from the last change (Engine.delta, kept on the
+       ticket), drawn exactly as the flat map draws it: added areas amber, removed areas red, both dashed. Nothing is computed here. */
+    const dl = t && t.delta && t.showDelta ? t.delta : null, dash = `stroke-width="${u(2.5)}" stroke-dasharray="${u(6)} ${u(4)}"`;
+    if (dl) { for (const k of dl.addedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="added" data-space="${k}">${crects(k, `fill="#f5d192" fill-opacity=".22" stroke="#f5d192" stroke-width="${u(3)}" stroke-dasharray="${u(6)} ${u(4)}"`, u(4))}</g>`;   // inset clear of the footprint rim, which every added area also has
+      for (const k of dl.removedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="removed" data-space="${k}">${crects(k, `fill="none" stroke="#f39091" ${dash}`, u(2))}</g>`; }
     for (const d of Object.keys(E.DOORS)) { if (E.doorLevel(d) !== l) continue; const g = fp.doors.has(d), [x, y] = cdoor(d);
       s += `<circle class="nx-door" data-door="${d}" data-granted="${g}" cx="${x}" cy="${y}" r="${u(VIS_PX)}" fill="${g ? '#a4ead0' : '#0b2a39'}" stroke="#fff" stroke-width="${u(1.6)}"/>`; }
     return s;
