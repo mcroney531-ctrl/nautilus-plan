@@ -28,11 +28,14 @@ Rules that do not change: granted, authorized and reachable stay separate; denia
 
 ## Status (Nov 12)
 
-Steps 1 and 2 authorised and built, flag off by default. Step 4 designed, not built: `docs/v2-cutaway-identify-design.md`. Steps 3 to 7, replacing the default map, and cutover: not authorised.
+Steps 1, 2 and 3 authorised and built, flag off by default. Step 4 design finalised and conditionally approved, not built: `docs/v2-cutaway-identify-design.md`. Steps 5 to 7, replacing the default map, and cutover: not authorised.
 
 - **Step 1:** `tools/cutaway_assets.py` derives `assets/v2/cutaway/L1.webp` (155 KB) and `L2.webp` (112 KB) from the untouched masters and records tool versions, encoder settings, SHA-256 of masters and assets, and the geometry hash in `assets.json`. `--check` derives them again and compares bytes (pinned versions: `requirements-cutaway.txt`); `--check --structure` also runs `shellreg.py` and `connectivity.py` on both masters. `test/cutaway.assets.test.js` runs in `npm test`: the geometry hash against the engine, and the stored files against their recorded hashes. `npm run test:cutaway` runs the full check.
 - **Step 2:** the flag needs two things, the art and `?map=cutaway`. The default build (`v2.html`, `dist/v2.html`) carries no art, so the flag cannot turn on there. `dist/v2-cutaway-preview.html` is the same app with the art; without `?map=cutaway` it behaves as the default build. With the flag on, the map area shows the painted level on a canvas whose margins are computed from the engine's doors (28 left, 53 right, 6 top, 59 bottom map units), so a lens with its label fits on any door. Frame only: no overlays, and Inspect is unavailable on the preview. `test/v2.cutaway.test.js` runs in `npm run test:ui`.
 - **Cost of the margin:** the building takes 83% of the map's width (400 of 481 units), so at 320 px it is drawn about 17% smaller than without margins. Step 3 should judge marker spacing at that size.
+
+- **Step 3 (Nov 12):** on the flagged cutaway the map now draws the granted footprint and veil, door markers, the walk route with door results, the level switch, the lens (the other level's picture through a circle, with that level's overlay) and the selection with the door's name. Ticket state stays in plan units; `NxMap.cutaway` only changes where things are drawn and how a pointer is read. `test/v2.cutaway.test.js`: 10 tests. Measurements and views: `docs/v2-cutaway-step3-measurements.json`, `docs/v2-review-shots/cutaway-step3/` (`node test/v2.cutaway.measure.js`).
+- **Step 3 findings at the rendered size:** at 320 px the lens is 71 px across (flat map: 85 px) and shows little; the two closest L2 markers are 19 px apart (flat: 34 px), under the 24 px guideline, so the named-door picker carries that pair; the door hit area is 44 px and takes all of each stair core and most of several small rooms. The public-gallery dot pattern is busy over painted floors. Not drawn yet: room labels (Step 4) and change-review outlines (Step 5).
 
 ## Proposed order
 

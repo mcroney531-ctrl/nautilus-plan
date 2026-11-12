@@ -249,9 +249,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-map-fig{margin:0 8px;display:block}
 .nx-map-fig .nx-map-cap{margin-top:8px}
 .nx-map-svg{display:block;width:100%;height:auto;aspect-ratio:4/3;border-radius:var(--nx-r-md);background:#061b29}
-/* cutaway map frame (flag off by default): the painted level under a transparent overlay drawing */
+/* cutaway map (flag off by default): the painted level, the other level seen through the lens, and a transparent overlay drawing */
 .nx-map-cut{position:relative}
 .nx-map-base{display:block;width:100%;height:auto;border-radius:var(--nx-r-md);background:#061b29}
+.nx-map-lensimg{position:absolute;left:0;top:0;width:100%;height:auto;pointer-events:none}
 .nx-map-cut .nx-map-svg{position:absolute;left:0;top:0;background:transparent}
 .nx-map-cap{font-size:13px;line-height:1.45;color:var(--nx-on-navy-muted)}
 .nx-legend{list-style:none;margin:0;padding:0 8px 8px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--nx-on-navy-muted)}

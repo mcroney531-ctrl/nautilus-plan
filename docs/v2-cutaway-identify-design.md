@@ -1,6 +1,6 @@
-# Cutaway map: identify-on-tap (integration Step 4). Design note for review; not implemented
+# Cutaway map: identify-on-tap (integration Step 4). Finalised design, conditionally approved Nov 12; not implemented
 
-Status, Nov 12: design only. Steps 1 and 2 are built behind a flag; Steps 3 to 7 are not authorised.
+Status, Nov 12: design only. Steps 1 to 3 are built behind a flag. Step 4 is not authorised for implementation; Steps 5 to 7 are not authorised.
 
 ## What exists today (V2, flat map), and must keep working
 
@@ -81,11 +81,49 @@ Only doors have inspection evidence. Selecting a room in Inspect keeps today's b
 - Granted, authorized and reachable are untouched; the map still draws granted only.
 - Tests to add with the implementation: every tap target on both levels identifies at 320, 400 and desktop; ticket state, record and result are identical before and after any number of identifications; no identify text contains a denial word; the order in section 2, including the crowded pair; the Find list reaches every target.
 
-## Questions for review
+## Decisions (Rone, Nov 12)
 
-1. **Rooms in Inspect:** today a tap on a room in Inspect selects it and the panel says something about it. Keep, or make rooms identify-only in both modes so that evidence is strictly about doors?
-2. **Find list or more:** is one grouped list enough as the keyboard equivalent, or should rooms on the map also be reachable by Tab?
-3. **"Restricted area" for every learner:** it tells a learner Quarantine is restricted before they inspect anything. I think that is right, since V2's legend already does, but it is a teaching choice.
-4. **Stair wording:** "stairs between Level 1 and Level 2" names the connection. Should it also name the doors on each side (West core · L1 and West mezzanine), or leave that to inspection?
+1. **Rooms in Inspect:** existing behaviour stays. A room can still be selected in Inspect and is identified; only doors produce access evidence. Passages, cores and voids are identified with no evidence.
+2. **Keyboard and screen reader:** the grouped Find on the map list. Rooms are not Tab stops.
+3. **Restricted classification:** shown to every learner, whatever the badge.
+4. **Stairs:** described as the connection between levels. Door permissions stay in inspection.
+
+The separation stands: tap identifies; Inspect explains.
+
+## What Step 3 measured, and what it changes here
+
+Measured on the flagged cutaway at its rendered size (`docs/v2-cutaway-step3-measurements.json`; the map is 304 px wide at 320 px, 384 px at 400 px, 364 px in the desktop column, and the building takes 83% of that).
+
+| At 320 px | Cutaway | Flat map today |
+| --- | --- | --- |
+| Door marker | 14 px | 9 px |
+| Door hit area | 44 px | 27 px |
+| Closest markers, L1 | 26 px (Classroom, Living Shore staff gate) | 33 px |
+| Closest markers, L2 | **19 px** (Quarantine, Tank-top · west) | 34 px |
+| Lens | 71 px | 85 px |
+
+Share of each room's floor where a tap selects the room and not a door, at 320 px: both stair cores **0%** on both levels (also 0% at 400 px and desktop); East mezzanine 21%; Dive locker 24%; West service hall 37%; West mezzanine 39%; Quarantine 40%; West gallery 50%; every other room over 50%.
+
+So the concern is real: a 44 px door target does swallow room taps, and it swallows the stair cores entirely.
+
+**Changes to section 2 (hit-testing):**
+
+- A door's hit radius is **22 px, capped at half the distance to the nearest other door marker on that level, and never under 12 px**. At 320 px the Quarantine and Tank-top west doors then get about 10 px each by the cap and 12 px by the floor, so they overlap by a few pixels; the nearer centre wins, as before. No tap between two doors can pick a third thing.
+- Inside a stair core, the core wins over its door unless the tap is within 12 px of the marker. The core's floor is about 25 × 13 px at 320 px, so on a phone the Find list is the dependable way to reach a core; the design does not pretend otherwise.
+- These radii apply to identification (Inspect off). In Inspect the existing door-first selection is unchanged, because it is existing behaviour and the lens is for doors.
+
+**Changes to section 4 (callout):** the callout is placed above the item, below it near the top edge, and is moved sideways if it would cover another door marker within 30 px. It must never cover the marker, passage gap or void edge it names. Step 3 already tests this for door names on all 15 doors at three widths.
+
+## Coverage required before and with implementation
+
+| Risk | Test |
+| --- | --- |
+| Real overlapping targets at 320 px | Real taps at the rendered positions of Quarantine and Tank-top · west, and at the midpoint between them and 4 px either side of it: each identifies the nearer door, never a room or the other level. Same for Classroom and Living Shore staff gate, and Dive locker and Tank-top · east. |
+| Door radius intercepting room taps | For every room on both levels at 320, 400 and desktop: a real tap at the room's largest clear point identifies the room. The measurement above is re-run and must show every room except the cores over 50% at 320 px. |
+| Stair cores | A tap in each core more than 12 px from its door marker identifies the core; the Find list reaches all four cores. |
+| Callouts covering features | For every identifiable thing: the callout's box does not intersect the item's own marker or gap, nor any door marker within 30 px, and stays inside the canvas. |
+| Find list switching levels | Choosing an item on the other level switches level, keeps focus on the Find list, announces "Level 2" and then the identification, in that order, once each. Escape or closing the map dialog returns focus to the control that opened it, as today. |
+| Existing Inspect behaviour | The current V2 suite's Inspect tests run unchanged with the flag on: room tap selects the room, door tap selects the door, the panel's content for a door is byte-identical flag on and off, and a selected passage, core or void adds nothing to the panel beyond its name. |
+| Semantics | Ticket state, record and result are identical before and after any number of identifications. No identify text matches a denial word. |
 
 Fictional facility and procedures; subject-matter review required before any real use.

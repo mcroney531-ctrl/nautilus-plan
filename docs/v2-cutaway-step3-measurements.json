@@ -1,0 +1,194 @@
+{
+ "320": {
+  "map_px": [
+   304,
+   200
+  ],
+  "building_px_wide": 253,
+  "px_per_map_unit": 0.632,
+  "marker_px": 14,
+  "marker_hit_px": 44,
+  "lens_px": 71,
+  "L1": {
+   "closest_markers_px": [
+    26,
+    "Classroom",
+    "Living Shore staff gate"
+   ],
+   "room_floor_where_a_tap_selects_the_room_pct": {
+    "West service hall": 37,
+    "West core · L1": 0,
+    "Service spine": 92,
+    "East core · L1": 0,
+    "East service hall": 73,
+    "Receiving": 63,
+    "West gallery": 50,
+    "Kelp Hall": 94,
+    "Living Shore": 62,
+    "Classroom": 62,
+    "Reef Tunnel": 100,
+    "Jelly Room": 95,
+    "Seasonal": 100,
+    "Atrium": 100
+   }
+  },
+  "L2": {
+   "closest_markers_px": [
+    19,
+    "Quarantine",
+    "Tank-top · west"
+   ],
+   "room_floor_where_a_tap_selects_the_room_pct": {
+    "West core · L2": 0,
+    "West mezzanine": 39,
+    "Quarantine": 40,
+    "Tank-top catwalks": 76,
+    "Food prep": 53,
+    "Ops offices": 94,
+    "East core · L2": 0,
+    "East mezzanine": 21,
+    "Dive locker": 24,
+    "Life support": 72
+   }
+  },
+  "flat_map_for_comparison": {
+   "map_px": [
+    304,
+    228
+   ],
+   "marker_px": 9,
+   "marker_hit_px": 27,
+   "lens_px": 85,
+   "L1_closest_markers_px": 33,
+   "L2_closest_markers_px": 34
+  }
+ },
+ "400": {
+  "map_px": [
+   384,
+   252
+  ],
+  "building_px_wide": 319,
+  "px_per_map_unit": 0.798,
+  "marker_px": 14,
+  "marker_hit_px": 44,
+  "lens_px": 89,
+  "L1": {
+   "closest_markers_px": [
+    33,
+    "Classroom",
+    "Living Shore staff gate"
+   ],
+   "room_floor_where_a_tap_selects_the_room_pct": {
+    "West service hall": 56,
+    "West core · L1": 0,
+    "Service spine": 97,
+    "East core · L1": 0,
+    "East service hall": 81,
+    "Receiving": 76,
+    "West gallery": 66,
+    "Kelp Hall": 98,
+    "Living Shore": 72,
+    "Classroom": 71,
+    "Reef Tunnel": 100,
+    "Jelly Room": 100,
+    "Seasonal": 100,
+    "Atrium": 100
+   }
+  },
+  "L2": {
+   "closest_markers_px": [
+    24,
+    "Quarantine",
+    "Tank-top · west"
+   ],
+   "room_floor_where_a_tap_selects_the_room_pct": {
+    "West core · L2": 0,
+    "West mezzanine": 57,
+    "Quarantine": 56,
+    "Tank-top catwalks": 83,
+    "Food prep": 71,
+    "Ops offices": 98,
+    "East core · L2": 0,
+    "East mezzanine": 44,
+    "Dive locker": 45,
+    "Life support": 82
+   }
+  },
+  "flat_map_for_comparison": {
+   "map_px": [
+    384,
+    288
+   ],
+   "marker_px": 12,
+   "marker_hit_px": 35,
+   "lens_px": 108,
+   "L1_closest_markers_px": 41,
+   "L2_closest_markers_px": 43
+  }
+ },
+ "desktop": {
+  "map_px": [
+   364,
+   239
+  ],
+  "building_px_wide": 303,
+  "px_per_map_unit": 0.757,
+  "marker_px": 14,
+  "marker_hit_px": 44,
+  "lens_px": 85,
+  "L1": {
+   "closest_markers_px": [
+    31,
+    "Classroom",
+    "Living Shore staff gate"
+   ],
+   "room_floor_where_a_tap_selects_the_room_pct": {
+    "West service hall": 52,
+    "West core · L1": 0,
+    "Service spine": 96,
+    "East core · L1": 0,
+    "East service hall": 79,
+    "Receiving": 73,
+    "West gallery": 63,
+    "Kelp Hall": 97,
+    "Living Shore": 69,
+    "Classroom": 69,
+    "Reef Tunnel": 100,
+    "Jelly Room": 99,
+    "Seasonal": 100,
+    "Atrium": 100
+   }
+  },
+  "L2": {
+   "closest_markers_px": [
+    23,
+    "Quarantine",
+    "Tank-top · west"
+   ],
+   "room_floor_where_a_tap_selects_the_room_pct": {
+    "West core · L2": 0,
+    "West mezzanine": 53,
+    "Quarantine": 52,
+    "Tank-top catwalks": 82,
+    "Food prep": 67,
+    "Ops offices": 97,
+    "East core · L2": 0,
+    "East mezzanine": 39,
+    "Dive locker": 41,
+    "Life support": 80
+   }
+  },
+  "flat_map_for_comparison": {
+   "map_px": [
+    364,
+    273
+   ],
+   "marker_px": 11,
+   "marker_hit_px": 33,
+   "lens_px": 102,
+   "L1_closest_markers_px": 39,
+   "L2_closest_markers_px": 41
+  }
+ }
+}

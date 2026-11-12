@@ -303,27 +303,25 @@ mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facil
     <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/><path d="M3 13l6-10M8 13l6-10" stroke="#0b2a39" stroke-width="1.5"/>')}Restricted area</li>
     <li>${sw('<circle cx="8" cy="8" r="5" fill="#a4ead0" stroke="#a9cfd6"/>')}Door included in badge permissions</li>
     <li>${sw('<circle cx="8" cy="8" r="5" fill="#0b2a39" stroke="#a9cfd6" stroke-width="1.3"/>')}Door with a reader, not in badge permissions</li></ul>`;
-/* Cutaway map frame (integration Step 2; flag off by default, see NxMap.cutawayOn). Frame only: the painted level on its
-   canvas, the level switch and the text summary. Footprint, doors, walk and lens on the cutaway are Step 3, so Inspect is
-   unavailable here and the caption says so. The painted level is a separate element under the (empty) overlay drawing, so
-   later overlay redraws never re-parse the image. */
-function renderCutawayFrame(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,f=NxMap.cutaway.frame(l),svg=inMap('#nxMapSvg'),fig=svg.parentNode;
-  let base=fig.querySelector('.nx-map-base');
-  if(!base){base=document.createElementNS('http://www.w3.org/2000/svg','svg');base.setAttribute('class','nx-map-base');base.setAttribute('aria-hidden','true');fig.insertBefore(base,svg);fig.classList.add('nx-map-cut');}
-  if(base.dataset.nxLevel!==String(l)){base.setAttribute('viewBox',f.viewBox);base.style.aspectRatio=f.ratio;base.innerHTML=f.base;base.dataset.nxLevel=String(l);}
-  svg.setAttribute('viewBox',f.viewBox);svg.style.aspectRatio=f.ratio;svg.dataset.nxFrame='cutaway';svg.innerHTML='';svg.setAttribute('role','img');svg.removeAttribute('tabindex');svg.removeAttribute('aria-label');svg.setAttribute('aria-labelledby','nxMapCap');svg.style.touchAction='';
-  mapRegion.classList.remove('nx-inspecting');const ib=inMap('#nxInspect');ib.setAttribute('aria-pressed','false');ib.disabled=true;inMap('#nxPickWrap').hidden=true;inMap('#nxInsp').hidden=true;inMap('#nxWalkNote').textContent='';
-  inMap('#nxLv1').disabled=inMap('#nxLv2').disabled=false;inMap('#nxLv1').setAttribute('aria-pressed',l===1);inMap('#nxLv2').setAttribute('aria-pressed',l===2);
-  inMap('#nxLv1').setAttribute('aria-label','Level 1, Gallery');inMap('#nxLv2').setAttribute('aria-label','Level 2, Topside');
-  inMap('#nxClock').textContent=sc?`${sc.day} ${MONTHS[+sc.date.slice(5,7)-1]} ${+sc.date.slice(8)} · ${E.fmt(sc.time)}`:'';
-  const s=NxMap.summary(t);
-  inMap('#nxMapCap').textContent=`Cutaway map preview, level ${l}: the building only. Badge permissions, doors, the walk and inspection are not drawn on this preview yet. `+(t?`${sc.person.name}'s badge grants access to ${s.doors.length} door${s.doors.length===1?'':'s'}: ${list(s.doors)}. Areas in the granted footprint, level 1: ${list(s.l1)}; level 2: ${list(s.l2)}.`:'Open a ticket to see that badge\'s permissions.');}
+/* Cutaway map (flag off by default, see NxMap.cutawayOn). Three stacked drawings share one canvas: the painted level; the
+   other level's picture, shown only through the lens circle; and the overlay, which is the only one redrawn as the lens or
+   the walk moves, so the pictures are never re-parsed. State (lens point, selection, walk points) stays in plan units. */
+const cutScale=svg=>{const w=svg.getBoundingClientRect().width;return w>0?w/NxMap.cutaway.canvas().w:0.62;};
+function cutawayDraw(svg,t,l,o){const C=NxMap.cutaway,f=C.frame(l),c=C.canvas(),fig=svg.parentNode,mk=cls=>{const e=document.createElementNS('http://www.w3.org/2000/svg','svg');e.setAttribute('class',cls);e.setAttribute('aria-hidden','true');e.setAttribute('viewBox',f.viewBox);e.style.aspectRatio=f.ratio;fig.insertBefore(e,svg);return e;};
+  let base=fig.querySelector('.nx-map-base'),li=fig.querySelector('.nx-map-lensimg');
+  if(!base){base=mk('nx-map-base');li=mk('nx-map-lensimg');fig.classList.add('nx-map-cut');svg.setAttribute('viewBox',f.viewBox);svg.style.aspectRatio=f.ratio;svg.dataset.nxFrame='cutaway';}
+  if(base.dataset.nxLevel!==String(l)){base.innerHTML=f.base;base.dataset.nxLevel=String(l);li.innerHTML=C.frame(l===1?2:1).image;li.dataset.nxLevel=String(l===1?2:1);}
+  const sc=cutScale(svg);
+  if(o.lens){const [x,y]=C.cpos(...o.lens);li.style.display='';li.style.clipPath=`circle(${C.LENS_R*sc}px at ${(x-c.x)*sc}px ${(y-c.y)*sc}px)`;}else li.style.display='none';
+  svg.innerHTML=C.overlay(t,l,getComputedStyle(document.body).fontFamily,o,sc);}
+addEventListener('resize',()=>{if(NxMap.cutawayOn())renderMap();});
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const list=a=>a.length?a.join(', '):'none';
 /* the map shows the open ticket's badge (granted only) at that ticket's level; in the inbox, the plain floor plan */
-function renderMap(){if(NxMap.cutawayOn())return renderCutawayFrame();const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,v=id?view[id]:null,ins=!!(v&&v.inspect),run=walking();
+function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,v=id?view[id]:null,ins=!!(v&&v.inspect),run=walking();
   const w=t&&t.walk,svg=inMap('#nxMapSvg');
-  svg.innerHTML=NxMap.svg(t,l,getComputedStyle(document.body).fontFamily,{lens:ins?v.lensP:null,sel:ins&&t?t.sel:null,walk:w,initials:sc?sc.person.initials:''});
+  const mo={lens:ins?v.lensP:null,sel:ins&&t?t.sel:null,walk:w,initials:sc?sc.person.initials:''};
+  if(NxMap.cutawayOn())cutawayDraw(svg,t,l,mo);else svg.innerHTML=NxMap.svg(t,l,getComputedStyle(document.body).fontFamily,mo);
   mapRegion.classList.toggle('nx-inspecting',ins);
   /* inspecting: the drawing becomes a keyboard-operable lens; otherwise it is an image named by its caption */
   if(ins){svg.setAttribute('role','application');svg.setAttribute('tabindex','0');svg.removeAttribute('aria-labelledby');svg.setAttribute('aria-label','Inspection lens on the facility map. Arrow keys move the lens; drag or tap to select a door or room. Evidence appears below the map.');svg.style.touchAction='none';}
@@ -354,11 +352,13 @@ mapRegion.addEventListener('change',e=>{if(e.target.id!=='nxDoorPick'||!e.target
   /* chosen by name: bring the evidence into view (the map stays one scroll up) */
   inMap('#nxInsp').scrollIntoView({block:'nearest'});});
 const svgEl=inMap('#nxMapSvg');let dragging=false;
-const svgPt=e=>{const p=svgEl.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=svgEl.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0};};
+const svgPt=e=>{const p=svgEl.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=svgEl.getScreenCTM(),q=m?p.matrixTransform(m.inverse()):{x:0,y:0};
+  if(!NxMap.cutawayOn())return q;const [x,y]=NxMap.cutaway.cplan(q.x,q.y);return {x,y};};   /* always plan units */
 /* the lens may centre on any point of the plan, edge doors included (the circle is clipped by the map frame) */
 const clampL=(x,y)=>[Math.max(0,Math.min(400,x)),Math.max(0,Math.min(300,y))];
 /* the lens is the selector: a door under it (this level first, then the level seen through it), else a room on a tap */
-function lensAt(x,y,tap){const id=route.id,v=view[id],t=st[id];v.lensP=clampL(x,y);const l=v.level,s=NxMap.pick(x,y,l),s2=NxMap.pick(x,y,l===1?2:1);
+function lensAt(x,y,tap){const id=route.id,v=view[id],t=st[id];v.lensP=clampL(x,y);const l=v.level,cut=NxMap.cutawayOn(),sc=cut?cutScale(svgEl):0,[X,Y]=cut?NxMap.cutaway.cpos(x,y):[0,0],
+    s=cut?NxMap.cutaway.pick(X,Y,l,sc):NxMap.pick(x,y,l),s2=cut?NxMap.cutaway.pick(X,Y,l===1?2:1,sc):NxMap.pick(x,y,l===1?2:1);
   const n=(s&&s.door)?s:(s2&&s2.door)?s2:tap?(s||s2):null;if(n)t.sel=n;}
 svgEl.addEventListener('pointerdown',e=>{const v=route.screen==='ticket'&&view[route.id];if(!v||!v.inspect||walking())return;dragging=true;try{svgEl.setPointerCapture(e.pointerId);}catch(_){}
   const p=svgPt(e);lensAt(p.x,p.y,true);renderMap();});

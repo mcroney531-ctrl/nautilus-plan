@@ -96,14 +96,19 @@ const NxMap = ((E, F) => {
     if (d) { for (const k of d.addedSpaces.filter(k => E.SPACES[k].l === l)) s += shapes(k, 'fill="none" stroke="#f5d192" stroke-width="7"'); for (const k of d.removedSpaces.filter(k => E.SPACES[k].l === l)) s += shapes(k, 'fill="none" stroke="#f39091" stroke-width="7" stroke-dasharray="14 8"'); }
     return s;
   }
-  /* Cutaway map frame (integration Step 2), behind a flag that is off by default. It needs two things: the art data, which
-     only the preview build carries (NX_CUTAWAY; the default build has none), and ?map=cutaway in the address.
-     The frame is the painted level in the engine's variant C projection, on a canvas with margins. Overlays are Step 3. */
+  /* Cutaway map, behind a flag that is off by default. It needs two things: the art data, which only the preview build
+     carries (NX_CUTAWAY; the default build has none), and ?map=cutaway in the address.
+     Step 2: the painted level in the engine's variant C projection, on a canvas with margins.
+     Step 3: the same overlays as the flat map, drawn in that projection: granted footprint and veil, door markers, the walk
+     route, the lens and the selection. Everything is still decided by the engine; only where it is drawn changes.
+     Room labels, and identifying things by tap, are Step 4. Change-review outlines are Step 5. */
   const CUT = typeof NX_CUTAWAY === 'object' && NX_CUTAWAY ? NX_CUTAWAY : null;
   const cutawayOn = () => !!CUT && typeof location === 'object' && new URLSearchParams(location.search).get('map') === 'cutaway';
   const LENS_R = 56, PAD = 6, LENS_LABEL = 16;   // lens radius (map units, as on the flat map), breathing room, the lens's "ABOVE · L2" line
-  /* plan point -> cutaway point; a door marker sits half-way up its wall, as in the spike that proved the overlays */
+  const VIS_PX = 7, HIT_PX = 22;                  // door marker radius and hit radius, in screen pixels at every width
+  /* plan point -> cutaway point, and back; a door marker sits half-way up its wall, as in the spike that proved the overlays */
   const cpos = (x, y) => [x, CUT.projection.off + CUT.projection.k * y];
+  const cplan = (X, Y) => [X, (Y - CUT.projection.off) / CUT.projection.k];
   const cdoor = d => { const p = CUT.projection, [x, y] = cpos(...E.DOORS[d].p); return [x + p.sh * p.hI * 0.5, y - p.hI * 0.5]; };
   /* margins from the engine's own doors: a lens centred on any door, with its label, fits inside the canvas */
   function canvas() {
@@ -112,7 +117,65 @@ const NxMap = ((E, F) => {
     const m = { l: Math.ceil(need.l) + PAD, r: Math.ceil(need.r) + PAD, t: Math.ceil(need.t) + PAD, b: Math.ceil(need.b) + PAD };
     return { x: -m.l, y: -m.t, w: W + m.l + m.r, h: H + m.t + m.b, margin: m, W, H };
   }
-  const frame = l => { const c = canvas(); return { viewBox: `${c.x} ${c.y} ${c.w} ${c.h}`, ratio: `${c.w} / ${c.h}`,
-    base: `<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="#061b29"/><image href="${CUT.img[l]}" x="0" y="0" width="${c.W}" height="${c.H}" preserveAspectRatio="none"/>` }; };
-  return { svg, summary, litOn, mini, pick, cutawayOn, cutaway: { frame, canvas, cpos, cdoor, LENS_R } };
+  const image = l => { const c = canvas(); return `<image href="${CUT.img[l]}" x="0" y="0" width="${c.W}" height="${c.H}" preserveAspectRatio="none"/>`; };
+  const frame = l => { const c = canvas(); return { viewBox: `${c.x} ${c.y} ${c.w} ${c.h}`, ratio: `${c.w} / ${c.h}`, image: image(l),
+    base: `<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="#061b29"/>${image(l)}` }; };
+  const crects = (id, attrs = '', inset = 0) => E.SPACES[id].r.map(r => { const [x, y] = cpos(r[0], r[1]); return `<rect x="${x + inset}" y="${y + inset}" width="${r[2] - 2 * inset}" height="${CUT.projection.k * r[3] - 2 * inset}" ${attrs}/>`; }).join('');
+  /* one level's overlay: the veil over floors outside the granted footprint, the footprint's rim and its public / restricted
+     patterns, and the doors. sc = screen pixels per map unit, so markers and lines keep their size on a phone. */
+  function clevel(t, l, sfx, sc) {
+    const u = px => px / sc, fp = footprintOf(t), ids = Object.keys(E.SPACES).filter(k => E.SPACES[k].l === l), lit = ids.filter(k => fp.spaces.has(k));
+    let s = `<g fill="#021019" opacity=".62" data-veil="${l}">${ids.filter(k => !fp.spaces.has(k)).map(k => crects(k)).join('')}</g>`;
+    for (const k of lit) { const kd = E.SPACES[k].kind; if (kd === 'public' || kd === 'restricted') s += crects(k, `fill="url(#${kd === 'public' ? 'nxDots' : 'nxStrp'}${sfx})" opacity=".8" pointer-events="none"`); }
+    s += lit.map(k => `<g data-lit="${k}">${crects(k, `fill="none" stroke="#a4ead0" stroke-width="${u(2)}"`, u(1))}</g>`).join('');
+    for (const d of Object.keys(E.DOORS)) { if (E.doorLevel(d) !== l) continue; const g = fp.doors.has(d), [x, y] = cdoor(d);
+      s += `<circle class="nx-door" data-door="${d}" data-granted="${g}" cx="${x}" cy="${y}" r="${u(VIS_PX)}" fill="${g ? '#a4ead0' : '#0b2a39'}" stroke="#fff" stroke-width="${u(1.6)}"/>`; }
+    return s;
+  }
+  function croute(w, l, initials, sc) {
+    const u = px => px / sc, pts = w.pts.slice(0, w.i + 1), at = p => p.door ? cdoor(p.door) : cpos(p.x, p.y); let s = '';
+    for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i]; if (a.l === l && b.l === l) { const [x1, y1] = at(a), [x2, y2] = at(b); s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#f5d192" stroke-width="${u(3)}" stroke-linecap="round" stroke-dasharray="${u(1)} ${u(6)}"/>`; } }
+    for (const p of pts) if (p.door && p.l === l) { const [x, y] = cdoor(p.door); s += `<circle data-walk="${p.door}" data-ok="${p.ok}" cx="${x}" cy="${y}" r="${u(VIS_PX)}" fill="${p.ok ? '#a4ead0' : '#f39091'}" stroke="#061b29" stroke-width="${u(1.6)}"/>`; }
+    const last = pts[pts.length - 1];
+    if (last && last.l === l) { const [x, y] = at(last); if (last.door && !last.ok) s += `<circle cx="${x}" cy="${y}" r="${u(13)}" fill="none" stroke="#f39091" stroke-width="${u(2.5)}"/>`;
+      s += `<g transform="translate(${x} ${y})"><circle r="${u(10)}" fill="#f5d192" stroke="#fff" stroke-width="${u(1.5)}"/><text y="${u(3.5)}" text-anchor="middle" font-size="${u(9.5)}" font-weight="800" fill="#1b1406">${initials}</text></g>`; }
+    return s;
+  }
+  function cselection(sel, l, sc) {
+    const u = px => px / sc;
+    if (sel && sel.door) { const [x, y] = cdoor(sel.door); return `<circle data-sel="${sel.door}" cx="${x}" cy="${y}" r="${u(12)}" fill="none" stroke="#ffde9f" stroke-width="${u(3)}"/>`; }
+    if (sel && sel.space) return `<g data-sel="${sel.space}">${crects(sel.space, `fill="none" stroke="#ffde9f" stroke-width="${u(2.5)}"${E.SPACES[sel.space].l === l ? '' : ` stroke-dasharray="${u(5)} ${u(4)}"`}`)}</g>`;
+    return '';
+  }
+  /* the selected door's name, placed above the door (below it near the top edge) so it never covers the door it names */
+  function ccallout(sel, sc) {
+    if (!sel || !sel.door) return ''; const u = px => px / sc, c = canvas(), d = E.DOORS[sel.door], [x, y] = cdoor(sel.door), h = u(24), w = Math.min(c.w - 8, u(d.n.length * 7.6 + 18));
+    const bx = Math.max(c.x + 4, Math.min(c.x + c.w - 4 - w, x - w / 2)), by = y - u(16) - h > c.y + 2 ? y - u(16) - h : y + u(16);
+    return `<g class="nx-callout" pointer-events="none"><rect x="${bx}" y="${by}" width="${w}" height="${h}" rx="${u(6)}" fill="#ffde9f"/><text x="${bx + w / 2}" y="${by + h * 0.7}" text-anchor="middle" font-size="${u(13)}" font-weight="800" fill="#1b1406">${d.n}</text></g>`;
+  }
+  /* The overlay drawing. Layers, bottom to top: this level (with a hole where the lens is); inside the lens, the other
+     level's overlay (the other level's picture is a separate element under this drawing, see app.js); the lens ring; then
+     the walk route, the selection and its name, so the lens never hides a stopped door or the selected door.
+     o: {lens:[plan x, plan y]|null, sel, walk, initials}; sc: screen pixels per map unit. */
+  function overlay(t, l, font, o, sc) {
+    const u = px => px / sc, c = canvas(), other = l === 1 ? 2 : 1, lens = o.lens ? cpos(...o.lens) : null;
+    font = String(font).replace(/"/g, "'");   // the family list goes inside a style attribute
+    let s = `<defs>${defs('A')}${defs('B')}${lens ? `<clipPath id="nxLensClip"><circle cx="${lens[0]}" cy="${lens[1]}" r="${LENS_R}"/></clipPath>
+      <mask id="nxLensHole" maskUnits="userSpaceOnUse" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}"><rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="#fff"/><circle cx="${lens[0]}" cy="${lens[1]}" r="${LENS_R}" fill="#000"/></mask>` : ''}</defs>`;
+    s += `<g data-level="${l}"${lens ? ' mask="url(#nxLensHole)"' : ''}>${clevel(t, l, 'A', sc)}</g>`;
+    if (lens) { const ly = lens[1] + LENS_R + u(13) > c.y + c.h - 2 ? lens[1] - LENS_R - u(6) : lens[1] + LENS_R + u(13), lx = Math.max(c.x + u(40), Math.min(c.x + c.w - u(40), lens[0]));
+      s += `<g clip-path="url(#nxLensClip)" data-lens-level="${other}">${clevel(t, other, 'B', sc)}</g>
+      <circle class="nx-lens" cx="${lens[0]}" cy="${lens[1]}" r="${LENS_R}" fill="none" stroke="#e2ffff" stroke-width="${u(3)}"/><text x="${lx}" y="${ly}" text-anchor="middle" style="font:700 ${u(11)}px ${font};fill:#e2ffff;letter-spacing:.04em" pointer-events="none">${other === 2 ? 'ABOVE · L2' : 'BELOW · L1'}</text>`; }
+    if (o.walk) s += `<g class="nx-route">${croute(o.walk, l, o.initials, sc)}</g>`;
+    return s + cselection(o.sel, l, sc) + ccallout(o.sel, sc);
+  }
+  /* what is under a cutaway point: the nearest door marker within HIT_PX screen pixels, else the room (as on the flat map) */
+  function cpick(X, Y, l, sc) {
+    let best = null, bd = 1e9;
+    for (const d of Object.keys(E.DOORS)) { if (E.doorLevel(d) !== l) continue; const [x, y] = cdoor(d), dd = Math.hypot(x - X, y - Y); if (dd < bd) { bd = dd; best = d; } }
+    if (bd * sc <= HIT_PX) return { door: best };
+    const [x, y] = cplan(X, Y), sp = Object.entries(E.SPACES).find(([k, o]) => o.l === l && o.r.some(r => x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <= r[1] + r[3]));
+    return sp ? { space: sp[0], pt: [x, y] } : null;
+  }
+  return { svg, summary, litOn, mini, pick, cutawayOn, cutaway: { frame, canvas, cpos, cplan, cdoor, overlay, pick: cpick, LENS_R, VIS_PX, HIT_PX } };
 })(Engine, Flow);
