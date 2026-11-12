@@ -57,6 +57,7 @@ painting = np.asarray(Image.open(src).convert("RGB")).astype(int)
 res = {"region": name, "box_px": box, "kind": chk["kind"], "rules": {}}
 locked = np.zeros((H, W), bool)
 for h in man.get("history", []):
+    if h["region"] not in man["regions"]: continue   # finished work locked by file (locked_files), not by a region box
     if h["region"] not in (name, chk.get("within")) and man["regions"][h["region"]].get("check", {}).get("within") != name: b = man["regions"][h["region"]]["box_px"]; locked[b[1]:b[3] + 1, b[0]:b[2] + 1] = True
 locked |= locked_mask(man, painting)
 for f in man.get("locked_files", []): locked |= np.asarray(Image.open(pkg / f).convert("L")) > 0   # scripted layers no editor may repaint
