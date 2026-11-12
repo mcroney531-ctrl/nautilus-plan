@@ -111,7 +111,7 @@ Playwright and Chromium are preinstalled; do not run `playwright install`.
 
 ### Update, Nov 12 (later): margins kept; mobile zoom spike done
 
-Decision (Rone/GPT): keep the full canvas margins, do not clip the lens on phones; Step 4 stays on HOLD pending a mobile usability pass. The spike is in `docs/spikes/cutaway-zoom/README.md` (isolated; `src/v2` untouched; 10/10 tests): Inspect-only 2× zoom whose view follows the lens, and a quieter footprint pattern. Accepted; **Step 4 built** (zoom toggle, quiet footprint, identify-on-tap and Find on the map; 15/15 tests in `test/v2.cutaway.step4.test.js`). Step 4 passed. **Step 5 built** (evidence parity, change-review outlines, flag on/off parity; `test/v2.cutaway.step5.test.js` 5/5). Awaiting Rone's review of Step 5. Step 6, Step 7 and cutover not authorised.
+Decision (Rone/GPT): keep the full canvas margins, do not clip the lens on phones; Step 4 stays on HOLD pending a mobile usability pass. The spike is in `docs/spikes/cutaway-zoom/README.md` (isolated; `src/v2` untouched; 10/10 tests): Inspect-only 2× zoom whose view follows the lens, and a quieter footprint pattern. Accepted; **Step 4 built** (zoom toggle, quiet footprint, identify-on-tap and Find on the map; 15/15 tests in `test/v2.cutaway.step4.test.js`). Step 4 passed. **Step 5 built** (evidence parity, change-review outlines, flag on/off parity; `test/v2.cutaway.step5.test.js` 5/5). Step 5 passed. **Step 6 review done: HOLD** (`docs/v2-cutaway-step6-review.md`): fix R1 and R2, then real-device and screen-reader checks, which Claude cannot perform. Step 7 and cutover not authorised.
 
 ### The open decision (as it stood before the update above)
 
