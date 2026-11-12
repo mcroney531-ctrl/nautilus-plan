@@ -86,6 +86,8 @@ for rid in ROOMS:
         man = json.loads((pkg / "manifest.json").read_text()); key = next(k_ for k_, v_ in plan["masks"].items() if v_["room"] == rid and v_["box_px"]); ys_, xs_ = np.nonzero(M)
         Image.fromarray((M * 255).astype(np.uint8)).save(pkg / f"mask-{key}.png"); cv = Image.new("L", (1600, 1067), 0); cv.paste(Image.fromarray((M * 255).astype(np.uint8)), (0, 0)); cv.save(pkg / f"canvas-3x2-mask-{key}.png")
         man["regions"][key] |= {"box_px": [int(xs_.min()), int(ys_.min()), int(xs_.max()), int(ys_.max())], "rects": rects, "check": {"kind": "room"}}; (pkg / "manifest.json").write_text(json.dumps(man, indent=1)); print(key, "mask px", int(M.sum())); continue
+    if ADD:   # an added room is composited through the package's own mask file, the one maskcheck.py passed
+        key = next(k_ for k_, v_ in plan["masks"].items() if v_["room"] == rid and v_["box_px"]); M = np.asarray(Image.open(pkg / f"mask-{key}.png").convert("L")) > 0
     al = Image.fromarray((M * 255).astype(np.uint8)); alpha = np.minimum(np.asarray(al.filter(ImageFilter.MinFilter(7)).filter(ImageFilter.GaussianBlur(1.5)), np.float32), np.asarray(al, np.float32)) / 255
     tall = lambda xe: hE * 0.6 if (xe <= 12 or xe >= 388) else hI; report[rid] = {"pieces": []}
     for r in rects:   # each rectangle of the space is fitted on its own walls; the mask stays one piece
