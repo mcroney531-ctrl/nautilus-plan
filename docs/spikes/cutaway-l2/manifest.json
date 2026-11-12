@@ -25,9 +25,9 @@
  "regions": {
   "02-westMezz": {
    "box_px": [
-    54,
+    92,
     246,
-    401,
+    399,
     534
    ],
    "room": "West mezzanine (engine: westMezz, staff)",
@@ -64,7 +64,7 @@
   },
   "07-admin": {
    "box_px": [
-    54,
+    75,
     513,
     398,
     785

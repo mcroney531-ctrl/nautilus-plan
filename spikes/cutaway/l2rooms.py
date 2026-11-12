@@ -58,7 +58,7 @@ for rid in ROOMS:
     M = np.zeros((H, W), bool)
     for r in rects:
         fl = np.zeros((H, W), bool); fl[int(Y(r[1])):int(Y(r[1] + r[3])) + 1, int(X(r[0])):int(X(r[0] + r[2])) + 1] = True; M |= fl & isfloor
-        bw = np.zeros((H, W), bool); bw[int(Y(r[1]) - hI * s) + 3:int(Y(r[1])) + 2, int(X(r[0])) + 6:int(X(r[0] + r[2])) + int(sh * hI * s)] = True
+        bw = np.zeros((H, W), bool); bw[int(Y(r[1]) - hI * s) + 3:int(Y(r[1])) + 2, int(X(r[0]) + (sh * hE * 0.6 * s + 4 if r[0] <= 12 else 6)):int(X(r[0] + r[2])) + int(sh * hI * s)] = True   # clear of the west exterior wall's leaning face
         if not any(q is not r and abs(q[1] + q[3] - r[1]) < 0.01 for q in rects): M |= bw & Acut & ~caps      # its own back wall's face
         xe = r[0] + r[2]
         if rid not in NO_EAST_FACE and not any(q is not r and abs(q[0] - xe) < 0.01 for q in rects):                                        # its own east wall's face, the side that looks into the room
@@ -69,6 +69,11 @@ for rid in ROOMS:
     M = np.asarray(Image.fromarray((M * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))) > 0
     M &= ~grow(caps, 1) & ~lock & ~(Afull & ~Acut)
     if MASKS_ONLY:
+        for f_ in json.loads((pkg / "manifest.json").read_text()).get("locked_files", []): M &= ~grow(np.asarray(Image.open(pkg / f_).convert("L")) > 0, 2)   # never a finished or scripted pixel
+        own = np.zeros((H, W), bool)
+        for r in rects:
+            hw = hE * 0.6 if r[0] + r[2] >= 388 else hI; own[int(Y(r[1]) - hI * s):int(Y(r[1])) + 4, int(X(r[0])):int(X(r[0] + r[2]) + sh * hI * s) + 2] = True; own[int(Y(r[1]) - hw * s):int(Y(r[1] + r[3])) + 2, int(X(r[0] + r[2])) - 3:int(X(r[0] + r[2]) + sh * hw * s) + 2] = True
+        M &= ~(Acut & ~own)   # wall pixels only on its own back and east wall faces
         man = json.loads((pkg / "manifest.json").read_text()); key = next(k_ for k_, v_ in plan["masks"].items() if v_["room"] == rid and v_["box_px"]); ys_, xs_ = np.nonzero(M)
         Image.fromarray((M * 255).astype(np.uint8)).save(pkg / f"mask-{key}.png"); cv = Image.new("L", (1600, 1067), 0); cv.paste(Image.fromarray((M * 255).astype(np.uint8)), (0, 0)); cv.save(pkg / f"canvas-3x2-mask-{key}.png")
         man["regions"][key] |= {"box_px": [int(xs_.min()), int(ys_.min()), int(xs_.max()), int(ys_.max())], "rects": rects, "check": {"kind": "room"}}; (pkg / "manifest.json").write_text(json.dumps(man, indent=1)); print(key, "mask px", int(M.sum())); continue
