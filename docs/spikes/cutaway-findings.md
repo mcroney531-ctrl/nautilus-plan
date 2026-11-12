@@ -497,3 +497,12 @@ No public cues anywhere on the level.
 - Voids could be dimmed further.
 
 **Validation limitation (documented):** the compositor's fit-quality gate does not apply where fewer than 300 wall-cap pixels surround a region.
+
+### L2 void treatment and final lock (Nov 12): `master-L2-v4.png`, L2 artwork LOCKED
+
+- **Change:** `spikes/cutaway/l2voids.py`, no image generation. Inside the three voids only: the L1 imagery darker and cooler (36% brightness, partly desaturated, blue-shifted), a deep inner shadow from the edge, a dark rim, a handrail with posts. Boundaries, the L1 imagery's position, walls and interaction geometry unchanged.
+- **Reads as intended:** at 320 px, 400 px and desktop the voids sit clearly below the lit L2 rooms; the Atrium's bench and plants, the Classroom's counter and the West gallery floor are still recognisable.
+- **Protected pixels:** 193,194 void pixels changed; 0 pixels outside the voids; 0 room pixels; 0 catwalk or bridge pixels.
+- **Checks on v4:** `shellreg.py` PASS; `connectivity.py` both spaces open; door taps 24 of 24 and picker 8 of 8 at each width; the AV vendor's walk completes on L2; lens from L1 over the Atrium shows the dimmed void, lens from L2 over the void shows the lit Atrium, in register. L1 taps still 21 of 21.
+- **Assets:** painted L1 155 KB, painted L2 112 KB as WebP.
+- **Next:** proposed integration order in `docs/v2-cutaway-integration-plan.md`. Not started.

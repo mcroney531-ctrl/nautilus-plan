@@ -8,7 +8,8 @@ Spike material, not V2. Plan and decisions: `PLAN.md`. Same tools and rules as t
 | `master-L2-v0.png` | Shell base: blockout plus the scripted Reef tank top and void views cut from `master-L1-v11.png` (`l2base.py`). |
 | `master-L2-v1.png` | v0 plus the scripted catwalk grating and bridge (`l2catwalk.py`). |
 | `master-L2-v2.png` | Stage 1 (`l2rooms.py`): engine walls with a scripted finish; Quarantine, Food prep, Dive locker, Life support and East mezzanine resampled from `source-shell-return-2.png` (`stage1-transforms.json`). `lock-rooms-L2.png` locks those rooms. |
-| `master-L2-v3.png` | v2 plus West mezzanine and Ops offices from `source-west-return-1.png`, placed by hand with a recorded approval (`l2rooms.py --add`). Current master. |
+| `master-L2-v3.png` | v2 plus West mezzanine and Ops offices from `source-west-return-1.png`, placed by hand with a recorded approval (`l2rooms.py --add`). |
+| `master-L2-v4.png` | v3 with the void treatment (`l2voids.py`). **Locked, final L2 master.** |
 | `lock-L2.png` | Scripted pixels no editor mask may hold. `bridge-exception-L2.png`: the locked pixels the bridge and its shadow changed, the one approved exception. `scripted-catwalk-L2.png`: grating and bridge. |
 | `mask-00-shell.png` | The first whole-level paint: everything except the locked, scripted and catwalk pixels. |
 | `mask-NN-*.png`, `manifest.json` | The planned room regions, for corrections after the shell paint. |
@@ -23,4 +24,4 @@ Spike material, not V2. Plan and decisions: `PLAN.md`. Same tools and rules as t
 
 ## Status
 
-All eight rooms are in `master-L2-v3.png`. The stair-core landings are plain (assessment in `../cutaway-findings.md`). No region is pending.
+L2 artwork is locked at `master-L2-v4.png` (Nov 12). All eight rooms are in it. The stair-core landings are plain (assessment in `../cutaway-findings.md`). No region is pending.

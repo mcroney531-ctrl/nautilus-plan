@@ -101,6 +101,15 @@
    ],
    "from": "master-L2-v2.png",
    "to": "master-L2-v3.png"
+  },
+  {
+   "region": "voids",
+   "method": "scripted void treatment (no image generation)",
+   "void_pixels": 193194,
+   "pixels_changed": 193194,
+   "outside_voids_unchanged": true,
+   "from": "master-L2-v3.png",
+   "to": "master-L2-v4.png"
   }
  ]
 }
