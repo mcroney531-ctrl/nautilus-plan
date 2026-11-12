@@ -18,6 +18,12 @@ sys.path.insert(0, str(Path(__file__).parent)); import shellreg as R
 root = Path(__file__).resolve().parents[2]; pkg = root / "docs/spikes/cutaway-l2"; W, H = 1600, 1004; a_ = sys.argv[1:]
 prev = Path(a_[a_.index("--preview") + 1]) if "--preview" in a_ else None
 ROOMS = (a_[a_.index("--rooms") + 1].split(",") if "--rooms" in a_ else ["quarantine", "food", "dive", "life", "eastMezz"])
+ADD = "--add" in a_   # add rooms to the latest master from another source image; no wall finish, nothing outside the rooms' masks changes
+SRC = a_[a_.index("--source") + 1] if "--source" in a_ else "source-shell-return-2.png"; GFIT = tuple(float(v) for v in a_[a_.index("--gfit") + 1].split(",")) if "--gfit" in a_ else (1.005, 1, -2)
+GC = tuple(float(v) for v in a_[a_.index("--gcentre") + 1].split(",")) if "--gcentre" in a_ else (1009, 502)
+SRCBOX = {}   # room -> the painted room's floor rectangle in the aligned source (px), set by hand where the painted walls are too far off to find
+for i_, v_ in enumerate(a_):
+    if v_ == "--srcbox": k_, b_ = a_[i_ + 1].split(":"); SRCBOX[k_] = [float(x_) for x_ in b_.split(",")]
 MASKS_ONLY = "--masks-only" in a_   # write engine-derived room masks for the named rooms into the package (for editor passes); paints nothing
 NO_EAST_FACE = {"life"}   # the source paints a dark panel on Life support's exterior wall that reads as an opening; that wall face stays the engine's
 plan = json.loads((pkg / "plan.json").read_text()); p = plan["projection"]; s = 4; k, off, hI, hE, sh = p["k"], p["off"], p["hI"], p["hE"], p["sh"]; X = lambda x: x * s; Y = lambda y: (off + k * y) * s
@@ -27,16 +33,19 @@ const svg=baseSVG(2,'C',false,JSON.parse(process.argv[1])).replace(/width="400" 
 await pg.setContent(`<html><body style="margin:0;background:#000">${svg}</body></html>`);await pg.locator('svg').screenshot({path:process.argv[2]});await b.close()})()"""
     f = root / "spikes/cutaway/out" / name; subprocess.check_call(["node", "-e", js, json.dumps(spec), str(f)], cwd=root); return np.asarray(Image.open(f).convert("L")) > 0
 grow = lambda m, n: np.asarray(Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(2 * n + 1))) > 0
-B = np.asarray(Image.open(pkg / "blockout-L2.png").convert("RGB")).astype(np.float32); base = np.asarray(Image.open(pkg / "master-L2-v1.png").convert("RGB")).astype(np.float32)
+B = np.asarray(Image.open(pkg / "blockout-L2.png").convert("RGB")).astype(np.float32); basefile = max(pkg.glob("master-L2-v*.png"), key=lambda q: int(re.search(r"v(\d+)", q.stem).group(1))) if ADD else pkg / "master-L2-v1.png"
+base = np.asarray(Image.open(basefile).convert("RGB")).astype(np.float32)
 lock = (np.asarray(Image.open(pkg / "lock-L2.png").convert("L")) > 0) | (np.asarray(Image.open(pkg / "scripted-catwalk-L2.png").convert("L")) > 0)
+if ADD: lock |= np.asarray(Image.open(pkg / "lock-rooms-L2.png").convert("L")) > 0
 Acut = arch({"cut": True}, "C-L2-arch-cut.png"); Afull = arch(True, "C-L2-arch.png"); caps = np.abs(B - np.array([238, 243, 245])).max(axis=2) < 8
 isfloor = (np.abs(B - np.array([188, 197, 202])).max(axis=2) < 10) | (np.abs(B - np.array([196, 187, 177])).max(axis=2) < 10) | (np.abs(B - np.array([174, 183, 189])).max(axis=2) < 10)
 rng = np.random.default_rng(11); yy, xx = np.mgrid[0:H, 0:W]; out = base.copy()
 # ---- 1. wall finish ----
-faces = Acut & ~grow(caps, 1) & ~lock; lum = (B.mean(axis=2) - 123) / 61.0; grain = rng.normal(0, 2.2, (H, W))
+Z0 = np.zeros((H, W), bool)
+faces = (Z0 if ADD else Acut & ~grow(caps, 1) & ~lock); lum = (B.mean(axis=2) - 123) / 61.0; grain = rng.normal(0, 2.2, (H, W))
 wall = np.stack([np.clip(lum, 0, 1.1) * 58 + 78, np.clip(lum, 0, 1.1) * 56 + 77, np.clip(lum, 0, 1.1) * 54 + 77], axis=2) + grain[..., None]; out[faces] = wall[faces]
-unp = isfloor & ~lock; conc = np.full((H, W, 3), (128, 126, 123), np.float32) + grain[..., None]; conc[(xx % 40 == 0) | (yy % 27 == 0)] -= 9; out[unp] = conc[unp]   # floors no room has painted yet: plain sealed tile
-lamps = [(X(32) + 60, Y(12)), (X(368) + 60, Y(12)), (X(216), Y(44)), (X(278), Y(44)), (X(125), Y(112)), (X(175), Y(112))]   # stair cores and the catwalk room's back wall
+unp = (Z0 if ADD else isfloor & ~lock); conc = np.full((H, W, 3), (128, 126, 123), np.float32) + grain[..., None]; conc[(xx % 40 == 0) | (yy % 27 == 0)] -= 9; out[unp] = conc[unp]   # floors no room has painted yet: plain sealed tile
+lamps = [] if ADD else [(X(32) + 60, Y(12)), (X(368) + 60, Y(12)), (X(216), Y(44)), (X(278), Y(44)), (X(125), Y(112)), (X(175), Y(112))]   # stair cores and the catwalk room's back wall
 glow = np.zeros((H, W), np.float32)
 for lx, fy in lamps: glow += np.exp(-(((xx - lx) / 62.0) ** 2 + ((yy - (fy - 4)) / 40.0) ** 2)) * 105
 lit = (faces | unp)[..., None] * glow[..., None] * np.array([1.0, 0.82, 0.55]); out += lit
@@ -44,7 +53,7 @@ img = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)); d = ImageDraw.Draw
 for lx, fy in lamps: d.rectangle([lx - 13, fy - 27, lx + 13, fy - 23], fill=(52, 49, 46)); d.rectangle([lx - 11, fy - 23, lx + 11, fy - 18], fill=(255, 222, 160))
 out = np.asarray(img).astype(np.float32); out[caps | lock] = base[caps | lock]; finish = (faces | unp) & ~caps
 # ---- 2 and 3. rooms ----
-src = R.to_frame(Image.open(pkg / "source-shell-return-2.png")); c0 = (1009, 502); g = (1.005, 1, -2)   # shellreg's global fit for this return
+src = R.to_frame(Image.open(pkg / SRC)); c0 = GC; g = GFIT   # shellreg's global fit for this return
 src = src.transform((W, H), Image.AFFINE, (1 / g[0], 0, c0[0] - (c0[0] + g[1]) / g[0], 0, 1 / g[0], c0[1] - (c0[1] + g[2]) / g[0]), Image.BICUBIC); Pc = R.painted_caps(src); S_ = np.asarray(src).astype(np.float32)
 def edge_shift(strip, axis):  # how far the painted caps in this strip sit from the engine's, along one axis (+/-48 px)
     e = caps & strip; best = (-1, 0)
@@ -85,8 +94,8 @@ for rid in ROOMS:
         def hstrip(ye): h_ = 2 if ye >= 288 else hI; z = np.zeros((H, W), bool); cy = Y(ye) - h_ * s; z[int(cy) - 12:int(cy) + 10, int(X(x0)) + 40:int(X(x1)) - 20] = True; return z
         inner = lambda o, at: any(q is not r and any(abs(e - at) < 0.01 for e in ((q[0], q[0] + q[2]) if o == "v" else (q[1], q[1] + q[3]))) for q in rects)   # an edge shared inside the space has no wall to measure
         oL = 0 if inner("v", x0) else edge_shift(vstrip(x0), 1); oR = 0 if inner("v", x1) else edge_shift(vstrip(x1), 1); oT = 0 if inner("h", y0) else edge_shift(hstrip(y0), 0); oB = 0 if inner("h", y1) else edge_shift(hstrip(y1), 0)
-        ex0, ex1, ey0, ey1 = X(x0), X(x1), Y(y0), Y(y1); px0, px1, py0, py1 = ex0 + oL, ex1 + oR, ey0 + oT, ey1 + oB; sx, sy = (px1 - px0) / (ex1 - ex0), (py1 - py0) / (ey1 - ey0)
-        piece = {"rect": r, "painted_walls_off_by_px": {"left": oL, "right": oR, "top": oT, "bottom": oB}, "x_scale": round(sx, 3), "y_scale": round(sy, 3)}; report[rid]["pieces"].append(piece)
+        ex0, ex1, ey0, ey1 = X(x0), X(x1), Y(y0), Y(y1); sb = SRCBOX.get(rid); px0, px1, py0, py1 = (sb[0], sb[2], sb[1], sb[3]) if sb else (ex0 + oL, ex1 + oR, ey0 + oT, ey1 + oB); sx, sy = (px1 - px0) / (ex1 - ex0), (py1 - py0) / (ey1 - ey0)
+        piece = {"rect": r, "painted_floor_px": [round(px0), round(py0), round(px1), round(py1)], "set_by_hand": rid in SRCBOX, "painted_walls_off_by_px": {"left": oL, "right": oR, "top": oT, "bottom": oB}, "x_scale": round(sx, 3), "y_scale": round(sy, 3)}; report[rid]["pieces"].append(piece)
         if abs(sx - 1) > 0.2 or abs(sy - 1) > 0.2: piece["result"] = "REFUSED"; continue
         F = np.asarray(src.transform((W, H), Image.AFFINE, (sx, 0, px0 - sx * ex0, 0, sy, py0 - sy * ey0), Image.BICUBIC)).astype(np.float32)
         part = np.zeros((H, W), np.float32); part[int(Y(y0) - hE * s):int(Y(y1)) + 2, int(X(x0)):int(X(x1)) + (int(sh * hE * 0.6 * s) + 2 if not inner("v", x1) else 0)] = 1
@@ -105,6 +114,13 @@ assert not (ch & ~(roommask | finish)).any(), "pixels outside the room masks and
 (prev or pkg).mkdir(parents=True, exist_ok=True); (prev / "stage1-transforms.json").write_text(json.dumps({"source": "source-shell-return-2.png", "global_fit": {"scale": g[0], "dx_px": g[1], "dy_px": g[2], "about_px": list(c0)}, "rooms": report}, indent=1)) if prev else None
 print(json.dumps(report, indent=1)); dest = prev or pkg; dest.mkdir(parents=True, exist_ok=True)
 if prev: Image.fromarray(res).save(prev / "l2-stage1.png"); Image.fromarray((roommask * 255).astype(np.uint8)).save(prev / "l2-stage1-roommask.png")
+elif ADD:
+    nv = int(re.search(r"v(\d+)", basefile.stem).group(1)) + 1; Image.fromarray(res).save(pkg / f"master-L2-v{nv}.png")
+    lk = (np.asarray(Image.open(pkg / "lock-rooms-L2.png").convert("L")) > 0) | roommask; Image.fromarray((lk * 255).astype(np.uint8)).save(pkg / "lock-rooms-L2.png")
+    tf = json.loads((pkg / "stage1-transforms.json").read_text()); tf.setdefault("added", []).append({"source": SRC, "global_fit": {"scale": g[0], "dx_px": g[1], "dy_px": g[2], "about_px": list(c0)}, "rooms": report}); (pkg / "stage1-transforms.json").write_text(json.dumps(tf, indent=1))
+    man = json.loads((pkg / "manifest.json").read_text())
+    for k_ in [k_ for k_ in man["regions"] if any(k_.split("-", 1)[1].startswith(r_) for r_ in ROOMS)]: man["regions"].pop(k_)
+    man.setdefault("history", []).append({"region": "rooms-added", "method": "engine walls; room interiors resampled from " + SRC, "rooms": ROOMS, "from": basefile.name, "to": f"master-L2-v{nv}.png"}); (pkg / "manifest.json").write_text(json.dumps(man, indent=1)); print("promoted", f"master-L2-v{nv}.png")
 else:
     mp = max(pkg.glob("master-L2-v*.png"), key=lambda q: int(re.search(r"v(\d+)", q.stem).group(1))); nv = int(re.search(r"v(\d+)", mp.stem).group(1)) + 1; assert mp.name == "master-L2-v1.png", "stage 1 is built on v1"
     Image.fromarray(res).save(pkg / f"master-L2-v{nv}.png"); Image.fromarray(((roommask | finish) * 255).astype(np.uint8)).save(pkg / "stage1-L2.png")

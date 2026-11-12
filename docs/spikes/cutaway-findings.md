@@ -402,3 +402,14 @@ Still placeholder: West mezzanine, Ops offices (Stage 2) and the two stair-core 
 ### L2 Stage 1 promoted (Nov 12): `master-L2-v2.png`
 
 Stage 1 approved, with the east-wall-face extension. Checks re-run on the promoted file: identical to the reviewed preview; `shellreg.py` PASS, recall 1.0; `connectivity.py` both spaces open; 0 pixels changed outside the Stage 1 pixels and 0 scripted pixels changed; 24 of 24 L2 door taps. The five rooms are locked by `lock-rooms-L2.png`. Approved for Stage 1 only: West mezzanine, Ops offices and the stair cores are still to do. Handoffs for regions 02 and 07 are prepared against v2 with engine-derived room masks (rules R1 to R3 pass); the wall between them and its passage are outside both masks.
+
+### L2 west rooms: first return (Nov 12): candidate prepared, not promoted; master stays `master-L2-v2.png`
+
+Source: `docs/spikes/cutaway-l2/source-west-return-1.png`. The editor repainted the whole level and painted both west rooms in one image.
+
+- **As architecture it fails again:** `shellreg.py` HOLD. The wall between West mezzanine and Ops offices is about 95 px too far south and the offices run to the building's front edge.
+- **The ordinary compositor accepted region 02** (scale 0.995, 1 / −2 px) and wrote a v3 without review. Its fit was scored on surroundings the editor had redrawn (ring error 21, against 4 to 8 on good passes), so the number meant little. That file was deleted. A high ring error should be a HOLD in `composite.py`; not yet changed.
+- **As environments both rooms are good,** and were fitted onto the engine's walls with `l2rooms.py --add` (source boxes set by hand, because the painted walls are beyond the automatic search; recorded in the preview's transforms):
+  - **West mezzanine:** no scale change. The painted room is 60 px deeper than the engine's; the extra is empty floor at the front and is cropped. Lockers, a cart and shelving against the back wall; clear floor at all four openings; no public cues.
+  - **Ops offices:** moved up 99 px and squeezed 17% vertically (a new exception, awaiting approval). Without the squeeze the desks and chairs are cut by the room's front wall. Shelving, cupboard, filing cabinet, two desks with blank monitors and chairs; clear path from the passage.
+- **Checks on the candidate:** masks 0 cap, 0 opening-span, 0 locked pixels; 0 pixels changed outside the two masks and 0 approved-room pixels changed; `shellreg.py` PASS, recall 1.0; `connectivity.py` both spaces open. Door taps to run on promotion.
