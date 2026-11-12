@@ -109,7 +109,11 @@ node test/v2.cutaway.measure.js        # measurements + screenshots, not pass/fa
 
 Playwright and Chromium are preinstalled; do not run `playwright install`.
 
-### The open decision (this is where we stopped)
+### Update, Nov 12 (later): margins kept; mobile zoom spike done
+
+Decision (Rone/GPT): keep the full canvas margins, do not clip the lens on phones; Step 4 stays on HOLD pending a mobile usability pass. The spike is in `docs/spikes/cutaway-zoom/README.md` (isolated; `src/v2` untouched; 10/10 tests): Inspect-only 2× zoom whose view follows the lens, and a quieter footprint pattern. Awaiting Rone's decision on its recommendation.
+
+### The open decision (as it stood before the update above)
 
 Step 3's measurements at the rendered size (`docs/v2-cutaway-step3-measurements.json`) are worse than the flat map on a 320 px phone, because the canvas margins that keep the lens uncut shrink the building to 83% of the map's width:
 
