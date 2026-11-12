@@ -1,0 +1,89 @@
+{
+ "taps": {
+  "320": {
+   "doors": 8,
+   "wrong": []
+  },
+  "400": {
+   "doors": 8,
+   "wrong": []
+  },
+  "desktop": {
+   "doors": 8,
+   "wrong": []
+  }
+ },
+ "passage_tap": {
+  "320": "null",
+  "400": "null",
+  "desktop": "null"
+ },
+ "picker": {
+  "320": {
+   "doors": 8,
+   "wrong": []
+  },
+  "400": {
+   "doors": 8,
+   "wrong": []
+  },
+  "desktop": {
+   "doors": 8,
+   "wrong": []
+  }
+ },
+ "clipped_markers": {
+  "320": [],
+  "400": [],
+  "desktop": []
+ },
+ "closest_markers_px": {
+  "320": [
+   23,
+   "D-QUAR",
+   "D-TOPW"
+  ],
+  "400": [
+   29,
+   "D-QUAR",
+   "D-TOPW"
+  ],
+  "desktop": [
+   75,
+   "D-QUAR",
+   "D-TOPW"
+  ]
+ },
+ "walks": {
+  "320": {
+   "AV vendor to the catwalks (10:00)": {
+    "status": "Walk complete: reached every stop.",
+    "level": 2
+   },
+   "dive crew lead at 05:30": {
+    "status": "Walk stopped at Loading dock.",
+    "level": 1
+   }
+  },
+  "400": {
+   "AV vendor to the catwalks (10:00)": {
+    "status": "Walk complete: reached every stop.",
+    "level": 2
+   },
+   "dive crew lead at 05:30": {
+    "status": "Walk stopped at Loading dock.",
+    "level": 1
+   }
+  },
+  "desktop": {
+   "AV vendor to the catwalks (10:00)": {
+    "status": "Walk complete: reached every stop.",
+    "level": 2
+   },
+   "dive crew lead at 05:30": {
+    "status": "Walk stopped at Loading dock.",
+    "level": 1
+   }
+  }
+ }
+}

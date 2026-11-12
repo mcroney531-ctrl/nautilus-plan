@@ -429,3 +429,71 @@ Source: `docs/spikes/cutaway-l2/source-west-return-1.png`. The editor repainted 
 - **The editor's version** (not used) drew a flight of stairs and a dark doorway on the back wall of both cores. The stairs are right in spirit; the doorway is an opening the engine does not have.
 - **Options:** (A) leave as is: the two levels agree, and the core is named by its label and its door marker. (B) a scripted stair cue, a few treads and a handrail against the back wall with no doorway, on both levels; L1 would have to be reopened for two small regions. (C) an editor pass per core: each landing is about 120 × 70 px, the size the editor places badly, and it has already invented a doorway there twice.
 - **Recommendation:** A for now. A stair cue is worth having, because the stairs are the only way between levels, but it is the same question on both levels and belongs with the integration decisions (labels, tap-to-identify), not with L2's art.
+
+---
+
+## Level 2 review on `master-L2-v3.png` (Nov 12)
+
+Views and results: `docs/spikes/cutaway-shots/l2-review/` (every state at 320 px, four desktop views, a contact sheet, `l2-review.json`), made by `spikes/cutaway/l2-review.js`. Stair cores: Option A approved, landings unchanged.
+
+To exercise Level 2 the spike page gained review-only badges (Exhibit Operations, Dive Crew, Temporary Exhibit AV) and can run another scenario's walk. One spike fault was found and fixed on the way: its lens showed the grey L1 blockout under L2, not the painted L1.
+
+### Recommendation: GO for L2 as the visual foundation, with the integration requirements below. No blockers.
+
+**1. Room function against the engine**
+
+| Space | Engine kind | Painted as | Match |
+| --- | --- | --- | --- |
+| Quarantine | restricted | isolation tanks, pipework, sink | yes |
+| Life support | restricted | pumps, filter vessel, skimmer column, control cabinet | yes |
+| Tank-top catwalks | staff | open reef tank top, grating, railed bridge | yes |
+| Dive locker | staff | wetsuits, cylinders, lockers, bench | yes |
+| Food prep | staff | steel counters, sinks, fridge, shelving | yes |
+| Ops offices | staff | desks, blank monitors, shelving, cupboard | yes |
+| West mezzanine | staff | lockers, cart, shelving, clear floor | yes |
+| East mezzanine | staff | shelving, dive-gear storage, clear floor | yes |
+| Cores | core | plain landings | plain by decision |
+
+No public cues anywhere on the level.
+
+**2 to 5. Footprints, walks, inspection, lens, doors**
+
+- **Footprints:** Exhibit Operations lights West mezzanine, Ops offices (through the open passage), Quarantine, Food prep and the catwalks; Dive Crew lights East mezzanine, Dive locker and the catwalks. Life support is lit by no badge, as the engine has it. Unlit rooms dim and stay recognisable.
+- **Walk:** the AV vendor's walk completes on L2 (stair, West mezzanine door, across the mezzanine, Tank-top west door, into the catwalk corridor), with the route on clear floor. The dive lead's 05:30 walk stops at the Loading dock on L1, as the engine decides. **Not exercised:** a walk that is stopped at an L2 door; no scenario in the spike produces one.
+- **Door taps:** 8 of 8 at each width (24 of 24). **Named-door picker:** 8 of 8 at each width; it switches to L2, turns on Inspect and selects the door.
+- **Lens, L1 to L2:** over the Reef Tunnel the ring and manta stay in place and the surface becomes lit water with the bridge. **L2 to L1:** over Quarantine it shows the Kelp Hall tank; over the Atrium void it shows the Atrium, in register with the void's own view; over the Classroom void likewise. Over a core it shows the other level's landing.
+- **Open passage (West mezzanine to Ops offices):** painted open at the engine's position; tapping it selects nothing.
+
+**6. Mobile readability**
+
+- No L2 door marker is clipped by the map edge at any width. The lens is clipped when it sits on Life support's door or on either core.
+- Closest markers: Quarantine and Tank-top west, 23 px at 320 px, 29 px at 400 px, 75 px at desktop.
+- At 320 px only Quarantine and Food prep get a label, and the Quarantine door marker covers the label's first letter. Six rooms, including restricted Life support, have none.
+
+**7. Seams and resampling:** no seam at room edges at desktop or 320 px; no furnishing visibly cut by a wall; the 15 to 17% stretches (Dive locker, East mezzanine west part, Ops offices) are not noticeable at either size.
+
+**Checks:** `shellreg.py` PASS; `connectivity.py` open on both levels; `test-composite.py` all pass; 9 geometry tests and 26 engine tests pass; L1 door taps still 21 of 21. No region is pending, so there is no mask to check.
+
+### Findings by class
+
+**BLOCKER:** none.
+
+**INTEGRATION REQUIREMENT**
+
+1. Canvas margin (carried from L1): lenses at Life support's door and at both cores are cut by the map edge.
+2. Labels at 320 px (carried): six of eight L2 rooms unlabelled; Life support, a restricted room, among them. Tap-to-identify must cover every room.
+3. Open-passage identification (carried): West mezzanine to Ops offices.
+4. Stair cores identified as the connection between levels without a painted staircase (new, from Option A).
+5. Restricted rooms: the art shows what Quarantine and Life support are, not that they are restricted. The classification has to come from the interface.
+6. Voids: each shows the L1 room below, dimmed, behind a rail. At 320 px the Atrium void can pass for an L2 room with plants and a bench. It has no door and is never lit, so it does not mislead about access, but a tap on it selects nothing. It should identify itself as open to the level below.
+7. Closest-door pair under 24 px at 320 px: the named-door picker stays mandatory (carried).
+8. The veil and footprint cover the catwalk room's water (accepted schematic behaviour); if the footprint is ever drawn per floor area, the water should be excluded.
+
+**COSMETIC BACKLOG**
+
+- Wall finish plainer than L1's painted walls (accepted).
+- The Quarantine label and its door marker overlap at 320 px.
+- West rooms' adjacent wall faces do not pick up their room light as the Stage 1 rooms' do.
+- Voids could be dimmed further.
+
+**Validation limitation (documented):** the compositor's fit-quality gate does not apply where fewer than 300 wall-cap pixels surround a region.
