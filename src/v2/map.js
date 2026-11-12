@@ -132,12 +132,14 @@ const NxMap = ((E, F) => {
     const u = px => px / sc, fp = footprintOf(t), ids = Object.keys(E.SPACES).filter(k => E.SPACES[k].l === l), lit = ids.filter(k => fp.spaces.has(k));
     let s = `<g fill="#021019" opacity=".62" data-veil="${l}">${ids.filter(k => !fp.spaces.has(k)).map(k => crects(k)).join('')}</g>`;
     for (const k of lit) { const kd = E.SPACES[k].kind; if (kd === 'public' || kd === 'restricted') s += crects(k, `fill="url(#${kd === 'public' ? 'nxDotsQ' : 'nxStrpQ'}${sfx})" opacity="1" pointer-events="none"`); }
-    s += lit.map(k => `<g data-lit="${k}">${crects(k, `fill="none" stroke="#a4ead0" stroke-width="${u(2)}"`, u(1))}</g>`).join('');
+    /* R2 (Step 6): every boundary line has a dark casing under it, so it keeps at least 3:1 against whatever the art is */
+    const cased = (w, dashed) => `fill="none" stroke="#021019" stroke-opacity=".9" stroke-width="${u(w)}"${dashed ? ` stroke-dasharray="${u(8)} ${u(2)}" stroke-dashoffset="${u(1)}"` : ''} class="nx-case"`;   // a 1 px dark edge each side; a dashed line gets a dashed edge 1 px longer at each end of every dash, so the gaps still show the art
+    s += lit.map(k => `<g data-lit="${k}">${crects(k, cased(4), u(1))}${crects(k, `fill="none" stroke="#a4ead0" stroke-width="${u(2)}" class="nx-line"`, u(1))}</g>`).join('');
     /* Step 5, change review: the engine's effective-permission difference from the last change (Engine.delta, kept on the
        ticket), drawn exactly as the flat map draws it: added areas amber, removed areas red, both dashed. Nothing is computed here. */
     const dl = t && t.delta && t.showDelta ? t.delta : null, dash = `stroke-width="${u(2.5)}" stroke-dasharray="${u(6)} ${u(4)}"`;
-    if (dl) { for (const k of dl.addedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="added" data-space="${k}">${crects(k, `fill="#f5d192" fill-opacity=".22" stroke="#f5d192" stroke-width="${u(3)}" stroke-dasharray="${u(6)} ${u(4)}"`, u(4))}</g>`;   // inset clear of the footprint rim, which every added area also has
-      for (const k of dl.removedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="removed" data-space="${k}">${crects(k, `fill="none" stroke="#f39091" ${dash}`, u(2))}</g>`; }
+    if (dl) { for (const k of dl.addedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="added" data-space="${k}">${crects(k, `fill="#f5d192" fill-opacity=".22" stroke="none"`, u(4))}${crects(k, cased(5, true), u(4))}${crects(k, `fill="none" stroke="#f5d192" stroke-width="${u(3)}" stroke-dasharray="${u(6)} ${u(4)}" class="nx-line"`, u(4))}</g>`;   // inset clear of the footprint rim, which every added area also has
+      for (const k of dl.removedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="removed" data-space="${k}">${crects(k, cased(4.5, true), u(2))}${crects(k, `fill="none" stroke="#f39091" ${dash} class="nx-line"`, u(2))}</g>`; }
     for (const d of Object.keys(E.DOORS)) { if (E.doorLevel(d) !== l) continue; const g = fp.doors.has(d), [x, y] = cdoor(d);
       s += `<circle class="nx-door" data-door="${d}" data-granted="${g}" cx="${x}" cy="${y}" r="${u(VIS_PX)}" fill="${g ? '#a4ead0' : '#0b2a39'}" stroke="#fff" stroke-width="${u(1.6)}"/>`; }
     return s;
@@ -273,6 +275,22 @@ const NxMap = ((E, F) => {
       s += `<text data-room-label="${id}" x="${f.x + f.w / 2}" y="${f.y + f.h / 2 + u(4)}" text-anchor="middle" stroke="#061b29" stroke-width="${u(3)}" stroke-linejoin="round" paint-order="stroke" style="font:700 ${u(11)}px ${font};fill:#e3f5f6">${sp.n}</text>`; }
     return `<g class="nx-rlabels" pointer-events="none">${s}</g>`;
   }
+  /* R1 (Step 6): what Inspect selects at a cutaway point (a tap, or the lens centre while dragging). In order:
+     1. a door on the shown level when genuinely hit: within 12 px of its marker, or within the flat map's 18 plan units and
+        Step 4's capped radius (22 px, half the distance to the nearest marker, never under 12 px). The plan distance un-squashes
+        the projection, so a door is not caught from across a room the way a fixed screen radius did;
+     2. a door on the level seen through the lens, only within OTHER_PX of its marker (validated in test/v2.cutaway.r1r2.test.js);
+     3. on a tap, the room under the point on the shown level, else on the other level. Ties: nearer marker, then smaller id. */
+  const OTHER_PX = 10;   // the sweep: no room-centre capture at any width, the same finger reach as 12-22 px, the least floor captured
+  function inspectPick(X, Y, l, sc, tap, otherPx = OTHER_PX) {
+    const k = CUT.projection.k, near = (lv, ok) => { let best = null, bd = 1e9;
+      for (const d of doorsOn(lv)) { const [a, b] = cdoor(d), px = Math.hypot(a - X, b - Y) * sc, plan = Math.hypot(a - X, (b - Y) / k); if (ok(d, px, plan) && px < bd) { bd = px; best = d; } } return best; };
+    const own = near(l, (d, px, plan) => px <= 12 || (plan <= 18 && px <= doorRadius(d, sc))); if (own) return { door: own };
+    const other = near(l === 1 ? 2 : 1, (d, px) => px <= otherPx); if (other) return { door: other };
+    if (!tap) return null; const [x, y] = cplan(X, Y);
+    for (const lv of [l, l === 1 ? 2 : 1]) { const sp = Object.keys(E.SPACES).find(s => E.SPACES[s].l === lv && E.SPACES[s].r.some(r => inR(x, y, r))); if (sp) return { space: sp, pt: [x, y] }; }
+    return null;
+  }
   /* what is under a cutaway point: the nearest door marker within HIT_PX screen pixels, else the room (as on the flat map) */
   function cpick(X, Y, l, sc) {
     let best = null, bd = 1e9;
@@ -281,5 +299,5 @@ const NxMap = ((E, F) => {
     const [x, y] = cplan(X, Y), sp = Object.entries(E.SPACES).find(([k, o]) => o.l === l && o.r.some(r => x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <= r[1] + r[3]));
     return sp ? { space: sp[0], pt: [x, y] } : null;
   }
-  return { svg, summary, litOn, mini, pick, cutawayOn, cutaway: { frame, canvas, cpos, cplan, cdoor, overlay, pick: cpick, LENS_R, VIS_PX, HIT_PX, identify, describe, plain, targets, anchor, doorRadius, below } };
+  return { svg, summary, litOn, mini, pick, cutawayOn, cutaway: { frame, canvas, cpos, cplan, cdoor, overlay, pick: cpick, LENS_R, VIS_PX, HIT_PX, identify, describe, plain, targets, anchor, doorRadius, below, inspectPick, OTHER_PX } };
 })(Engine, Flow);

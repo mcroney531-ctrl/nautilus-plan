@@ -407,7 +407,7 @@ const clampL=(x,y)=>[Math.max(0,Math.min(400,x)),Math.max(0,Math.min(300,y))];
 /* the lens is the selector: a door under it (this level first, then the level seen through it), else a room on a tap */
 function lensAt(x,y,tap){const id=route.id,v=view[id],t=st[id];v.lensP=clampL(x,y);const l=v.level,cut=NxMap.cutawayOn(),sc=cut?cutScale(svgEl):0,[X,Y]=cut?NxMap.cutaway.cpos(x,y):[0,0],
     s=cut?NxMap.cutaway.pick(X,Y,l,sc):NxMap.pick(x,y,l),s2=cut?NxMap.cutaway.pick(X,Y,l===1?2:1,sc):NxMap.pick(x,y,l===1?2:1);
-  const n=(s&&s.door)?s:(s2&&s2.door)?s2:tap?(s||s2):null;if(n)t.sel=n;if(cut)camFollow(false);}
+  const n=cut?NxMap.cutaway.inspectPick(X,Y,l,sc,tap):(s&&s.door)?s:(s2&&s2.door)?s2:tap?(s||s2):null;if(n)t.sel=n;if(cut)camFollow(false);}
 svgEl.addEventListener('pointerdown',e=>{const v=route.screen==='ticket'&&view[route.id];if(!v||!v.inspect||walking())return;dragging=true;try{svgEl.setPointerCapture(e.pointerId);}catch(_){}
   const p=svgPt(e);lensAt(p.x,p.y,true);renderMap();});
 svgEl.addEventListener('pointermove',e=>{if(!dragging)return;const p=svgPt(e);lensAt(p.x,p.y,false);renderMap();});

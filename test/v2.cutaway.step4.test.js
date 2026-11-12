@@ -22,7 +22,7 @@ const geom = pg => ev(pg, () => { const s = vis('#nxMapSvg'), b = s.getBoundingC
 const canvasVB = pg => ev(pg, () => { const c = NxMap.cutaway.canvas(); return [c.x, c.y, c.w, c.h].join(' '); });
 /* Step 3's overlay with the two approved changes taken out: the quieter footprint pattern and the room labels */
 const norm = s => s.replace(/<pattern id="nx(?:Dots|Strp)Q[AB]"[\s\S]*?<\/pattern>/g, '').replace(/nxDotsQ/g, 'nxDots').replace(/nxStrpQ/g, 'nxStrp')
-  .replace(/(fill="url\(#nx(?:Dots|Strp)[AB]\)") opacity="1"/g, '$1 opacity=".8"').replace(/<g class="nx-rlabels"[^>]*>[\s\S]*?<\/g>/g, '').replace(/<g data-delta="(?:added|removed)" data-space="[^"]+">[\s\S]*?<\/g>/g, '');   /* and Step 5's change-review outlines */
+  .replace(/(fill="url\(#nx(?:Dots|Strp)[AB]\)") opacity="1"/g, '$1 opacity=".8"').replace(/<g class="nx-rlabels"[^>]*>[\s\S]*?<\/g>/g, '').replace(/<g data-delta="(?:added|removed)" data-space="[^"]+">[\s\S]*?<\/g>/g, '').replace(/<rect [^>]*class="nx-case"[^>]*><\/rect>/g, '').replace(/ class="nx-line"/g, '');   /* and Step 6 R2's casings */   /* and Step 5's change-review outlines */
 
 const tests = {
   async '1x overview: identical to Step 3 except the approved footprint pattern, room labels and (Step 5) change-review outlines (Inspect off and on, both levels, three widths)'(b) {
@@ -56,12 +56,13 @@ const tests = {
     await ev(pg, () => vis('#nxMapSvg').focus()); const cx = await ev(pg, () => NxMap.cutaway.canvas().x), before = +(await geom(pg)).vb.split(' ')[0]; let cut = 0;
     for (let i = 0; i < 40; i++) { await pg.keyboard.press('ArrowLeft'); const q = await geom(pg); if (!q.lensIn && +q.vb.split(' ')[0] > cx + 0.01) cut++; }
     assert(+(await geom(pg)).vb.split(' ')[0] < before - 20, 'arrow keys pan'); assert.strictEqual(cut, 0, 'the lens stays whole unless the view is at the canvas edge'); await done(pg); },
-  async 'zoom 2x at 320: real clicks on the crowded pairs pick the nearer door (markers, and 4 px either side of the midpoint)'(b) {
+  async 'zoom 2x at 320 (Inspect, R1 rule): a click on each marker of the crowded pairs, or within 8 px of it towards its neighbour, picks that door; between them, the nearer door or the room, never the farther door'(b) {
     const pg = await open(b, PREVIEW, 320); await ticket(pg); await inspect(pg); await zoomT(pg);
-    for (const [a, c] of [['D-QUAR', 'D-TOPW'], ['D-CLS', 'D-LSG'], ['D-DIVE', 'D-TOPE']]) for (const [t, want] of [[0, a], [1, c], [0.5, a, -4], [0.5, c, 4]].map(([t, w, o]) => [[t, o || 0], w])) {
-      await pick(pg, a); const pa = await scr(pg, ...await ev(pg, d => NxMap.cutaway.cdoor(d), a)), pc = await scr(pg, ...await ev(pg, d => NxMap.cutaway.cdoor(d), c)), L = Math.hypot(pc[0] - pa[0], pc[1] - pa[1]);
-      assert(L >= 24, `${a}/${c} ${L}`); await pg.mouse.click(pa[0] + (pc[0] - pa[0]) * t[0] + t[1] * (pc[0] - pa[0]) / L, pa[1] + (pc[1] - pa[1]) * t[0] + t[1] * (pc[1] - pa[1]) / L);
-      const s = await ev(pg, () => __nx.state('elena').sel); assert(s && s.door === want, `${a}/${c} at ${t}: ${JSON.stringify(s)}`); }
+    for (const [a, c] of [['D-QUAR', 'D-TOPW'], ['D-CLS', 'D-LSG'], ['D-DIVE', 'D-TOPE']]) { await pick(pg, a);
+      const pa = await scr(pg, ...await ev(pg, d => NxMap.cutaway.cdoor(d), a)), pc = await scr(pg, ...await ev(pg, d => NxMap.cutaway.cdoor(d), c)), L = Math.hypot(pc[0] - pa[0], pc[1] - pa[1]), ux = (pc[0] - pa[0]) / L, uy = (pc[1] - pa[1]) / L;
+      assert(L >= 24, `${a}/${c} ${L}`);
+      for (const [p, want] of [[pa, a], [pc, c], [[pa[0] + 8 * ux, pa[1] + 8 * uy], a], [[pc[0] - 8 * ux, pc[1] - 8 * uy], c]]) { await pick(pg, a); await pg.mouse.click(...p); const s = await ev(pg, () => __nx.state('elena').sel); assert(s && s.door === want, `${a}/${c}: ${JSON.stringify(s)}`); }
+      for (const [o, far] of [[-4, c], [4, a]]) { await pick(pg, a); await pg.mouse.click(pa[0] + (L / 2 + o) * ux, pa[1] + (L / 2 + o) * uy); const s = await ev(pg, () => __nx.state('elena').sel); assert(s && s.door !== far, `${a}/${c} midpoint ${o}: ${JSON.stringify(s)}`); } }
     await done(pg); },
   async 'identify: a real tap names every door, room, open passage, void and stair core on both levels at 320, 400 and desktop (cores where a tap clear of the door exists)'(b) {
     const report = {}; for (const size of W) { const pg = await open(b, PREVIEW, size); await ticket(pg); report[size] = { coresByTap: 0, passagesByTap: 0 };

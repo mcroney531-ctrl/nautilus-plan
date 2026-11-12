@@ -127,6 +127,64 @@ Measured per stroke pixel against the same pixel with that layer hidden, at desk
   - a teal line at the Kelp Hall tank rim;
   - the L2 wall finish is plainer than L1's.
 
+## R1 and R2: fixed (Nov 12)
+
+Tests: `test/v2.cutaway.r1r2.test.js` (4/4, in `npm run test:ui`). Measurements: `docs/v2-cutaway-r1r2.json`.
+
+**R1, Inspect hit-testing.** In order:
+1. A door on the shown level wins when genuinely hit: within 12 px of its marker, or within the flat map's 18 plan units and Step 4's capped radius.
+2. A door on the level seen through the lens wins only within **10 px** of its marker.
+3. Otherwise the room under the tap.
+
+The 10 px was chosen by sweeping 6–22 px against the real marker positions:
+
+| Measure | 10 px | Why it was chosen |
+| --- | --- | --- |
+| Room centres captured by an other-level door | 0 at every width | 12 px still captured one room centre at 320 px |
+| Finger reach (taps 0 and 4 px off the marker) | 72.5–73.3% | The same as 12 to 22 px. Below 10 px it falls to 39–66% |
+| Floor captured by other-level doors | 3.6–5.7% | |
+
+- **Centre taps on all 24 spaces now match the flat map at 320, 400 and desktop**, with one exception. At the Ops offices centre the *flat* map captures a Level 1 door (Staff–gallery connector) through the lens; the cutaway selects the room. No door on the other level is captured anywhere on the cutaway.
+- **Every door stays reachable** at three widths, 1× and 2×:
+  - on its own level, by a click on the marker and 6 px to each side;
+  - from the door list;
+  - through the lens from the other level, for 11 of 15 doors. The other 4 are the stair-core doors, which sit in the same spot on both levels, where the shown level's door wins by design. They are reachable on their own level and from the list.
+- **One Step 4 test changed** to the R1 rule. At 2× the crowded pairs are 39–52 px apart, so a click halfway between them is 20–26 px from either marker, which is not a genuine hit. The test now requires:
+  - clicks on each marker, and within 8 px of it, pick that door;
+  - clicks between the markers pick the nearer door or the room, never the farther door.
+
+**R2, contrast.**
+- Every boundary line has a dark casing, 1 px each side. A dashed line gets dashed casing, 1 px longer at each end of every dash, so the gaps still show the art.
+- The first solid casing made the gained outline look like hazard tape and covered room edges, so it was replaced.
+- The share of line-colour pixels at 3:1 or more against the adjacent colour, over the real art:
+
+| Line | With casing (320 / 400 / desktop, 1× and 2×) | Without |
+| --- | --- | --- |
+| Footprint rim | 96–99% | 77–89% |
+| Gained outline (amber) | 96–99% | 40–72% |
+| Lost outline (red) | 97–99% | 90–97% |
+
+- Anti-aliased edge pixels, a blend of the line and its edge, are reported separately in the JSON and not counted.
+- Door markers stay above the casings.
+- Room labels and markers are unchanged.
+
+**Reruns after R1 and R2:**
+
+| Run | Result |
+| --- | --- |
+| Step 6 automated review: playthrough at three widths | Identical, all Closed |
+| Step 6 automated review: layout | Clean |
+| Cutaway Step 3 | 10/10 |
+| Cutaway Step 4 | 15/15 |
+| Cutaway Step 5 | 5/5 |
+| V2 | 58/58 |
+| V1 | 47 pass |
+| Engine, golden flow, CSS and assets | Green |
+
+The automated door markers measure in the table under R2 above (41–44% at 3:1) was taken before these changes and is not re-measured ring-only; the phone check covers how markers read.
+
+**Still open:** R3 and R4, using `docs/v2-cutaway-device-checklist.md`, which also covers text-size scaling (the app sets text in px, so 200% page zoom passing does not show that a larger font setting works).
+
 ## Needed for a GO on default adoption
 
 1. R1 and R2 fixed, with the parity and contrast measurements re-run.

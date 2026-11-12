@@ -100,34 +100,34 @@
  },
  "contrast": {
   "footprint rim (L1)": {
-   "pixels": 7045,
-   "pct_ge_3": 58.5,
-   "median": 3.45,
-   "p10": 1.76
+   "pixels": 8145,
+   "pct_ge_3": 50,
+   "median": 3,
+   "p10": 1.66
   },
   "added outline, amber (L2)": {
-   "pixels": 3493,
-   "pct_ge_3": 27.3,
-   "median": 1.82,
-   "p10": 1.63
+   "pixels": 5322,
+   "pct_ge_3": 36.4,
+   "median": 2.22,
+   "p10": 1.65
   },
   "door markers (L1)": {
-   "pixels": 1070,
-   "pct_ge_3": 44.1,
-   "median": 2.59,
-   "p10": 1.3
+   "pixels": 1133,
+   "pct_ge_3": 62,
+   "median": 4.08,
+   "p10": 1.38
   },
   "door markers (L2)": {
-   "pixels": 1080,
-   "pct_ge_3": 41,
-   "median": 2.49,
-   "p10": 1.28
+   "pixels": 1142,
+   "pct_ge_3": 58.1,
+   "median": 4.21,
+   "p10": 1.38
   },
   "removed outline, red (L2)": {
-   "pixels": 2284,
-   "pct_ge_3": 61.8,
-   "median": 3.9,
-   "p10": 1.84
+   "pixels": 2931,
+   "pct_ge_3": 47.3,
+   "median": 2.7,
+   "p10": 1.61
   },
   "public-gallery dots (L1)": {
    "pixels": 0,
@@ -185,7 +185,7 @@
   "rooms": [
    [
     "L1 westSvc",
-    "DIFF flat {\"space\":\"westSvc\",\"pt\":[31.9999942779541,166]} cut {\"door\":\"D-WGC\"} evidence false"
+    "DIFF flat {\"space\":\"westSvc\",\"pt\":[31.9999942779541,166]} cut {\"space\":\"westSvc\",\"pt\":[32.00008010864258,166.00000718060662]} evidence true"
    ],
    [
     "L1 westCore1",
@@ -209,15 +209,15 @@
    ],
    [
     "L1 westGal",
-    "DIFF flat {\"space\":\"westGal\",\"pt\":[76.00003814697266,166]} cut {\"door\":\"D-WGC\"} evidence false"
+    "DIFF flat {\"space\":\"westGal\",\"pt\":[76.00003814697266,166]} cut {\"space\":\"westGal\",\"pt\":[75.99993133544922,166.00000718060662]} evidence true"
    ],
    [
     "L1 kelp",
-    "DIFF flat {\"space\":\"kelp\",\"pt\":[143,87.99998474121094]} cut {\"door\":\"D-FOOD\"} evidence false"
+    "DIFF flat {\"space\":\"kelp\",\"pt\":[143,87.99998474121094]} cut {\"space\":\"kelp\",\"pt\":[142.99993896484375,87.99999461454503]} evidence true"
    ],
    [
     "L1 touch",
-    "DIFF flat {\"space\":\"touch\",\"pt\":[143,167]} cut {\"door\":\"D-FOOD\"} evidence false"
+    "DIFF flat {\"space\":\"touch\",\"pt\":[143,167]} cut {\"space\":\"touch\",\"pt\":[142.99993896484375,166.999973970301]} evidence true"
    ],
    [
     "L1 classroom",
@@ -229,11 +229,11 @@
    ],
    [
     "L1 jelly",
-    "DIFF flat {\"space\":\"jelly\",\"pt\":[318,80.99999237060547]} cut {\"door\":\"D-DIVE\"} evidence false"
+    "DIFF flat {\"space\":\"jelly\",\"pt\":[318,80.99999237060547]} cut {\"space\":\"jelly\",\"pt\":[318.0000305175781,81.00002513212316]} evidence true"
    ],
    [
     "L1 seasonal",
-    "DIFF flat {\"space\":\"seasonal\",\"pt\":[318,157]} cut {\"door\":\"D-TOPE\"} evidence false"
+    "DIFF flat {\"space\":\"seasonal\",\"pt\":[318,157]} cut {\"space\":\"seasonal\",\"pt\":[318.0000305175781,156.99999192181755]} evidence true"
    ],
    [
     "L1 atrium",
@@ -257,11 +257,11 @@
    ],
    [
     "L2 food",
-    "DIFF flat {\"space\":\"food\",\"pt\":[143,167]} cut {\"door\":\"D-FOOD\"} evidence false"
+    "DIFF flat {\"space\":\"food\",\"pt\":[143,167]} cut {\"space\":\"food\",\"pt\":[142.99993896484375,166.999973970301]} evidence true"
    ],
    [
     "L2 admin",
-    "same"
+    "DIFF flat {\"door\":\"D-WGC\"} cut {\"space\":\"admin\",\"pt\":[53.99992752075195,187.00000538545495]} evidence false"
    ],
    [
     "L2 eastCore2",
@@ -273,7 +273,7 @@
    ],
    [
     "L2 dive",
-    "DIFF flat {\"space\":\"dive\",\"pt\":[322.0000305175781,80.99999237060547]} cut {\"door\":\"D-DIVE\"} evidence false"
+    "DIFF flat {\"space\":\"dive\",\"pt\":[322.0000305175781,80.99999237060547]} cut {\"space\":\"dive\",\"pt\":[321.9999694824219,81.00002513212316]} evidence true"
    ],
    [
     "L2 life",
@@ -286,5 +286,5 @@
   "inspectOn": "- heading \"Facility map\" [level=2]\n- button \"Close map\"\n- group \"Level\":\n  - button \"Level 1, Gallery\": L1 Gallery\n  - button \"Level 2, Topside\" [pressed]: L2 Topside\n- button \"Inspect\" [pressed]\n- text: Tue Oct 27 · 07:15 Inspect a door\n- combobox \"Inspect a door\":\n  - option \"Choose a door…\"\n- button \"Zoom in\"\n- 'figure \"Showing level 2. Elena Park''s badge grants access to 0 doors: none. Areas in the granted footprint, level 1: none; level 2: none.\"':\n  - application \"Inspection lens on the facility map. Arrow keys move the lens; drag or tap to select a door or room. Evidence appears below the map.\": Food prep BELOW · L1 Quarantine\n  - paragraph: Quarantine · door with a badge reader · Level 2\n- region \"Inspection\":\n  - heading \"Inspection\" [level=3]\n  - heading \"Quarantine\" [level=4]\n  - term: Reader\n  - definition: Online · D-QUAR\n  - term: Entry\n  - definition: West mezzanine → Quarantine\n  - term: Groups\n  - definition: Exhibit Operations 05:00–22:00\n  - term: This badge\n  - definition: Not granted\n  - term: Tue 07:15\n  - definition: Denied · badge has no group for this door\n  - term: Records\n  - definition: None\n- list \"Map key\":\n  - listitem: Area in the granted footprint\n  - listitem: Public gallery\n  - listitem: Restricted area\n  - listitem: Door included in badge permissions\n  - listitem: Door with a reader, not in badge permissions"
  },
  "note": "Automated, emulated Chromium only. No real device, no screen reader. See docs/v2-cutaway-step6-review.md.",
- "seconds": 62
+ "seconds": 58
 }
