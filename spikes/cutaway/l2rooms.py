@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent)); import shellreg as R
 root = Path(__file__).resolve().parents[2]; pkg = root / "docs/spikes/cutaway-l2"; W, H = 1600, 1004; a_ = sys.argv[1:]
 prev = Path(a_[a_.index("--preview") + 1]) if "--preview" in a_ else None
 ROOMS = (a_[a_.index("--rooms") + 1].split(",") if "--rooms" in a_ else ["quarantine", "food", "dive", "life", "eastMezz"])
+NO_EAST_FACE = {"life"}   # the source paints a dark panel on Life support's exterior wall that reads as an opening; that wall face stays the engine's
 plan = json.loads((pkg / "plan.json").read_text()); p = plan["projection"]; s = 4; k, off, hI, hE, sh = p["k"], p["off"], p["hI"], p["hE"], p["sh"]; X = lambda x: x * s; Y = lambda y: (off + k * y) * s
 def arch(spec, name):
     js = """const {baseSVG}=require('./spikes/cutaway/base.js'),{chromium}=require('playwright');(async()=>{const b=await chromium.launch(),pg=await b.newPage({viewport:{width:1600,height:1400}});
@@ -34,12 +35,12 @@ rng = np.random.default_rng(11); yy, xx = np.mgrid[0:H, 0:W]; out = base.copy()
 faces = Acut & ~grow(caps, 1) & ~lock; lum = (B.mean(axis=2) - 123) / 61.0; grain = rng.normal(0, 2.2, (H, W))
 wall = np.stack([np.clip(lum, 0, 1.1) * 58 + 78, np.clip(lum, 0, 1.1) * 56 + 77, np.clip(lum, 0, 1.1) * 54 + 77], axis=2) + grain[..., None]; out[faces] = wall[faces]
 unp = isfloor & ~lock; conc = np.full((H, W, 3), (128, 126, 123), np.float32) + grain[..., None]; conc[(xx % 40 == 0) | (yy % 27 == 0)] -= 9; out[unp] = conc[unp]   # floors no room has painted yet: plain sealed tile
-lamps = [(X(32) + 60, Y(12)), (X(368) + 60, Y(12)), (X(222), Y(44)), (X(272), Y(44))]   # stair cores and the catwalk room's back wall
+lamps = [(X(32) + 60, Y(12)), (X(368) + 60, Y(12)), (X(216), Y(44)), (X(278), Y(44)), (X(125), Y(112)), (X(175), Y(112))]   # stair cores and the catwalk room's back wall
 glow = np.zeros((H, W), np.float32)
-for lx, fy in lamps: glow += np.exp(-(((xx - lx) / 46.0) ** 2 + ((yy - (fy - 8)) / 30.0) ** 2)) * 70
+for lx, fy in lamps: glow += np.exp(-(((xx - lx) / 62.0) ** 2 + ((yy - (fy - 4)) / 40.0) ** 2)) * 105
 lit = (faces | unp)[..., None] * glow[..., None] * np.array([1.0, 0.82, 0.55]); out += lit
 img = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)); d = ImageDraw.Draw(img)
-for lx, fy in lamps: d.rectangle([lx - 9, fy - 24, lx + 9, fy - 21], fill=(58, 54, 50)); d.rectangle([lx - 8, fy - 21, lx + 8, fy - 17], fill=(255, 216, 150))
+for lx, fy in lamps: d.rectangle([lx - 13, fy - 27, lx + 13, fy - 23], fill=(52, 49, 46)); d.rectangle([lx - 11, fy - 23, lx + 11, fy - 18], fill=(255, 222, 160))
 out = np.asarray(img).astype(np.float32); out[caps | lock] = base[caps | lock]; finish = (faces | unp) & ~caps
 # ---- 2 and 3. rooms ----
 src = R.to_frame(Image.open(pkg / "source-shell-return-2.png")); c0 = (1009, 502); g = (1.005, 1, -2)   # shellreg's global fit for this return
@@ -58,6 +59,11 @@ for rid in ROOMS:
         fl = np.zeros((H, W), bool); fl[int(Y(r[1])):int(Y(r[1] + r[3])) + 1, int(X(r[0])):int(X(r[0] + r[2])) + 1] = True; M |= fl & isfloor
         bw = np.zeros((H, W), bool); bw[int(Y(r[1]) - hI * s) + 3:int(Y(r[1])) + 2, int(X(r[0])) + 6:int(X(r[0] + r[2])) + int(sh * hI * s)] = True
         if not any(q is not r and abs(q[1] + q[3] - r[1]) < 0.01 for q in rects): M |= bw & Acut & ~caps      # its own back wall's face
+        xe = r[0] + r[2]
+        if rid not in NO_EAST_FACE and not any(q is not r and abs(q[0] - xe) < 0.01 for q in rects):                                        # its own east wall's face, the side that looks into the room
+            hw = hE * 0.6 if xe >= 388 else hI; sf = Image.new("L", (W, H), 0)
+            ImageDraw.Draw(sf).polygon([(X(xe) - 1, Y(r[1]) + 3), (X(xe) - 1, Y(r[1] + r[3]) - 2), (X(xe) + sh * hw * s - 3, Y(r[1] + r[3]) - hw * s + 2), (X(xe) + sh * hw * s - 3, Y(r[1]) - hw * s + 6)], fill=255)
+            M |= (np.asarray(sf) > 0) & Acut & ~caps
     M &= ~grow(caps, 1) & ~lock; M &= ~(Afull & ~Acut)                                                        # never a cap, a locked pixel or an opening span
     M = np.asarray(Image.fromarray((M * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))) > 0
     M &= ~grow(caps, 1) & ~lock & ~(Afull & ~Acut)
@@ -73,12 +79,19 @@ for rid in ROOMS:
         piece = {"rect": r, "painted_walls_off_by_px": {"left": oL, "right": oR, "top": oT, "bottom": oB}, "x_scale": round(sx, 3), "y_scale": round(sy, 3)}; report[rid]["pieces"].append(piece)
         if abs(sx - 1) > 0.2 or abs(sy - 1) > 0.2: piece["result"] = "REFUSED"; continue
         F = np.asarray(src.transform((W, H), Image.AFFINE, (sx, 0, px0 - sx * ex0, 0, sy, py0 - sy * ey0), Image.BICUBIC)).astype(np.float32)
-        part = np.zeros((H, W), np.float32); part[int(Y(y0) - hI * s):int(Y(y1)) + 2, int(X(x0)):int(X(x1)) + (int(sh * hI * s) + 2 if not inner("v", x1) else 0)] = 1
+        part = np.zeros((H, W), np.float32); part[int(Y(y0) - hE * s):int(Y(y1)) + 2, int(X(x0)):int(X(x1)) + (int(sh * hE * 0.6 * s) + 2 if not inner("v", x1) else 0)] = 1
         if len(rects) > 1 and inner("v", x0) is False and inner("v", x1): part[:, int(X(x1)):] = 0
         a2 = (alpha * part)[..., None]; out = out * (1 - a2) + F * a2
     roommask |= M; report[rid] |= {"mask_px": int(M.sum()), "opening_span_px_in_mask": int((M & Afull & ~Acut).sum()), "cap_px": int((M & caps).sum()), "locked_px": int((M & lock).sum())}
+# wall faces the rooms do not cover pick up the light of the rooms beside them, and a soft shadow where they meet a floor
+fb = lambda arr, sg: np.asarray(Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(sg)), np.float32)
+rm = roommask.astype(np.float32); Lr = out.mean(axis=2) * rm; spill = fb(Lr, 16) / np.maximum(fb(rm * 255, 16) / 255, 0.08) * (fb(rm * 255, 16) / 255)
+tgt = finish & ~roommask; gain = (np.clip(spill - 40, 0, 160) * 0.34)[..., None] * np.array([1.0, 0.86, 0.66]); out[tgt] = (out + gain)[tgt]
+edge = fb((Acut & ~caps).astype(np.float32) * 255, 5) / 255; fl = unp & ~roommask; out[fl] = (out * (1 - 0.28 * edge[..., None]))[fl]
+out[caps | lock] = base[caps | lock]
 res = np.clip(out + 0.5, 0, 255).astype(np.uint8); b8 = base.astype(np.uint8); ch = np.abs(res.astype(int) - b8).max(axis=2) > 0
 assert not (ch & ~(roommask | finish)).any(), "pixels outside the room masks and the wall finish changed"; assert not (ch & (caps | lock)).any(), "a cap or a scripted pixel changed"
+(prev or pkg).mkdir(parents=True, exist_ok=True); (prev / "stage1-transforms.json").write_text(json.dumps({"source": "source-shell-return-2.png", "global_fit": {"scale": g[0], "dx_px": g[1], "dy_px": g[2], "about_px": list(c0)}, "rooms": report}, indent=1)) if prev else None
 print(json.dumps(report, indent=1)); dest = prev or pkg; dest.mkdir(parents=True, exist_ok=True)
 if prev: Image.fromarray(res).save(prev / "l2-stage1.png"); Image.fromarray((roommask * 255).astype(np.uint8)).save(prev / "l2-stage1-roommask.png")
 else: sys.exit("promotion is not enabled yet: run with --preview")

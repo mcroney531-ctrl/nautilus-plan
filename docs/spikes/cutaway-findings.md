@@ -377,3 +377,24 @@ Option A approved. `docs/spikes/cutaway-l2/master-L2-v0.png` is the corrected bl
 | Wall finish | REVISE | Tone sits with the caps and the rooms, but it is flat: no shading from the room lights, and the scripted wall lights barely register. Reads as unfinished next to painted interiors. |
 
 Not yet done: West mezzanine and Ops offices (Stage 2), stair-core landings, overlay and tap checks at three widths.
+
+### L2 Stage 1, second round (Nov 12): for review; nothing promoted
+
+Approved for this round: each room's mask includes its own back-wall face; the room-specific resampling, with the 15 to 17% stretches as recorded exceptions. Transforms: `docs/spikes/cutaway-l2/stage1-transforms.json`.
+
+- **Clipping fixed by one more engine-derived extension, which needs sign-off:** each room's mask also takes the face of its own east wall that looks into the room (never the cap, an opening span or another wall). Equipment standing against east walls is now whole. Life support is the exception: the source paints a dark panel on its exterior wall that reads as an opening, so that wall face stays the engine's.
+- **East mezzanine:** each of its two rectangles is fitted on its own walls and composited through one continuous mask. The stray wall strip is gone; a thin rail remains beside the Dive locker's east wall and reads as a rail.
+- **Wall finish:** faces the rooms do not cover now pick up warm light from the rooms beside them and a soft shadow where they meet a floor; six visible wall lights (cores, catwalk room, the catwalk corridor). No doors, openings or wall positions are touched.
+- **Checks:** masks hold 0 cap, 0 opening-span and 0 scripted pixels; `shellreg.py` PASS at identity, recall 1.0; `connectivity.py` both spaces open; unchanged-pixel assertions pass; all 8 L2 badge doors select correctly by real tap at 320 / 400 / desktop (24 of 24); the lens from L1 shows the rooms in place.
+
+| Item | Verdict | Notes |
+| --- | --- | --- |
+| Quarantine | PASS | 7% taller than painted. Tanks, pipework, shelving whole. |
+| Food prep | PASS | Under 1% change. |
+| Dive locker | PASS | 17% narrower than painted (recorded exception); wetsuits, cylinders, lockers, bench and sink whole and recognisable, also at 320 px. |
+| Life support | PASS | 7% narrower. Plant fills the room; the exterior wall face is the engine's. |
+| East mezzanine | PASS | East part 2% wider, west part 15% narrower (recorded exception). One continuous floor; shelving and wall equipment whole. |
+| Wall finish | PASS, plainer than L1 | Lit and shaded, consistent with the rooms; it has less surface detail than L1's painted walls. |
+
+At 320 px each room is identifiable by colour and main shapes (green tanks, yellow cylinders, steel counters, the plant's pipework); individual items are not, as on L1.
+Still placeholder: West mezzanine, Ops offices (Stage 2) and the two stair-core landings.

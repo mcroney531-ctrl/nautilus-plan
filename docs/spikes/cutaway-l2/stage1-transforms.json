@@ -1,0 +1,150 @@
+{
+ "source": "source-shell-return-2.png",
+ "global_fit": {
+  "scale": 1.005,
+  "dx_px": 1,
+  "dy_px": -2,
+  "about_px": [
+   1009,
+   502
+  ]
+ },
+ "rooms": {
+  "quarantine": {
+   "pieces": [
+    {
+     "rect": [
+      98,
+      44,
+      90,
+      66
+     ],
+     "painted_walls_off_by_px": {
+      "left": -2,
+      "right": -1,
+      "top": -3,
+      "bottom": 10
+     },
+     "x_scale": 1.003,
+     "y_scale": 1.072
+    }
+   ],
+   "mask_px": 60250,
+   "opening_span_px_in_mask": 0,
+   "cap_px": 0,
+   "locked_px": 0
+  },
+  "food": {
+   "pieces": [
+    {
+     "rect": [
+      98,
+      134,
+      90,
+      66
+     ],
+     "painted_walls_off_by_px": {
+      "left": -1,
+      "right": 0,
+      "top": 4,
+      "bottom": 3
+     },
+     "x_scale": 1.003,
+     "y_scale": 0.994
+    }
+   ],
+   "mask_px": 58513,
+   "opening_span_px_in_mask": 0,
+   "cap_px": 0,
+   "locked_px": 0
+  },
+  "dive": {
+   "pieces": [
+    {
+     "rect": [
+      298,
+      44,
+      48,
+      74
+     ],
+     "painted_walls_off_by_px": {
+      "left": -31,
+      "right": 1,
+      "top": -4,
+      "bottom": -2
+     },
+     "x_scale": 1.167,
+     "y_scale": 1.01
+    }
+   ],
+   "mask_px": 35820,
+   "opening_span_px_in_mask": 0,
+   "cap_px": 0,
+   "locked_px": 0
+  },
+  "life": {
+   "pieces": [
+    {
+     "rect": [
+      316,
+      196,
+      72,
+      92
+     ],
+     "painted_walls_off_by_px": {
+      "left": -22,
+      "right": -2,
+      "top": -3,
+      "bottom": 2
+     },
+     "x_scale": 1.069,
+     "y_scale": 1.02
+    }
+   ],
+   "mask_px": 70676,
+   "opening_span_px_in_mask": 0,
+   "cap_px": 0,
+   "locked_px": 0
+  },
+  "eastMezz": {
+   "pieces": [
+    {
+     "rect": [
+      348,
+      44,
+      40,
+      150
+     ],
+     "painted_walls_off_by_px": {
+      "left": 0,
+      "right": -3,
+      "top": -1,
+      "bottom": 0
+     },
+     "x_scale": 0.981,
+     "y_scale": 1.002
+    },
+    {
+     "rect": [
+      298,
+      120,
+      50,
+      74
+     ],
+     "painted_walls_off_by_px": {
+      "left": -31,
+      "right": 0,
+      "top": -2,
+      "bottom": 0
+     },
+     "x_scale": 1.155,
+     "y_scale": 1.01
+    }
+   ],
+   "mask_px": 105332,
+   "opening_span_px_in_mask": 0,
+   "cap_px": 0,
+   "locked_px": 0
+  }
+ }
+}
