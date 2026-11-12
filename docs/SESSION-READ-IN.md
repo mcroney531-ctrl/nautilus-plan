@@ -111,7 +111,7 @@ Playwright and Chromium are preinstalled; do not run `playwright install`.
 
 ### Update, Nov 12 (later): margins kept; mobile zoom spike done
 
-Decision (Rone/GPT): keep the full canvas margins, do not clip the lens on phones; Step 4 stays on HOLD pending a mobile usability pass. The spike is in `docs/spikes/cutaway-zoom/README.md` (isolated; `src/v2` untouched; 10/10 tests): Inspect-only 2× zoom whose view follows the lens, and a quieter footprint pattern. Awaiting Rone's decision on its recommendation.
+Decision (Rone/GPT): keep the full canvas margins, do not clip the lens on phones; Step 4 stays on HOLD pending a mobile usability pass. The spike is in `docs/spikes/cutaway-zoom/README.md` (isolated; `src/v2` untouched; 10/10 tests): Inspect-only 2× zoom whose view follows the lens, and a quieter footprint pattern. Accepted; **Step 4 built** (zoom toggle, quiet footprint, identify-on-tap and Find on the map; 15/15 tests in `test/v2.cutaway.step4.test.js`). Awaiting Rone's review of Step 4. Steps 5 to 7 not authorised.
 
 ### The open decision (as it stood before the update above)
 

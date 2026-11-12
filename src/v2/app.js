@@ -294,7 +294,10 @@ mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facil
     <button class="nx-tool" type="button" id="nxInspect" data-nx-key="inspect" aria-pressed="false"><svg class="nx-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 10.5m-6.5 0a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0 M15.5 15.5L21 21"/></svg>Inspect</button>
     <span class="nx-clock" id="nxClock"></span></div>
   <div class="nx-pick" id="nxPickWrap" hidden><label for="nxDoorPick">Inspect a door</label><select id="nxDoorPick" data-nx-key="doorpick"></select></div>
+  <div class="nx-zoom" id="nxZoomWrap" hidden><button type="button" class="nx-tool" id="nxZoom" data-nx-key="zoom">Zoom in</button></div>
+  <div class="nx-pick" id="nxFindWrap" hidden><label for="nxFind">Find on the map</label><select id="nxFind" data-nx-key="find"></select></div>
   <figure class="nx-map-fig"><svg class="nx-map-svg" id="nxMapSvg" viewBox="0 0 400 300" role="img" aria-labelledby="nxMapCap"></svg>
+    <p class="nx-ident" id="nxIdent" hidden></p>
     <p class="nx-walknote" id="nxWalkNote"></p><figcaption class="nx-map-cap" id="nxMapCap"></figcaption></figure>
   <section class="nx-insp" id="nxInsp" aria-labelledby="nxInspH" hidden></section>
   <ul class="nx-legend" aria-label="Map key">
@@ -306,21 +309,48 @@ mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facil
 /* Cutaway map (flag off by default, see NxMap.cutawayOn). Three stacked drawings share one canvas: the painted level; the
    other level's picture, shown only through the lens circle; and the overlay, which is the only one redrawn as the lens or
    the walk moves, so the pictures are never re-parsed. State (lens point, selection, walk points) stays in plan units. */
-const cutScale=svg=>{const w=svg.getBoundingClientRect().width;return w>0?w/NxMap.cutaway.canvas().w:0.62;};
+const cutScale=svg=>{const w=svg.getBoundingClientRect().width;return w>0?w/camView().w:0.62;};
+/* Step 4 zoom: only in Inspect, Whole building or 2x. The camera is a part of the canvas (view state, never on the ticket) and
+   follows the lens, so moving the lens (drag, tap, arrow keys, the door list) is how a zoomed view pans: no pan or pinch
+   gesture. Inspect off, the walk and "Whole building" show the full canvas with its margins. */
+const camV=()=>route.screen==='ticket'?view[route.id]:null;
+const camZoom=()=>{const v=camV();return v&&v.inspect&&!walking()?(v.zoom||1):1;};
+function camView(){const c=NxMap.cutaway.canvas(),z=camZoom(),v=camV();if(z===1)return {x:c.x,y:c.y,w:c.w,h:c.h,z:1};
+  const w=c.w/z,h=c.h/z,cam=v.cam||[c.x+c.w/2,c.y+c.h/2],cl=(a,lo,hi)=>Math.max(lo,Math.min(hi,a));
+  return {x:cl(cam[0]-w/2,c.x,c.x+c.w-w),y:cl(cam[1]-h/2,c.y,c.y+c.h-h),w,h,z};}
+/* zoomed, the lens is at most 112 px across on screen; at 1x it is the Step 3 lens */
+const lensR=sc=>camZoom()>1?Math.min(NxMap.cutaway.LENS_R,56/sc):NxMap.cutaway.LENS_R;
+function camFollow(center){const v=camV();if(!v||!v.lensP||camZoom()===1)return;const [X,Y]=NxMap.cutaway.cpos(...v.lensP);
+  if(center){v.cam=[X,Y];return;}
+  const vb=camView(),sc=cutScale(svgEl),R=lensR(sc),pl=R+4/sc,pb=R+20/sc;let cx=vb.x+vb.w/2,cy=vb.y+vb.h/2;
+  if(X-pl<vb.x)cx-=vb.x-(X-pl);if(X+pl>vb.x+vb.w)cx+=X+pl-(vb.x+vb.w);if(Y-pl<vb.y)cy-=vb.y-(Y-pl);if(Y+pb>vb.y+vb.h)cy+=Y+pb-(vb.y+vb.h);v.cam=[cx,cy];}
+/* Step 4 identify: what a tap or the Find list names, kept in view state (per ticket, or the inbox map's own) */
+let inboxIdent=null;
+const identGet=()=>route.screen==='ticket'?view[route.id].ident||null:inboxIdent;
+const identSet=it=>{if(route.screen==='ticket')view[route.id].ident=it;else inboxIdent=it;};
+const identHTML=(d,btn)=>`<b>${esc(d.name)}</b>${esc(d.after)}${d.rest.map(r=>' · '+esc(r)).join('')}${btn?' <button type="button" class="nx-linkbtn" data-nx-act="identinspect" data-nx-key="identinspect">Inspect this door</button>':''}`;
+function findOptions(){const C=NxMap.cutaway,G=[['room','Rooms'],['door','Doors'],['passage','Open passages'],['core','Stairs'],['void','Open to the level below']];
+  return '<option value="">Choose a place…</option>'+[1,2].map(L=>G.map(([ty,lab])=>{const its=C.targets(L).filter(i=>i.type===ty);if(!its.length)return '';
+    return `<optgroup label="Level ${L} · ${lab}">${its.map(i=>{const d=C.describe(i),txt=ty==='passage'?'Between'+d.after.replace(/^ between/,''):ty==='void'?`Above the ${C.below(E.VOIDS[i.id])}`:d.name;
+      return `<option value="${i.type}|${i.id}|${L}">${esc(txt)}</option>`;}).join('')}</optgroup>`;}).join('')).join('');}
 function cutawayDraw(svg,t,l,o){const C=NxMap.cutaway,f=C.frame(l),c=C.canvas(),fig=svg.parentNode,mk=cls=>{const e=document.createElementNS('http://www.w3.org/2000/svg','svg');e.setAttribute('class',cls);e.setAttribute('aria-hidden','true');e.setAttribute('viewBox',f.viewBox);e.style.aspectRatio=f.ratio;fig.insertBefore(e,svg);return e;};
   let base=fig.querySelector('.nx-map-base'),li=fig.querySelector('.nx-map-lensimg');
   if(!base){base=mk('nx-map-base');li=mk('nx-map-lensimg');fig.classList.add('nx-map-cut');svg.setAttribute('viewBox',f.viewBox);svg.style.aspectRatio=f.ratio;svg.dataset.nxFrame='cutaway';}
   if(base.dataset.nxLevel!==String(l)){base.innerHTML=f.base;base.dataset.nxLevel=String(l);li.innerHTML=C.frame(l===1?2:1).image;li.dataset.nxLevel=String(l===1?2:1);}
-  const sc=cutScale(svg);
-  if(o.lens){const [x,y]=C.cpos(...o.lens);li.style.display='';li.style.clipPath=`circle(${C.LENS_R*sc}px at ${(x-c.x)*sc}px ${(y-c.y)*sc}px)`;}else li.style.display='none';
-  svg.innerHTML=C.overlay(t,l,getComputedStyle(document.body).fontFamily,o,sc);}
+  const vb=camView(),vbs=`${vb.x} ${vb.y} ${vb.w} ${vb.h}`;for(const e of [base,li,svg])if(e.getAttribute('viewBox')!==vbs)e.setAttribute('viewBox',vbs);
+  const sc=cutScale(svg),R=lensR(sc);fig.dataset.nxZoom=String(vb.z);
+  if(o.lens){const [x,y]=C.cpos(...o.lens);li.style.display='';li.style.clipPath=`circle(${R*sc}px at ${(x-vb.x)*sc}px ${(y-vb.y)*sc}px)`;}else li.style.display='none';
+  svg.innerHTML=C.overlay(t,l,getComputedStyle(document.body).fontFamily,{...o,view:vb,lensR:R},sc);}
 addEventListener('resize',()=>{if(NxMap.cutawayOn())renderMap();});
+/* the cutaway sizes markers, hit areas, labels and patterns in screen pixels, so redraw whenever the drawing's width changes
+   (the phone map dialog opening, a scrollbar appearing), not only on window resize */
+let cutW=0;const cutRO=typeof ResizeObserver==='function'?new ResizeObserver(es=>{const w=Math.round(es[0].contentRect.width);if(w>0&&w!==cutW&&NxMap.cutawayOn()){cutW=w;renderMap();}}):null;
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const list=a=>a.length?a.join(', '):'none';
 /* the map shows the open ticket's badge (granted only) at that ticket's level; in the inbox, the plain floor plan */
 function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,v=id?view[id]:null,ins=!!(v&&v.inspect),run=walking();
   const w=t&&t.walk,svg=inMap('#nxMapSvg');
-  const mo={lens:ins?v.lensP:null,sel:ins&&t?t.sel:null,walk:w,initials:sc?sc.person.initials:''};
+  const cut=NxMap.cutawayOn(),g0=cut&&!ins&&!run?identGet():null,mo={lens:ins?v.lensP:null,sel:ins&&t?t.sel:null,walk:w,initials:sc?sc.person.initials:'',ident:g0&&g0.l===l?g0:null};
   if(NxMap.cutawayOn())cutawayDraw(svg,t,l,mo);else svg.innerHTML=NxMap.svg(t,l,getComputedStyle(document.body).fontFamily,mo);
   mapRegion.classList.toggle('nx-inspecting',ins);
   /* inspecting: the drawing becomes a keyboard-operable lens; otherwise it is an image named by its caption */
@@ -329,6 +359,12 @@ function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:
   const ib=inMap('#nxInspect');ib.setAttribute('aria-pressed',ins);ib.disabled=!id||run;
   inMap('#nxLv1').disabled=inMap('#nxLv2').disabled=run;
   const pw=inMap('#nxPickWrap'),pk=inMap('#nxDoorPick');pw.hidden=!ins;
+  {const zw=inMap('#nxZoomWrap'),on=cut&&ins&&!run;zw.hidden=!on;if(on)inMap('#nxZoom').textContent=(v.zoom||1)===2?'Whole building':'Zoom in';}
+  {const fw=inMap('#nxFindWrap'),fs=inMap('#nxFind');fw.hidden=!cut||ins;fs.disabled=run;if(cut&&!fs.options.length)fs.innerHTML=findOptions();
+    if(cut){const g=identGet();fs.value=g&&!ins&&!run?`${g.type}|${g.id}|${g.l}`:'';}}
+  {const il=inMap('#nxIdent');let it=null,btn=false;
+    if(cut&&!run){if(ins&&t&&t.sel)it=t.sel.door?{type:'door',id:t.sel.door}:{type:E.SPACES[t.sel.space].kind==='core'?'core':'room',id:t.sel.space};else if(mo.ident){it=mo.ident;btn=it.type==='door'&&!!id;}}
+    il.hidden=!it;il.innerHTML=it?identHTML(NxMap.cutaway.describe(it),btn):'';}
   if(ins){const cur=t.sel&&t.sel.door?t.sel.door:'';pk.innerHTML=`<option value="">Choose a door…</option>`+[1,2].map(L=>`<optgroup label="Level ${L}">${Object.entries(E.DOORS).filter(([d])=>E.doorLevel(d)===L).map(([d,o])=>`<option value="${d}"${d===cur?' selected':''}>${esc(o.n)}</option>`).join('')}</optgroup>`).join('');}
   const wn=inMap('#nxWalkNote');wn.className='nx-walknote'+(w&&!w.running?(w.res.stop?' nx-walknote-stop':' nx-walknote-ok'):'');
   wn.textContent=!w?'':w.running?`Walking ${sc.person.name.split(' ')[0]} in…`:w.res.stop?`Walk stopped at ${E.DOORS[w.res.stop.door]?E.DOORS[w.res.stop.door].n:'a door'}.`:'Walk complete: reached every stop.';
@@ -342,16 +378,26 @@ function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:
   inMap('#nxMapCap').textContent=t?`Showing level ${l}. ${sc.person.name}'s badge grants access to ${s.doors.length} door${s.doors.length===1?'':'s'}: ${list(s.doors)}. Areas in the granted footprint, level 1: ${list(s.l1)}; level 2: ${list(s.l2)}.`
     :`Showing level ${l}. Open a ticket to see that badge's permissions.`;}
 mapRegion.addEventListener('click',e=>{const b=e.target.closest('[data-nx-level]');if(!b||walking())return;const l=+b.dataset.nxLevel;
-  if(route.screen==='ticket')view[route.id].level=l;else inboxLevel=l;renderMap();announce(`Level ${l}`);});
-mapRegion.addEventListener('click',e=>{if(!e.target.closest('#nxInspect')||route.screen!=='ticket'||walking())return;const v=view[route.id];v.inspect=!v.inspect;
+  if(route.screen==='ticket')view[route.id].level=l;else inboxLevel=l;const g=identGet();if(g&&g.l!==l)identSet(null);renderMap();announce(`Level ${l}`);});
+mapRegion.addEventListener('click',e=>{if(!e.target.closest('#nxInspect')||route.screen!=='ticket'||walking())return;const v=view[route.id];v.inspect=!v.inspect;v.ident=null;if(!v.inspect)v.zoom=1;
   renderMap();announce(v.inspect?'Inspect on. Drag or tap the map, or choose a door from the list.':'Inspect off');});
 mapRegion.addEventListener('click',e=>{if(e.target.closest('[data-nx-act="flag"]')){const t=st[route.id];t.flagged=!t.flagged;render();}});
+/* Step 4: the zoom toggle (Inspect only) */
+mapRegion.addEventListener('click',e=>{if(!e.target.closest('#nxZoom')||route.screen!=='ticket'||walking())return;const v=view[route.id],nz=(v.zoom||1)===2?1:2,cv=camView();
+  v.zoom=nz;v.cam=v.lensP?NxMap.cutaway.cpos(...v.lensP):[cv.x+cv.w/2,cv.y+cv.h/2];renderMap();announce(nz===1?'Showing the whole building':'Zoomed in, 2 times');});
+/* Step 4: Find on the map, the equivalent of every tap target (switches level if needed, then names the thing; focus stays) */
+mapRegion.addEventListener('change',e=>{if(e.target.id!=='nxFind'||!e.target.value||walking())return;const [type,iid,L]=e.target.value.split('|'),l=+L,cur=route.screen==='ticket'?view[route.id].level:inboxLevel,sw=l!==cur;
+  if(sw){if(route.screen==='ticket')view[route.id].level=l;else inboxLevel=l;}
+  const it={type,id:iid,l};identSet(it);renderMap();announce((sw?`Level ${l}. `:'')+NxMap.cutaway.plain(NxMap.cutaway.describe(it)));});
+/* Step 4: "Inspect this door" on an identified door: Inspect on, lens on that door, as choosing it from the door list */
+mapRegion.addEventListener('click',e=>{if(!e.target.closest('[data-nx-act="identinspect"]')||route.screen!=='ticket'||walking())return;const id=route.id,v=view[id],g=v.ident;if(!g||g.type!=='door')return;
+  v.inspect=true;v.ident=null;st[id].sel={door:g.id};v.level=E.doorLevel(g.id);v.lensP=[...E.DOORS[g.id].p];camFollow(true);render();inMap('#nxDoorPick').focus();announce(`Inspect on. Inspecting ${E.DOORS[g.id].n}`);});
 /* the door list is the accessible alternative to the lens: every door reachable by touch or keyboard without reading the map */
 mapRegion.addEventListener('change',e=>{if(e.target.id!=='nxDoorPick'||!e.target.value)return;const id=route.id,d=e.target.value,v=view[id];
-  st[id].sel={door:d};v.level=E.doorLevel(d);v.lensP=[...E.DOORS[d].p];render();announce(`Inspecting ${E.DOORS[d].n}`);
+  st[id].sel={door:d};v.level=E.doorLevel(d);v.lensP=[...E.DOORS[d].p];if(NxMap.cutawayOn())camFollow(true);render();announce(`Inspecting ${E.DOORS[d].n}`);
   /* chosen by name: bring the evidence into view (the map stays one scroll up) */
   inMap('#nxInsp').scrollIntoView({block:'nearest'});});
-const svgEl=inMap('#nxMapSvg');let dragging=false;
+const svgEl=inMap('#nxMapSvg');let dragging=false;if(cutRO)cutRO.observe(svgEl);
 const svgPt=e=>{const p=svgEl.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=svgEl.getScreenCTM(),q=m?p.matrixTransform(m.inverse()):{x:0,y:0};
   if(!NxMap.cutawayOn())return q;const [x,y]=NxMap.cutaway.cplan(q.x,q.y);return {x,y};};   /* always plan units */
 /* the lens may centre on any point of the plan, edge doors included (the circle is clipped by the map frame) */
@@ -359,11 +405,15 @@ const clampL=(x,y)=>[Math.max(0,Math.min(400,x)),Math.max(0,Math.min(300,y))];
 /* the lens is the selector: a door under it (this level first, then the level seen through it), else a room on a tap */
 function lensAt(x,y,tap){const id=route.id,v=view[id],t=st[id];v.lensP=clampL(x,y);const l=v.level,cut=NxMap.cutawayOn(),sc=cut?cutScale(svgEl):0,[X,Y]=cut?NxMap.cutaway.cpos(x,y):[0,0],
     s=cut?NxMap.cutaway.pick(X,Y,l,sc):NxMap.pick(x,y,l),s2=cut?NxMap.cutaway.pick(X,Y,l===1?2:1,sc):NxMap.pick(x,y,l===1?2:1);
-  const n=(s&&s.door)?s:(s2&&s2.door)?s2:tap?(s||s2):null;if(n)t.sel=n;}
+  const n=(s&&s.door)?s:(s2&&s2.door)?s2:tap?(s||s2):null;if(n)t.sel=n;if(cut)camFollow(false);}
 svgEl.addEventListener('pointerdown',e=>{const v=route.screen==='ticket'&&view[route.id];if(!v||!v.inspect||walking())return;dragging=true;try{svgEl.setPointerCapture(e.pointerId);}catch(_){}
   const p=svgPt(e);lensAt(p.x,p.y,true);renderMap();});
 svgEl.addEventListener('pointermove',e=>{if(!dragging)return;const p=svgPt(e);lensAt(p.x,p.y,false);renderMap();});
 const endDrag=()=>{if(!dragging)return;dragging=false;render();const t=st[route.id];if(t.sel)announce(`Inspecting ${t.sel.door?E.DOORS[t.sel.door].n:E.SPACES[t.sel.space].n}`);};
+/* Step 4 identify: with Inspect off, a tap names what is under it. Nothing is stored on the ticket; no lens, no evidence. */
+svgEl.addEventListener('click',e=>{if(!NxMap.cutawayOn()||walking())return;const v=route.screen==='ticket'?view[route.id]:null;if(v&&v.inspect)return;
+  const p=svgPt(e),C=NxMap.cutaway,[X,Y]=C.cpos(p.x,p.y),it=C.identify(X,Y,v?v.level:inboxLevel,cutScale(svgEl));
+  if(it&&(it.type==='room'||it.type==='core'))it.at=[X,Y];identSet(it);renderMap();if(it)announce(C.plain(C.describe(it)));});
 svgEl.addEventListener('pointerup',endDrag);svgEl.addEventListener('pointercancel',endDrag);
 svgEl.addEventListener('keydown',e=>{const v=route.screen==='ticket'&&view[route.id];if(!v||!v.inspect)return;const k={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]}[e.key];if(!k)return;
   e.preventDefault();const t=st[route.id],before=JSON.stringify(t.sel);lensAt(v.lensP[0]+k[0],v.lensP[1]+k[1],true);render();if(JSON.stringify(t.sel)!==before&&t.sel)announce(`Inspecting ${t.sel.door?E.DOORS[t.sel.door].n:E.SPACES[t.sel.space].n}`);});

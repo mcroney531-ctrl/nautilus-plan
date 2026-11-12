@@ -101,11 +101,16 @@ const NxMap = ((E, F) => {
      Step 2: the painted level in the engine's variant C projection, on a canvas with margins.
      Step 3: the same overlays as the flat map, drawn in that projection: granted footprint and veil, door markers, the walk
      route, the lens and the selection. Everything is still decided by the engine; only where it is drawn changes.
-     Room labels, and identifying things by tap, are Step 4. Change-review outlines are Step 5. */
+     Step 4: Inspect zoom (Whole building or 2x; the view follows the lens), the quieter footprint pattern (sized in screen
+     pixels), room labels where they fit, and identify: a tap names what is under it from the engine's static data only.
+     Change-review outlines are Step 5. */
   const CUT = typeof NX_CUTAWAY === 'object' && NX_CUTAWAY ? NX_CUTAWAY : null;
   const cutawayOn = () => !!CUT && typeof location === 'object' && new URLSearchParams(location.search).get('map') === 'cutaway';
   const LENS_R = 56, PAD = 6, LENS_LABEL = 16;   // lens radius (map units, as on the flat map), breathing room, the lens's "ABOVE · L2" line
-  const VIS_PX = 7, HIT_PX = 22;                  // door marker radius and hit radius, in screen pixels at every width
+  const VIS_PX = 7, HIT_PX = 22;
+  /* the footprint's public and restricted patterns, sized in screen pixels so they stay quiet over the painted floors */
+  const qdefs = (sfx, u) => `<pattern id="nxDotsQ${sfx}" width="${u(12)}" height="${u(12)}" patternUnits="userSpaceOnUse"><circle cx="${u(6)}" cy="${u(6)}" r="${u(1.2)}" fill="#d9fff1" opacity=".55"/></pattern>`
+    + `<pattern id="nxStrpQ${sfx}" width="${u(10)}" height="${u(10)}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="${u(1.6)}" height="${u(10)}" fill="#ffe3b3" opacity=".4"/></pattern>`;                  // door marker radius and hit radius, in screen pixels at every width
   /* plan point -> cutaway point, and back; a door marker sits half-way up its wall, as in the spike that proved the overlays */
   const cpos = (x, y) => [x, CUT.projection.off + CUT.projection.k * y];
   const cplan = (X, Y) => [X, (Y - CUT.projection.off) / CUT.projection.k];
@@ -126,7 +131,7 @@ const NxMap = ((E, F) => {
   function clevel(t, l, sfx, sc) {
     const u = px => px / sc, fp = footprintOf(t), ids = Object.keys(E.SPACES).filter(k => E.SPACES[k].l === l), lit = ids.filter(k => fp.spaces.has(k));
     let s = `<g fill="#021019" opacity=".62" data-veil="${l}">${ids.filter(k => !fp.spaces.has(k)).map(k => crects(k)).join('')}</g>`;
-    for (const k of lit) { const kd = E.SPACES[k].kind; if (kd === 'public' || kd === 'restricted') s += crects(k, `fill="url(#${kd === 'public' ? 'nxDots' : 'nxStrp'}${sfx})" opacity=".8" pointer-events="none"`); }
+    for (const k of lit) { const kd = E.SPACES[k].kind; if (kd === 'public' || kd === 'restricted') s += crects(k, `fill="url(#${kd === 'public' ? 'nxDotsQ' : 'nxStrpQ'}${sfx})" opacity="1" pointer-events="none"`); }
     s += lit.map(k => `<g data-lit="${k}">${crects(k, `fill="none" stroke="#a4ead0" stroke-width="${u(2)}"`, u(1))}</g>`).join('');
     for (const d of Object.keys(E.DOORS)) { if (E.doorLevel(d) !== l) continue; const g = fp.doors.has(d), [x, y] = cdoor(d);
       s += `<circle class="nx-door" data-door="${d}" data-granted="${g}" cx="${x}" cy="${y}" r="${u(VIS_PX)}" fill="${g ? '#a4ead0' : '#0b2a39'}" stroke="#fff" stroke-width="${u(1.6)}"/>`; }
@@ -148,8 +153,8 @@ const NxMap = ((E, F) => {
     return '';
   }
   /* the selected door's name, placed above the door (below it near the top edge) so it never covers the door it names */
-  function ccallout(sel, sc) {
-    if (!sel || !sel.door) return ''; const u = px => px / sc, c = canvas(), d = E.DOORS[sel.door], [x, y] = cdoor(sel.door), h = u(24), w = Math.min(c.w - 8, u(d.n.length * 7.6 + 18));
+  function ccallout(sel, sc, view) {
+    if (!sel || !sel.door) return ''; const u = px => px / sc, c = view || canvas(), d = E.DOORS[sel.door], [x, y] = cdoor(sel.door), h = u(24), w = Math.min(c.w - 8, u(d.n.length * 7.6 + 18));
     const bx = Math.max(c.x + 4, Math.min(c.x + c.w - 4 - w, x - w / 2)), by = y - u(16) - h > c.y + 2 ? y - u(16) - h : y + u(16);
     return `<g class="nx-callout" pointer-events="none"><rect x="${bx}" y="${by}" width="${w}" height="${h}" rx="${u(6)}" fill="#ffde9f"/><text x="${bx + w / 2}" y="${by + h * 0.7}" text-anchor="middle" font-size="${u(13)}" font-weight="800" fill="#1b1406">${d.n}</text></g>`;
   }
@@ -158,16 +163,110 @@ const NxMap = ((E, F) => {
      the walk route, the selection and its name, so the lens never hides a stopped door or the selected door.
      o: {lens:[plan x, plan y]|null, sel, walk, initials}; sc: screen pixels per map unit. */
   function overlay(t, l, font, o, sc) {
-    const u = px => px / sc, c = canvas(), other = l === 1 ? 2 : 1, lens = o.lens ? cpos(...o.lens) : null;
+    const u = px => px / sc, c = o.view || canvas(), LR = o.lensR || LENS_R, other = l === 1 ? 2 : 1, lens = o.lens ? cpos(...o.lens) : null;
     font = String(font).replace(/"/g, "'");   // the family list goes inside a style attribute
-    let s = `<defs>${defs('A')}${defs('B')}${lens ? `<clipPath id="nxLensClip"><circle cx="${lens[0]}" cy="${lens[1]}" r="${LENS_R}"/></clipPath>
-      <mask id="nxLensHole" maskUnits="userSpaceOnUse" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}"><rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="#fff"/><circle cx="${lens[0]}" cy="${lens[1]}" r="${LENS_R}" fill="#000"/></mask>` : ''}</defs>`;
-    s += `<g data-level="${l}"${lens ? ' mask="url(#nxLensHole)"' : ''}>${clevel(t, l, 'A', sc)}</g>`;
-    if (lens) { const ly = lens[1] + LENS_R + u(13) > c.y + c.h - 2 ? lens[1] - LENS_R - u(6) : lens[1] + LENS_R + u(13), lx = Math.max(c.x + u(40), Math.min(c.x + c.w - u(40), lens[0]));
+    let s = `<defs>${defs('A')}${defs('B')}${qdefs('A', u)}${qdefs('B', u)}${lens ? `<clipPath id="nxLensClip"><circle cx="${lens[0]}" cy="${lens[1]}" r="${LR}"/></clipPath>
+      <mask id="nxLensHole" maskUnits="userSpaceOnUse" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}"><rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="#fff"/><circle cx="${lens[0]}" cy="${lens[1]}" r="${LR}" fill="#000"/></mask>` : ''}</defs>`;
+    s += `<g data-level="${l}"${lens ? ' mask="url(#nxLensHole)"' : ''}>${clevel(t, l, 'A', sc)}${roomLabels(l, sc, c, font)}</g>`;
+    if (lens) { const ly = lens[1] + LR + u(13) > c.y + c.h - 2 ? lens[1] - LR - u(6) : lens[1] + LR + u(13), lx = Math.max(c.x + u(40), Math.min(c.x + c.w - u(40), lens[0]));
       s += `<g clip-path="url(#nxLensClip)" data-lens-level="${other}">${clevel(t, other, 'B', sc)}</g>
-      <circle class="nx-lens" cx="${lens[0]}" cy="${lens[1]}" r="${LENS_R}" fill="none" stroke="#e2ffff" stroke-width="${u(3)}"/><text x="${lx}" y="${ly}" text-anchor="middle" style="font:700 ${u(11)}px ${font};fill:#e2ffff;letter-spacing:.04em" pointer-events="none">${other === 2 ? 'ABOVE · L2' : 'BELOW · L1'}</text>`; }
+      <circle class="nx-lens" cx="${lens[0]}" cy="${lens[1]}" r="${LR}" fill="none" stroke="#e2ffff" stroke-width="${u(3)}"/><text x="${lx}" y="${ly}" text-anchor="middle" style="font:700 ${u(11)}px ${font};fill:#e2ffff;letter-spacing:.04em" pointer-events="none">${other === 2 ? 'ABOVE · L2' : 'BELOW · L1'}</text>`; }
     if (o.walk) s += `<g class="nx-route">${croute(o.walk, l, o.initials, sc)}</g>`;
-    return s + cselection(o.sel, l, sc) + ccallout(o.sel, sc);
+    return s + cselection(o.sel, l, sc) + ccallout(o.sel, sc, o.view) + (o.ident ? identCallout(o.ident, sc, c, font) : '');
+  }
+  /* ---------- Step 4: identify. Reads only the engine's static data (SPACES, DOORS, LINKS, VOIDS); never canEnter, walk
+     or footprint, and nothing it returns describes what a badge may do. ---------- */
+  const KIND = { public: 'public gallery', staff: 'staff area', program: 'program room', restricted: 'restricted area' };
+  const inR = (x, y, r) => x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <= r[1] + r[3];
+  const big = id => E.SPACES[id].r.reduce((a, r) => r[2] * r[3] > a[2] * a[3] ? r : a);
+  const floorBox = r => { const [x, y] = cpos(r[0], r[1]); return { x, y, w: r[2], h: CUT.projection.k * r[3] }; };
+  const doorsOn = l => Object.keys(E.DOORS).filter(d => E.doorLevel(d) === l).sort();
+  /* an open passage crosses the wall its point sits on: 15 units along that wall, 6 either side of it */
+  const axis = (a, b, p) => { let best = [1e9, 'h']; for (const id of [a, b]) for (const r of E.SPACES[id].r) {
+    for (const y of [r[1], r[1] + r[3]]) if (Math.abs(p[1] - y) < best[0]) best = [Math.abs(p[1] - y), 'h'];
+    for (const x of [r[0], r[0] + r[2]]) if (Math.abs(p[0] - x) < best[0]) best = [Math.abs(p[0] - x), 'v']; } return best[1]; };
+  const PASSAGES = E.LINKS.filter(k => k[2]).map(([a, b, p]) => ({ id: a + '~' + b, a, b, p, l: E.SPACES[a].l, ax: axis(a, b, p) }));
+  const passage = id => PASSAGES.find(q => q.id === id);
+  const inPassage = (q, x, y) => q.ax === 'h' ? Math.abs(x - q.p[0]) <= 7.5 && Math.abs(y - q.p[1]) <= 6 : Math.abs(y - q.p[1]) <= 7.5 && Math.abs(x - q.p[0]) <= 6;
+  const below = v => { const x = v.r[0] + v.r[2] / 2, y = v.r[1] + v.r[3] / 2, s = Object.values(E.SPACES).find(o => o.l === 1 && o.kind !== 'core' && o.r.some(r => inR(x, y, r))); return s ? s.n : 'Level 1'; };
+  /* what a thing is: {name, after, rest}, read as "Name after · rest · rest" */
+  function describe(it) {
+    if (it.type === 'door') return { name: E.DOORS[it.id].n, after: '', rest: ['door with a badge reader', 'Level ' + E.doorLevel(it.id)] };
+    if (it.type === 'passage') { const q = passage(it.id); return { name: 'Open passage', after: ` between ${E.SPACES[q.a].n} and ${E.SPACES[q.b].n}`, rest: ['no reader', 'Level ' + q.l] }; }
+    if (it.type === 'void') return { name: 'Open to Level 1', after: '', rest: [`the ${below(E.VOIDS[it.id])} is below`, 'not a room on this level'] };
+    const sp = E.SPACES[it.id];
+    if (sp.kind === 'core') return { name: sp.n.replace(/ · L\d$/, ''), after: '', rest: ['stairs between Level 1 and Level 2'] };
+    return { name: sp.n, after: '', rest: [KIND[sp.kind] || 'room', 'Level ' + sp.l] };
+  }
+  const plain = d => d.name + d.after + d.rest.map(r => ' · ' + r).join('');
+  /* every identifiable thing on a level, for the Find list (engine order) */
+  function targets(l) {
+    const out = [];
+    for (const [k, sp] of Object.entries(E.SPACES)) if (sp.l === l) out.push({ type: sp.kind === 'core' ? 'core' : 'room', id: k, l });
+    for (const d of Object.keys(E.DOORS)) if (E.doorLevel(d) === l) out.push({ type: 'door', id: d, l });
+    for (const q of PASSAGES) if (q.l === l) out.push({ type: 'passage', id: q.id, l });
+    if (l === 2) E.VOIDS.forEach((v, i) => out.push({ type: 'void', id: String(i), l }));
+    return out;
+  }
+  /* where a thing's name is pinned: its marker, its gap, the top edge of a void, or a room's floor centre (a tap uses the tapped spot) */
+  function anchor(it) {
+    if (it.type === 'door') return cdoor(it.id);
+    if (it.type === 'passage') return cpos(...passage(it.id).p);
+    if (it.type === 'void') { const b = floorBox(E.VOIDS[it.id].r); return [b.x + b.w / 2, b.y]; }
+    const b = floorBox(big(it.id)); return [b.x + b.w / 2, b.y + b.h / 2];
+  }
+  /* a door's identify radius: 22 px, capped at half the distance to the nearest other marker on its level, never under 12 px */
+  function doorRadius(d, sc) { const [x, y] = cdoor(d); let nn = 1e9; for (const e of doorsOn(E.doorLevel(d))) if (e !== d) { const [a, b] = cdoor(e); nn = Math.min(nn, Math.hypot(a - x, b - y) * sc); } return Math.min(HIT_PX, Math.max(12, nn / 2)); }
+  /* what is under a cutaway point, first match wins: door, open passage, void, stair core, room. Inside a core the core wins
+     over its door unless the tap is within 12 px of the marker. Ties between doors go to the nearer, then to the smaller id. */
+  function identify(X, Y, l, sc) {
+    const [x, y] = cplan(X, Y), core = Object.keys(E.SPACES).find(k => E.SPACES[k].l === l && E.SPACES[k].kind === 'core' && E.SPACES[k].r.some(r => inR(x, y, r)));
+    let best = null, bd = 1e9;
+    for (const d of doorsOn(l)) { const [a, b] = cdoor(d), dd = Math.hypot(a - X, b - Y) * sc; if (dd <= doorRadius(d, sc) && dd < bd) { bd = dd; best = d; } }
+    if (best && !(core && bd > 12)) return { type: 'door', id: best, l };
+    const q = PASSAGES.find(q => q.l === l && inPassage(q, x, y)); if (q) return { type: 'passage', id: q.id, l };
+    if (l === 2) { const i = E.VOIDS.findIndex(v => inR(x, y, v.r)); if (i >= 0) return { type: 'void', id: String(i), l }; }
+    if (core) return { type: 'core', id: core, l };
+    const sp = Object.keys(E.SPACES).find(k => E.SPACES[k].l === l && E.SPACES[k].kind !== 'core' && E.SPACES[k].r.some(r => inR(x, y, r)));
+    return sp ? { type: 'room', id: sp, l } : null;
+  }
+  const hitCircle = (b, c) => { const nx = Math.max(b.x, Math.min(c.x, b.x + b.w)), ny = Math.max(b.y, Math.min(c.y, b.y + b.h)); return Math.hypot(nx - c.x, ny - c.y) < c.r; };
+  const hitRect = (b, r) => b.x < r.x + r.w && b.x + b.w > r.x && b.y < r.y + r.h && b.y + b.h > r.y;
+  const within = (b, r) => b.x >= r.x && b.x + b.w <= r.x + r.w && b.y >= r.y && b.y + b.h <= r.y + r.h;
+  /* what a thing's name must never cover: its marker, its passage gap, or (for a void) its edge */
+  function own(it, at, sc) {
+    const u = px => px / sc, k = CUT.projection.k;
+    if (it.type === 'door') return { c: { x: at[0], y: at[1], r: u(VIS_PX + 3) } };
+    if (it.type === 'passage') { const q = passage(it.id), [x, y] = cpos(...q.p); return { r: q.ax === 'h' ? { x: x - 7.5, y: y - u(6), w: 15, h: u(12) } : { x: x - u(6), y: y - 7.5 * k, w: u(12), h: 15 * k } }; }
+    if (it.type === 'void') return { edge: floorBox(E.VOIDS[it.id].r) };
+    return { c: { x: at[0], y: at[1], r: u(4) } };
+  }
+  /* the name box: above the thing, else below it; slid sideways to clear other door markers; always inside the view */
+  function callBox(it, text, at, sc, view) {
+    const u = px => px / sc, w = Math.min(view.w - u(8), u(text.length * 7.6 + 18)), h = u(24), o = own(it, at, sc), marks = doorsOn(it.l).map(cdoor);
+    const near = marks.filter(([x, y]) => Math.hypot(x - at[0], y - at[1]) * sc <= 30);
+    const area = it.type === 'room' || it.type === 'core', g = area ? [6, 16, 40] : [16, 40];   // an area's name may sit close to the tapped spot: no marker is under it
+    const ys = o.edge ? [o.edge.y - u(8) - h, o.edge.y + o.edge.h + u(8), o.edge.y - u(40) - h, o.edge.y + o.edge.h + u(40)] : g.flatMap(d => [at[1] - u(d) - h, at[1] + u(d)]);
+    const inView = b => b.x >= view.x + u(2) - 1e-6 && b.x + b.w <= view.x + view.w - u(2) + 1e-6 && b.y >= view.y + u(2) - 1e-6 && b.y + b.h <= view.y + view.h - u(2) + 1e-6;
+    const clear = (b, avoid) => inView(b) && !(o.c && hitCircle(b, o.c)) && !(o.r && hitRect(b, o.r)) && !(o.edge && hitRect(b, o.edge) && !within(b, o.edge))
+      && !avoid.some(([x, y]) => hitCircle(b, { x, y, r: u(VIS_PX + 2) }));
+    const cands = []; for (const y of ys) for (const dx of [0, -40, 40, -80, 80, -120, 120, -160, 160]) cands.push({ x: Math.max(view.x + u(2), Math.min(view.x + view.w - u(2) - w, at[0] - w / 2 + u(dx))), y, w, h });
+    return cands.find(b => clear(b, marks)) || cands.find(b => clear(b, near)) || cands.find(b => clear(b, [])) || cands[0];
+  }
+  function identCallout(it, sc, view, font) {
+    const u = px => px / sc, d = describe(it), at = it.at || anchor(it), b = callBox(it, d.name, at, sc, view);
+    return `<g class="nx-ident-callout" data-ident="${it.type}:${it.id}" pointer-events="none"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="${u(6)}" fill="#ffde9f"/>`
+      + `<text x="${b.x + b.w / 2}" y="${b.y + b.h * 0.7}" text-anchor="middle" font-size="${u(13)}" font-weight="800" fill="#1b1406">${d.name}</text></g>`;
+  }
+  /* room names that fit whole on their floor at this size without touching a door marker; never cores, doors, passages or voids */
+  function roomLabels(l, sc, view, font) {
+    const u = px => px / sc, marks = doorsOn(l).map(cdoor); let s = '';
+    for (const [id, sp] of Object.entries(E.SPACES)) { if (sp.l !== l || sp.kind === 'core') continue;
+      const f = floorBox(big(id)), tw = u(sp.n.length * 6.4 + 10), th = u(16); if (tw > f.w || th > f.h) continue;
+      const b = { x: f.x + f.w / 2 - tw / 2, y: f.y + f.h / 2 - th / 2, w: tw, h: th };
+      if (!within(b, view) || marks.some(([x, y]) => hitCircle(b, { x, y, r: u(VIS_PX + 2) }))) continue;
+      s += `<text data-room-label="${id}" x="${f.x + f.w / 2}" y="${f.y + f.h / 2 + u(4)}" text-anchor="middle" stroke="#061b29" stroke-width="${u(3)}" stroke-linejoin="round" paint-order="stroke" style="font:700 ${u(11)}px ${font};fill:#e3f5f6">${sp.n}</text>`; }
+    return `<g class="nx-rlabels" pointer-events="none">${s}</g>`;
   }
   /* what is under a cutaway point: the nearest door marker within HIT_PX screen pixels, else the room (as on the flat map) */
   function cpick(X, Y, l, sc) {
@@ -177,5 +276,5 @@ const NxMap = ((E, F) => {
     const [x, y] = cplan(X, Y), sp = Object.entries(E.SPACES).find(([k, o]) => o.l === l && o.r.some(r => x >= r[0] && x <= r[0] + r[2] && y >= r[1] && y <= r[1] + r[3]));
     return sp ? { space: sp[0], pt: [x, y] } : null;
   }
-  return { svg, summary, litOn, mini, pick, cutawayOn, cutaway: { frame, canvas, cpos, cplan, cdoor, overlay, pick: cpick, LENS_R, VIS_PX, HIT_PX } };
+  return { svg, summary, litOn, mini, pick, cutawayOn, cutaway: { frame, canvas, cpos, cplan, cdoor, overlay, pick: cpick, LENS_R, VIS_PX, HIT_PX, identify, describe, plain, targets, anchor, doorRadius, below } };
 })(Engine, Flow);

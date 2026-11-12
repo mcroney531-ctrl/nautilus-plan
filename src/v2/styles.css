@@ -300,3 +300,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media (prefers-reduced-motion:reduce){.nx-body *{transition:none!important;animation:none!important}}
 @media (forced-colors:active){.nx-step[aria-current="step"] .nx-chev{outline:3px solid CanvasText}.nx-item[aria-current="page"]{outline:2px solid CanvasText}}
 .nx-instr-na{font-weight:500;font-size:14px;color:var(--nx-muted)}
+/* cutaway Step 4: Inspect zoom toggle, Find on the map, and the identify line under the map */
+.nx-zoom{display:flex;gap:6px;padding:0 8px}.nx-zoom[hidden],.nx-pick[hidden],.nx-ident[hidden]{display:none}
+.nx-ident{margin:6px 8px 0;font:500 14px/1.45 var(--nx-font);color:var(--nx-on-navy)}.nx-ident b{font-weight:800}
+.nx-linkbtn{display:inline-flex;align-items:center;min-height:44px;margin-left:4px;padding:0 10px;border-radius:var(--nx-r-md);border:1px solid var(--nx-silver);background:transparent;color:var(--nx-on-navy);font:700 14px var(--nx-font);cursor:pointer}
+.nx-pick{grid-template-columns:minmax(0,1fr)}.nx-pick select{min-width:0;max-width:100%}

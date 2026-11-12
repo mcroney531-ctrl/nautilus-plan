@@ -1,6 +1,6 @@
-# Cutaway map: identify-on-tap (integration Step 4). Finalised design, conditionally approved Nov 12; not implemented
+# Cutaway map: identify-on-tap (integration Step 4). Finalised design; built Nov 12 behind the flag
 
-Status, Nov 12: design only. Steps 1 to 3 are built behind a flag. Step 4 is not authorised for implementation; Steps 5 to 7 are not authorised.
+Status, Nov 12: built behind the cutaway flag, with the Inspect zoom and the quieter footprint (see the integration plan). Steps 5 to 7 are not authorised. Implementation notes are at the end.
 
 ## What exists today (V2, flat map), and must keep working
 
@@ -125,5 +125,14 @@ So the concern is real: a 44 px door target does swallow room taps, and it swall
 | Find list switching levels | Choosing an item on the other level switches level, keeps focus on the Find list, announces "Level 2" and then the identification, in that order, once each. Escape or closing the map dialog returns focus to the control that opened it, as today. |
 | Existing Inspect behaviour | The current V2 suite's Inspect tests run unchanged with the flag on: room tap selects the room, door tap selects the door, the panel's content for a door is byte-identical flag on and off, and a selected passage, core or void adds nothing to the panel beyond its name. |
 | Semantics | Ticket state, record and result are identical before and after any number of identifications. No identify text matches a denial word. |
+
+## Implementation notes (Nov 12)
+
+- **Built as designed:** hit order (door, open passage, void, stair core, room), the capped door radius (22 px, half the distance to the nearest marker, never under 12 px), the core-beats-its-door rule, the wording table, "Inspect this door", the grouped Find list, identification only in view state, no lens or evidence outside Inspect, nothing during a walk.
+- **Announcements:** the identify line is not itself a live region. Every identification is announced once through the page's existing live region instead, so a Find choice on the other level reads "Level 2. Quarantine · restricted area · Level 2" in one message, in that order. Two live regions could not guarantee the order and would announce the name twice.
+- **Callouts:** stricter than designed. No identify callout covers any door marker (not only those within 30 px), its own gap or a void's edge, at 320 px, 400 px and desktop, from a tap or the Find list. An area's name (room, stair core) may sit closer to the tapped spot, since no marker is under it.
+- **Reach at 320 px:** every stair core and all 7 open passages answer a real tap at all three widths. The crowded pairs pick the nearer door at the markers and 4 px either side of the midpoint.
+- **Room labels are fewer than estimated.** Whole names that fit their floor: 1 on L1 and 0 on L2 at 320 px (the Atrium); 2 and 1 at 400 px and desktop. The design guessed about three per level at 320 px. Taps and the Find list name everything else; no labels were forced.
+- **Zoom and labels:** at 2× in Inspect more labels fit; a label under the lens is hidden with the rest of that level's overlay, as markers are.
 
 Fictional facility and procedures; subject-matter review required before any real use.
