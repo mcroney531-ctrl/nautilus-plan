@@ -303,10 +303,25 @@ mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facil
     <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/><path d="M3 13l6-10M8 13l6-10" stroke="#0b2a39" stroke-width="1.5"/>')}Restricted area</li>
     <li>${sw('<circle cx="8" cy="8" r="5" fill="#a4ead0" stroke="#a9cfd6"/>')}Door included in badge permissions</li>
     <li>${sw('<circle cx="8" cy="8" r="5" fill="#0b2a39" stroke="#a9cfd6" stroke-width="1.3"/>')}Door with a reader, not in badge permissions</li></ul>`;
+/* Cutaway map frame (integration Step 2; flag off by default, see NxMap.cutawayOn). Frame only: the painted level on its
+   canvas, the level switch and the text summary. Footprint, doors, walk and lens on the cutaway are Step 3, so Inspect is
+   unavailable here and the caption says so. The painted level is a separate element under the (empty) overlay drawing, so
+   later overlay redraws never re-parse the image. */
+function renderCutawayFrame(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,f=NxMap.cutaway.frame(l),svg=inMap('#nxMapSvg'),fig=svg.parentNode;
+  let base=fig.querySelector('.nx-map-base');
+  if(!base){base=document.createElementNS('http://www.w3.org/2000/svg','svg');base.setAttribute('class','nx-map-base');base.setAttribute('aria-hidden','true');fig.insertBefore(base,svg);fig.classList.add('nx-map-cut');}
+  if(base.dataset.nxLevel!==String(l)){base.setAttribute('viewBox',f.viewBox);base.style.aspectRatio=f.ratio;base.innerHTML=f.base;base.dataset.nxLevel=String(l);}
+  svg.setAttribute('viewBox',f.viewBox);svg.style.aspectRatio=f.ratio;svg.dataset.nxFrame='cutaway';svg.innerHTML='';svg.setAttribute('role','img');svg.removeAttribute('tabindex');svg.removeAttribute('aria-label');svg.setAttribute('aria-labelledby','nxMapCap');svg.style.touchAction='';
+  mapRegion.classList.remove('nx-inspecting');const ib=inMap('#nxInspect');ib.setAttribute('aria-pressed','false');ib.disabled=true;inMap('#nxPickWrap').hidden=true;inMap('#nxInsp').hidden=true;inMap('#nxWalkNote').textContent='';
+  inMap('#nxLv1').disabled=inMap('#nxLv2').disabled=false;inMap('#nxLv1').setAttribute('aria-pressed',l===1);inMap('#nxLv2').setAttribute('aria-pressed',l===2);
+  inMap('#nxLv1').setAttribute('aria-label','Level 1, Gallery');inMap('#nxLv2').setAttribute('aria-label','Level 2, Topside');
+  inMap('#nxClock').textContent=sc?`${sc.day} ${MONTHS[+sc.date.slice(5,7)-1]} ${+sc.date.slice(8)} · ${E.fmt(sc.time)}`:'';
+  const s=NxMap.summary(t);
+  inMap('#nxMapCap').textContent=`Cutaway map preview, level ${l}: the building only. Badge permissions, doors, the walk and inspection are not drawn on this preview yet. `+(t?`${sc.person.name}'s badge grants access to ${s.doors.length} door${s.doors.length===1?'':'s'}: ${list(s.doors)}. Areas in the granted footprint, level 1: ${list(s.l1)}; level 2: ${list(s.l2)}.`:'Open a ticket to see that badge\'s permissions.');}
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const list=a=>a.length?a.join(', '):'none';
 /* the map shows the open ticket's badge (granted only) at that ticket's level; in the inbox, the plain floor plan */
-function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,v=id?view[id]:null,ins=!!(v&&v.inspect),run=walking();
+function renderMap(){if(NxMap.cutawayOn())return renderCutawayFrame();const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,v=id?view[id]:null,ins=!!(v&&v.inspect),run=walking();
   const w=t&&t.walk,svg=inMap('#nxMapSvg');
   svg.innerHTML=NxMap.svg(t,l,getComputedStyle(document.body).fontFamily,{lens:ins?v.lensP:null,sel:ins&&t?t.sel:null,walk:w,initials:sc?sc.person.initials:''});
   mapRegion.classList.toggle('nx-inspecting',ins);

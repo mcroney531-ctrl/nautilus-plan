@@ -259,6 +259,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-map-fig{margin:0 8px;display:block}
 .nx-map-fig .nx-map-cap{margin-top:8px}
 .nx-map-svg{display:block;width:100%;height:auto;aspect-ratio:4/3;border-radius:var(--nx-r-md);background:#061b29}
+/* cutaway map frame (flag off by default): the painted level under a transparent overlay drawing */
+.nx-map-cut{position:relative}
+.nx-map-base{display:block;width:100%;height:auto;border-radius:var(--nx-r-md);background:#061b29}
+.nx-map-cut .nx-map-svg{position:absolute;left:0;top:0;background:transparent}
 .nx-map-cap{font-size:13px;line-height:1.45;color:var(--nx-on-navy-muted)}
 .nx-legend{list-style:none;margin:0;padding:0 8px 8px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--nx-on-navy-muted)}
 .nx-legend li{display:flex;align-items:center;gap:6px}
@@ -659,6 +663,7 @@ return { routeOf, actorOf, center, outP, finalized, verified, steps, buildWalk, 
 })();
 if (typeof module !== 'undefined') module.exports = Flow;
 
+
 /* Nautilus V2 map drawing (Phase 03): the engine's own floor plan as SVG strings, ported from V1's levelSVG.
    Shows GRANTED only (Engine.footprint: doors the badge's groups and exceptions open, flooded through open passages).
    Time windows, schedules, door status and reader faults never reach the map: those belong to the walk (opened or
@@ -757,7 +762,25 @@ const NxMap = ((E, F) => {
     if (d) { for (const k of d.addedSpaces.filter(k => E.SPACES[k].l === l)) s += shapes(k, 'fill="none" stroke="#f5d192" stroke-width="7"'); for (const k of d.removedSpaces.filter(k => E.SPACES[k].l === l)) s += shapes(k, 'fill="none" stroke="#f39091" stroke-width="7" stroke-dasharray="14 8"'); }
     return s;
   }
-  return { svg, summary, litOn, mini, pick };
+  /* Cutaway map frame (integration Step 2), behind a flag that is off by default. It needs two things: the art data, which
+     only the preview build carries (NX_CUTAWAY; the default build has none), and ?map=cutaway in the address.
+     The frame is the painted level in the engine's variant C projection, on a canvas with margins. Overlays are Step 3. */
+  const CUT = typeof NX_CUTAWAY === 'object' && NX_CUTAWAY ? NX_CUTAWAY : null;
+  const cutawayOn = () => !!CUT && typeof location === 'object' && new URLSearchParams(location.search).get('map') === 'cutaway';
+  const LENS_R = 56, PAD = 6, LENS_LABEL = 16;   // lens radius (map units, as on the flat map), breathing room, the lens's "ABOVE · L2" line
+  /* plan point -> cutaway point; a door marker sits half-way up its wall, as in the spike that proved the overlays */
+  const cpos = (x, y) => [x, CUT.projection.off + CUT.projection.k * y];
+  const cdoor = d => { const p = CUT.projection, [x, y] = cpos(...E.DOORS[d].p); return [x + p.sh * p.hI * 0.5, y - p.hI * 0.5]; };
+  /* margins from the engine's own doors: a lens centred on any door, with its label, fits inside the canvas */
+  function canvas() {
+    const { W, H } = CUT.projection, pts = Object.keys(E.DOORS).map(cdoor), need = { l: 0, r: 0, t: 0, b: 0 };
+    for (const [x, y] of pts) { need.l = Math.max(need.l, LENS_R - x); need.r = Math.max(need.r, x + LENS_R - W); need.t = Math.max(need.t, LENS_R - y); need.b = Math.max(need.b, y + LENS_R + LENS_LABEL - H); }
+    const m = { l: Math.ceil(need.l) + PAD, r: Math.ceil(need.r) + PAD, t: Math.ceil(need.t) + PAD, b: Math.ceil(need.b) + PAD };
+    return { x: -m.l, y: -m.t, w: W + m.l + m.r, h: H + m.t + m.b, margin: m, W, H };
+  }
+  const frame = l => { const c = canvas(); return { viewBox: `${c.x} ${c.y} ${c.w} ${c.h}`, ratio: `${c.w} / ${c.h}`,
+    base: `<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="#061b29"/><image href="${CUT.img[l]}" x="0" y="0" width="${c.W}" height="${c.H}" preserveAspectRatio="none"/>` }; };
+  return { svg, summary, litOn, mini, pick, cutawayOn, cutaway: { frame, canvas, cpos, cdoor, LENS_R } };
 })(Engine, Flow);
 
 /* Nautilus V2 (Phases 01-06): routing, the Shift Inbox, the four-stage tracker, the stage workspaces (Review, Investigate and the
@@ -1065,10 +1088,25 @@ mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facil
     <li>${sw('<rect x="1" y="3" width="14" height="10" rx="2" fill="#a4ead0"/><path d="M3 13l6-10M8 13l6-10" stroke="#0b2a39" stroke-width="1.5"/>')}Restricted area</li>
     <li>${sw('<circle cx="8" cy="8" r="5" fill="#a4ead0" stroke="#a9cfd6"/>')}Door included in badge permissions</li>
     <li>${sw('<circle cx="8" cy="8" r="5" fill="#0b2a39" stroke="#a9cfd6" stroke-width="1.3"/>')}Door with a reader, not in badge permissions</li></ul>`;
+/* Cutaway map frame (integration Step 2; flag off by default, see NxMap.cutawayOn). Frame only: the painted level on its
+   canvas, the level switch and the text summary. Footprint, doors, walk and lens on the cutaway are Step 3, so Inspect is
+   unavailable here and the caption says so. The painted level is a separate element under the (empty) overlay drawing, so
+   later overlay redraws never re-parse the image. */
+function renderCutawayFrame(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,f=NxMap.cutaway.frame(l),svg=inMap('#nxMapSvg'),fig=svg.parentNode;
+  let base=fig.querySelector('.nx-map-base');
+  if(!base){base=document.createElementNS('http://www.w3.org/2000/svg','svg');base.setAttribute('class','nx-map-base');base.setAttribute('aria-hidden','true');fig.insertBefore(base,svg);fig.classList.add('nx-map-cut');}
+  if(base.dataset.nxLevel!==String(l)){base.setAttribute('viewBox',f.viewBox);base.style.aspectRatio=f.ratio;base.innerHTML=f.base;base.dataset.nxLevel=String(l);}
+  svg.setAttribute('viewBox',f.viewBox);svg.style.aspectRatio=f.ratio;svg.dataset.nxFrame='cutaway';svg.innerHTML='';svg.setAttribute('role','img');svg.removeAttribute('tabindex');svg.removeAttribute('aria-label');svg.setAttribute('aria-labelledby','nxMapCap');svg.style.touchAction='';
+  mapRegion.classList.remove('nx-inspecting');const ib=inMap('#nxInspect');ib.setAttribute('aria-pressed','false');ib.disabled=true;inMap('#nxPickWrap').hidden=true;inMap('#nxInsp').hidden=true;inMap('#nxWalkNote').textContent='';
+  inMap('#nxLv1').disabled=inMap('#nxLv2').disabled=false;inMap('#nxLv1').setAttribute('aria-pressed',l===1);inMap('#nxLv2').setAttribute('aria-pressed',l===2);
+  inMap('#nxLv1').setAttribute('aria-label','Level 1, Gallery');inMap('#nxLv2').setAttribute('aria-label','Level 2, Topside');
+  inMap('#nxClock').textContent=sc?`${sc.day} ${MONTHS[+sc.date.slice(5,7)-1]} ${+sc.date.slice(8)} · ${E.fmt(sc.time)}`:'';
+  const s=NxMap.summary(t);
+  inMap('#nxMapCap').textContent=`Cutaway map preview, level ${l}: the building only. Badge permissions, doors, the walk and inspection are not drawn on this preview yet. `+(t?`${sc.person.name}'s badge grants access to ${s.doors.length} door${s.doors.length===1?'':'s'}: ${list(s.doors)}. Areas in the granted footprint, level 1: ${list(s.l1)}; level 2: ${list(s.l2)}.`:'Open a ticket to see that badge\'s permissions.');}
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const list=a=>a.length?a.join(', '):'none';
 /* the map shows the open ticket's badge (granted only) at that ticket's level; in the inbox, the plain floor plan */
-function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,v=id?view[id]:null,ins=!!(v&&v.inspect),run=walking();
+function renderMap(){if(NxMap.cutawayOn())return renderCutawayFrame();const id=route.screen==='ticket'?route.id:null,t=id?st[id]:null,sc=id?S[id]:null,l=id?view[id].level:inboxLevel,v=id?view[id]:null,ins=!!(v&&v.inspect),run=walking();
   const w=t&&t.walk,svg=inMap('#nxMapSvg');
   svg.innerHTML=NxMap.svg(t,l,getComputedStyle(document.body).fontFamily,{lens:ins?v.lensP:null,sel:ins&&t?t.sel:null,walk:w,initials:sc?sc.person.initials:''});
   mapRegion.classList.toggle('nx-inspecting',ins);

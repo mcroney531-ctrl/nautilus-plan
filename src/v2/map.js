@@ -96,5 +96,23 @@ const NxMap = ((E, F) => {
     if (d) { for (const k of d.addedSpaces.filter(k => E.SPACES[k].l === l)) s += shapes(k, 'fill="none" stroke="#f5d192" stroke-width="7"'); for (const k of d.removedSpaces.filter(k => E.SPACES[k].l === l)) s += shapes(k, 'fill="none" stroke="#f39091" stroke-width="7" stroke-dasharray="14 8"'); }
     return s;
   }
-  return { svg, summary, litOn, mini, pick };
+  /* Cutaway map frame (integration Step 2), behind a flag that is off by default. It needs two things: the art data, which
+     only the preview build carries (NX_CUTAWAY; the default build has none), and ?map=cutaway in the address.
+     The frame is the painted level in the engine's variant C projection, on a canvas with margins. Overlays are Step 3. */
+  const CUT = typeof NX_CUTAWAY === 'object' && NX_CUTAWAY ? NX_CUTAWAY : null;
+  const cutawayOn = () => !!CUT && typeof location === 'object' && new URLSearchParams(location.search).get('map') === 'cutaway';
+  const LENS_R = 56, PAD = 6, LENS_LABEL = 16;   // lens radius (map units, as on the flat map), breathing room, the lens's "ABOVE · L2" line
+  /* plan point -> cutaway point; a door marker sits half-way up its wall, as in the spike that proved the overlays */
+  const cpos = (x, y) => [x, CUT.projection.off + CUT.projection.k * y];
+  const cdoor = d => { const p = CUT.projection, [x, y] = cpos(...E.DOORS[d].p); return [x + p.sh * p.hI * 0.5, y - p.hI * 0.5]; };
+  /* margins from the engine's own doors: a lens centred on any door, with its label, fits inside the canvas */
+  function canvas() {
+    const { W, H } = CUT.projection, pts = Object.keys(E.DOORS).map(cdoor), need = { l: 0, r: 0, t: 0, b: 0 };
+    for (const [x, y] of pts) { need.l = Math.max(need.l, LENS_R - x); need.r = Math.max(need.r, x + LENS_R - W); need.t = Math.max(need.t, LENS_R - y); need.b = Math.max(need.b, y + LENS_R + LENS_LABEL - H); }
+    const m = { l: Math.ceil(need.l) + PAD, r: Math.ceil(need.r) + PAD, t: Math.ceil(need.t) + PAD, b: Math.ceil(need.b) + PAD };
+    return { x: -m.l, y: -m.t, w: W + m.l + m.r, h: H + m.t + m.b, margin: m, W, H };
+  }
+  const frame = l => { const c = canvas(); return { viewBox: `${c.x} ${c.y} ${c.w} ${c.h}`, ratio: `${c.w} / ${c.h}`,
+    base: `<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="#061b29"/><image href="${CUT.img[l]}" x="0" y="0" width="${c.W}" height="${c.H}" preserveAspectRatio="none"/>` }; };
+  return { svg, summary, litOn, mini, pick, cutawayOn, cutaway: { frame, canvas, cpos, cdoor, LENS_R } };
 })(Engine, Flow);

@@ -1,0 +1,44 @@
+{
+ "note": "Derived by tools/cutaway_assets.py. Do not edit by hand.",
+ "tools": {
+  "pillow": "12.3.0",
+  "libwebp": "1.6.0"
+ },
+ "encoder": {
+  "format": "WEBP",
+  "quality": 82,
+  "method": 6
+ },
+ "size": [
+  1600,
+  1004
+ ],
+ "projection": {
+  "variant": "C",
+  "k": 0.68,
+  "off": 40,
+  "W": 400,
+  "H": 251,
+  "hI": 9,
+  "hE": 34,
+  "hF": 2,
+  "sh": 0.5
+ },
+ "geometry_sha256": "fd3a9d4ff5bd3df317a805c2e0166739d588847e395ea07159192c0fa3f31964",
+ "levels": {
+  "L1": {
+   "master": "docs/spikes/cutaway-l1-correction/master-L1-v11.png",
+   "master_sha256": "79621c53008e823980ec9e30f36757b33570157f8211b65911517ab61ba1c561",
+   "asset": "assets/v2/cutaway/L1.webp",
+   "asset_sha256": "804d5a147350dcc45fbaec81b61336d01e84639db17bf4f04f8b56c4dfaf4a2c",
+   "bytes": 154816
+  },
+  "L2": {
+   "master": "docs/spikes/cutaway-l2/master-L2-v4.png",
+   "master_sha256": "2594f97c83683248997f4e17fe259b977e35e56966752db00e1c597020674343",
+   "asset": "assets/v2/cutaway/L2.webp",
+   "asset_sha256": "a134a0e36310fe65c83c6211bf259ea4c80fc5eed0f623894301edc6e2f2176f",
+   "bytes": 111532
+  }
+ }
+}
