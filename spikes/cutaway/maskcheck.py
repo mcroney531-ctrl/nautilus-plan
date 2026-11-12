@@ -9,6 +9,9 @@ interior (default; rooms, floors):
       region's mask file: its box plus that wall's silhouette. Architecture behind the silhouette is exempt from I1, and
   I2  no mask pixel lies outside the box and the silhouette.
 
+room (an engine-derived room mask, written by l2rooms.py --masks-only): floor plus the faces of the room's own back and east walls.
+  R1  no wall-cap pixel;  R2  no door or passage span pixel;  R3  no wall pixel other than its own back or east wall face.
+
 shell (the first whole-level paint over the blockout): the mask is everything except locked and finished pixels; only O4 applies.
       The painted walls are checked after compositing: frame registration, the opening count and connectivity.py.
 
@@ -73,6 +76,16 @@ if chk["kind"] == "interior":
         return n
     c = {s: clear(s) for s in ("left", "top", "right", "bottom")} if not (A & M).any() else None
     if c: res["clear_px"] = c; res["largest_clear_box"] = [x0 - c["left"], y0 - c["top"], x1 + c["right"], y1 + c["bottom"]]
+elif chk["kind"] == "room":   # engine-derived room mask: floor, plus the faces of its own back and east walls
+    M = np.asarray(Image.open(pkg / reg["mask"]).convert("L")) > 0; A = arch(True, "C-L1-arch.png"); Ac = arch({"cut": True}, "C-L1-arch-cut.png"); other = A; F = np.zeros((H, W), bool)
+    pr = man["projection"]; s_ = 4; Xp = lambda x: x * s_; Yp = lambda y: (pr["off"] + pr["k"] * y) * s_; own = np.zeros((H, W), bool)
+    for r in reg["rects"]:
+        hw = pr["hE"] * 0.6 if r[0] + r[2] >= 388 else pr["hI"]
+        own[int(Yp(r[1]) - pr["hI"] * s_):int(Yp(r[1])) + 4, int(Xp(r[0])):int(Xp(r[0] + r[2]) + pr["sh"] * pr["hI"] * s_) + 2] = True
+        own[int(Yp(r[1]) - hw * s_):int(Yp(r[1] + r[3])) + 2, int(Xp(r[0] + r[2])) - 3:int(Xp(r[0] + r[2]) + pr["sh"] * hw * s_) + 2] = True
+    capm = np.abs(np.asarray(Image.open(pkg / "blockout-L2.png").convert("RGB")).astype(int) - np.array([238, 243, 245])).max(axis=2) < 8
+    res["rules"]["R1 wall-cap pixels inside"] = int((M & capm).sum()); res["rules"]["R2 door or passage span pixels inside"] = int((M & A & ~Ac).sum())
+    res["rules"]["R3 wall pixels that are not its own back or east wall face"] = int((M & Ac & ~own).sum()); res["mask_pixels"] = int(M.sum())
 elif chk["kind"] == "shell":   # the first whole-level paint: everything except scripted and finished pixels. Walls are judged afterwards, against the engine
     other = F = np.zeros((H, W), bool); M = np.asarray(Image.open(pkg / reg["mask"]).convert("L")) > 0
 elif chk["kind"] == "surface":

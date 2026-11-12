@@ -398,3 +398,7 @@ Approved for this round: each room's mask includes its own back-wall face; the r
 
 At 320 px each room is identifiable by colour and main shapes (green tanks, yellow cylinders, steel counters, the plant's pipework); individual items are not, as on L1.
 Still placeholder: West mezzanine, Ops offices (Stage 2) and the two stair-core landings.
+
+### L2 Stage 1 promoted (Nov 12): `master-L2-v2.png`
+
+Stage 1 approved, with the east-wall-face extension. Checks re-run on the promoted file: identical to the reviewed preview; `shellreg.py` PASS, recall 1.0; `connectivity.py` both spaces open; 0 pixels changed outside the Stage 1 pixels and 0 scripted pixels changed; 24 of 24 L2 door taps. The five rooms are locked by `lock-rooms-L2.png`. Approved for Stage 1 only: West mezzanine, Ops offices and the stair cores are still to do. Handoffs for regions 02 and 07 are prepared against v2 with engine-derived room masks (rules R1 to R3 pass); the wall between them and its passage are outside both masks.

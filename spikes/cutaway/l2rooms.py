@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent)); import shellreg as R
 root = Path(__file__).resolve().parents[2]; pkg = root / "docs/spikes/cutaway-l2"; W, H = 1600, 1004; a_ = sys.argv[1:]
 prev = Path(a_[a_.index("--preview") + 1]) if "--preview" in a_ else None
 ROOMS = (a_[a_.index("--rooms") + 1].split(",") if "--rooms" in a_ else ["quarantine", "food", "dive", "life", "eastMezz"])
+MASKS_ONLY = "--masks-only" in a_   # write engine-derived room masks for the named rooms into the package (for editor passes); paints nothing
 NO_EAST_FACE = {"life"}   # the source paints a dark panel on Life support's exterior wall that reads as an opening; that wall face stays the engine's
 plan = json.loads((pkg / "plan.json").read_text()); p = plan["projection"]; s = 4; k, off, hI, hE, sh = p["k"], p["off"], p["hI"], p["hE"], p["sh"]; X = lambda x: x * s; Y = lambda y: (off + k * y) * s
 def arch(spec, name):
@@ -67,6 +68,10 @@ for rid in ROOMS:
     M &= ~grow(caps, 1) & ~lock; M &= ~(Afull & ~Acut)                                                        # never a cap, a locked pixel or an opening span
     M = np.asarray(Image.fromarray((M * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))) > 0
     M &= ~grow(caps, 1) & ~lock & ~(Afull & ~Acut)
+    if MASKS_ONLY:
+        man = json.loads((pkg / "manifest.json").read_text()); key = next(k_ for k_, v_ in plan["masks"].items() if v_["room"] == rid and v_["box_px"]); ys_, xs_ = np.nonzero(M)
+        Image.fromarray((M * 255).astype(np.uint8)).save(pkg / f"mask-{key}.png"); cv = Image.new("L", (1600, 1067), 0); cv.paste(Image.fromarray((M * 255).astype(np.uint8)), (0, 0)); cv.save(pkg / f"canvas-3x2-mask-{key}.png")
+        man["regions"][key] |= {"box_px": [int(xs_.min()), int(ys_.min()), int(xs_.max()), int(ys_.max())], "rects": rects, "check": {"kind": "room"}}; (pkg / "manifest.json").write_text(json.dumps(man, indent=1)); print(key, "mask px", int(M.sum())); continue
     al = Image.fromarray((M * 255).astype(np.uint8)); alpha = np.minimum(np.asarray(al.filter(ImageFilter.MinFilter(7)).filter(ImageFilter.GaussianBlur(1.5)), np.float32), np.asarray(al, np.float32)) / 255
     tall = lambda xe: hE * 0.6 if (xe <= 12 or xe >= 388) else hI; report[rid] = {"pieces": []}
     for r in rects:   # each rectangle of the space is fitted on its own walls; the mask stays one piece
@@ -89,9 +94,18 @@ rm = roommask.astype(np.float32); Lr = out.mean(axis=2) * rm; spill = fb(Lr, 16)
 tgt = finish & ~roommask; gain = (np.clip(spill - 40, 0, 160) * 0.34)[..., None] * np.array([1.0, 0.86, 0.66]); out[tgt] = (out + gain)[tgt]
 edge = fb((Acut & ~caps).astype(np.float32) * 255, 5) / 255; fl = unp & ~roommask; out[fl] = (out * (1 - 0.28 * edge[..., None]))[fl]
 out[caps | lock] = base[caps | lock]
+if MASKS_ONLY: sys.exit(0)
 res = np.clip(out + 0.5, 0, 255).astype(np.uint8); b8 = base.astype(np.uint8); ch = np.abs(res.astype(int) - b8).max(axis=2) > 0
 assert not (ch & ~(roommask | finish)).any(), "pixels outside the room masks and the wall finish changed"; assert not (ch & (caps | lock)).any(), "a cap or a scripted pixel changed"
 (prev or pkg).mkdir(parents=True, exist_ok=True); (prev / "stage1-transforms.json").write_text(json.dumps({"source": "source-shell-return-2.png", "global_fit": {"scale": g[0], "dx_px": g[1], "dy_px": g[2], "about_px": list(c0)}, "rooms": report}, indent=1)) if prev else None
 print(json.dumps(report, indent=1)); dest = prev or pkg; dest.mkdir(parents=True, exist_ok=True)
 if prev: Image.fromarray(res).save(prev / "l2-stage1.png"); Image.fromarray((roommask * 255).astype(np.uint8)).save(prev / "l2-stage1-roommask.png")
-else: sys.exit("promotion is not enabled yet: run with --preview")
+else:
+    mp = max(pkg.glob("master-L2-v*.png"), key=lambda q: int(re.search(r"v(\d+)", q.stem).group(1))); nv = int(re.search(r"v(\d+)", mp.stem).group(1)) + 1; assert mp.name == "master-L2-v1.png", "stage 1 is built on v1"
+    Image.fromarray(res).save(pkg / f"master-L2-v{nv}.png"); Image.fromarray(((roommask | finish) * 255).astype(np.uint8)).save(pkg / "stage1-L2.png")
+    (pkg / "stage1-transforms.json").write_text(json.dumps({"source": "source-shell-return-2.png", "global_fit": {"scale": g[0], "dx_px": g[1], "dy_px": g[2], "about_px": list(c0)}, "rooms": report}, indent=1))
+    Image.fromarray((roommask * 255).astype(np.uint8)).save(pkg / "lock-rooms-L2.png"); man = json.loads((pkg / "manifest.json").read_text()); man["locked_files"] = sorted(set(man.get("locked_files", [])) | {"lock-rooms-L2.png"}); man["regions"].pop("00-shell", None)
+    for k_, v_ in list(man["regions"].items()):
+        if any(k_.split("-", 1)[1].startswith(r_) for r_ in ROOMS) : man["regions"].pop(k_)       # finished rooms leave the pending list; their pixels are locked by file
+    man.setdefault("history", []).append({"region": "stage1-rooms", "method": "engine walls; room interiors resampled from source-shell-return-2.png; scripted wall finish", "rooms": ROOMS, "from": mp.name, "to": f"master-L2-v{nv}.png"})
+    (pkg / "manifest.json").write_text(json.dumps(man, indent=1)); print("promoted", f"master-L2-v{nv}.png")
