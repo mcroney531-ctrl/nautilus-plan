@@ -89,7 +89,46 @@ print(json.dumps({'edge_px':len(anyl)-len(line),'line_px':n,'pct_ge_3':round(100
       await pg.uncheck('[data-nx-key="g-exhibitOps"]'); await mapOpen(pg); await measure('lost outline L2', 2, '[data-delta="removed"]', 'f39091');
       await done(pg); }
     assert.deepEqual(low, [], 'at least 90% of each line\'s pixels at 3:1 against their surroundings'); },
+  async 'markers: the white ring of every door marker keeps 3:1 against what is drawn just outside it (a dark halo), granted and not, 3 widths, 1x and 2x, both levels'(b) {
+    const PY = `
+import json,sys
+from PIL import Image
+a=Image.open(sys.argv[1]).convert('RGB');b=Image.open(sys.argv[2]).convert('RGB');A=a.load();B=b.load();W,H=a.size
+ms=json.loads(sys.argv[3]);d=float(sys.argv[4])
+def L(p):
+  f=lambda v:(v/255)/12.92 if v/255<=0.03928 else ((v/255+0.055)/1.055)**2.4
+  return 0.2126*f(p[0])+0.7152*f(p[1])+0.0722*f(p[2])
+def cr(p,q):
+  x,y=L(p),L(q);return (max(x,y)+0.05)/(min(x,y)+0.05)
+import math;out=[]
+for m in ms:
+  cx,cy=m['c'][0]*d,m['c'][1]*d;rr=m['r']*d;ring=[];outside=[];inner=[]
+  for k in range(72):
+    t=k*math.pi/36
+    def px(r,img):
+      x,y=int(round(cx+r*math.cos(t))),int(round(cy+r*math.sin(t)));return img[min(W-1,max(0,x)),min(H-1,max(0,y))]
+    ring.append(cr(px(rr,A),px(rr+1.5*d,B)))      # drawn ring vs the art just outside it (marker hidden)
+    outside.append(cr(px(rr,A),px(rr+1.5*d,A)))   # drawn ring vs what is drawn just outside it (with any halo)
+    inner.append(cr(px(rr,A),px(rr-2.4*d,A)))     # ring vs the marker's own fill
+  ring.sort();outside.sort();inner.sort()
+  out.append({'door':m['d'],'granted':m['g'],'ring_vs_art_min':round(ring[0],2),'ring_vs_art_pct_ge3':round(100*sum(x>=3 for x in ring)/72),'ring_vs_drawn_pct_ge3':round(100*sum(x>=3 for x in outside)/72),'ring_vs_fill_median':round(inner[36],2)})
+print(json.dumps(out))`, R = [];
+    for (const size of W) for (const z of [1, 2]) for (const state of ['start', 'granted']) { const pg = await open(b, ON, size, 2); await go(pg, '/t/elena/configure', false);
+      if (state === 'granted') { await pg.check('[data-nx-key="g-allStaff"]'); await pg.check('[data-nx-key="g-education"]'); } await mapOpen(pg);
+      for (const l of [1, 2]) { await level(pg, l);
+        if (z === 2) { await inspect(pg); await ev(pg, () => { const s = vis('#nxDoorPick'); s.value = 'D-WSE'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await level(pg, l); await ev(pg, () => { if (vis('#nxZoom').textContent === 'Zoom in') vis('#nxZoom').click(); }); }
+        await pg.waitForTimeout(200); await ev(pg, () => vis('#nxMapSvg').scrollIntoView({ block: 'center' }));
+        const box = await ev(pg, () => { const q = vis('#nxMapSvg').getBoundingClientRect(); return { x: q.x, y: q.y, width: q.width, height: q.height }; });
+        const ms = await ev(pg, box => { const s = vis('#nxMapSvg'), lens = s.querySelector('.nx-lens'), lb = lens && lens.getBoundingClientRect(); return [...s.querySelectorAll('[data-level] .nx-door')].map(e => { const r = e.getBoundingClientRect(), c = [r.left + r.width / 2 - box.x, r.top + r.height / 2 - box.y];
+          const inLens = lb && Math.hypot(r.left + r.width / 2 - (lb.left + lb.width / 2), r.top + r.height / 2 - (lb.top + lb.height / 2)) < lb.width / 2 + 10; return { d: e.dataset.door, g: e.dataset.granted === 'true', c, r: 7, vis: c[0] > 10 && c[1] > 10 && c[0] < box.width - 10 && c[1] < box.height - 10 && !inLens }; }).filter(m => m.vis); }, box);
+        const fa = path.join(TMP, 'ma.png'), fb = path.join(TMP, 'mb.png'); fs.writeFileSync(fa, await pg.screenshot({ clip: box }));
+        await ev(pg, () => { for (const e of vis('#nxMapSvg').querySelectorAll('.nx-door, .nx-door-halo')) e.style.visibility = 'hidden'; }); fs.writeFileSync(fb, await pg.screenshot({ clip: box }));
+        await ev(pg, () => { for (const e of vis('#nxMapSvg').querySelectorAll('.nx-door, .nx-door-halo')) e.style.visibility = ''; });
+        for (const m of JSON.parse(execFileSync('python3', ['-c', PY, fa, fb, JSON.stringify(ms), '2']).toString())) R.push({ size, z, state, l, ...m }); }
+      await done(pg); }
+    OUT.markers = { samples: R.length, ringUnder3AgainstBareArt: R.filter(r => r.ring_vs_art_pct_ge3 < 100).length, ringUnder3WithHalo: R.filter(r => r.ring_vs_drawn_pct_ge3 < 100).length, worstBareArt: Math.min(...R.map(r => r.ring_vs_art_min)) };
+    assert.strictEqual(OUT.markers.ringUnder3WithHalo, 0, JSON.stringify(R.filter(r => r.ring_vs_drawn_pct_ge3 < 100).slice(0, 3))); },
 };
 (async () => { const b = await chromium.launch(); let pass = 0, n = 0;
   for (const [name, f] of Object.entries(tests)) { n++; try { await f(b); pass++; console.log('ok', name); } catch (e) { console.log('FAIL', name, '\n  ', e.message.split('\n').slice(0, 8).join('\n   ')); } }
-  fs.writeFileSync(path.join(__dirname, '../docs/v2-cutaway-r1r2.json'), JSON.stringify(OUT, null, 1) + '\n'); await b.close(); console.log(`\n${pass}/${n} R1/R2 tests passed`); process.exit(pass === n ? 0 : 1); })();
+  fs.writeFileSync(path.join(__dirname, '../docs/v2-cutaway-r1r2.json'), JSON.stringify(OUT, null, 1) + '\n'); await b.close(); console.log(`\n${pass}/${n} R1/R2 and marker tests passed`); process.exit(pass === n ? 0 : 1); })();

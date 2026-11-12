@@ -7,8 +7,12 @@ For Rone, on an Android phone in Chrome. It takes about 30 minutes. Write PASS, 
 1. On the phone, open **https://mcroney531-ctrl.github.io/nautilus-plan/dist/v2-cutaway-preview.html?map=cutaway**
    - The `?map=cutaway` part turns the cutaway on. Without it, the same file shows the ordinary flat map.
    - `v2.html` carries no cutaway art at all, so nobody using the normal V2 link sees any of this.
-   - (Not checked from here: this environment cannot reach GitHub Pages. If the link gives a 404, open the file from the repository instead: GitHub → `dist/v2-cutaway-preview.html` → Download raw file → open it in Chrome, then add `?map=cutaway` to the end of the address.)
+   - **Deployment status:** GitHub Pages builds `main` on every push. The run for commit `c0c20c2` succeeded, and its site artifact (172 MB) matches the repository's tracked files (177 MB). There is no Jekyll config excluding `dist/`, so the file should be published at this address. Claude cannot load the page from its environment, so step 1 is the real check: if the map shows painted art, the preview works.
+   - The preview is **one self-contained file** (about 1 MB, with the art embedded and no other files), so nothing else has to load.
+   - **If the link fails:** that is a publishing problem, not a failed test. Tell Claude. As a fallback, on a computer, download `dist/v2-cutaway-preview.html` from the repository and send it to the phone; Android Chrome's handling of local files varies, so the Pages link is the reliable route.
 2. Leave Chrome's zoom at 100% and the phone's font size at default for parts A to D.
+
+**Priority if time is short:** A3–A8, B1–B3 and C1–C8 first; the rest can follow.
 
 ## A. Touch (TalkBack off)
 

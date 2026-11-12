@@ -22,7 +22,7 @@ const geom = pg => ev(pg, () => { const s = vis('#nxMapSvg'), b = s.getBoundingC
 const canvasVB = pg => ev(pg, () => { const c = NxMap.cutaway.canvas(); return [c.x, c.y, c.w, c.h].join(' '); });
 /* Step 3's overlay with the two approved changes taken out: the quieter footprint pattern and the room labels */
 const norm = s => s.replace(/<pattern id="nx(?:Dots|Strp)Q[AB]"[\s\S]*?<\/pattern>/g, '').replace(/nxDotsQ/g, 'nxDots').replace(/nxStrpQ/g, 'nxStrp')
-  .replace(/(fill="url\(#nx(?:Dots|Strp)[AB]\)") opacity="1"/g, '$1 opacity=".8"').replace(/<g class="nx-rlabels"[^>]*>[\s\S]*?<\/g>/g, '').replace(/<g data-delta="(?:added|removed)" data-space="[^"]+">[\s\S]*?<\/g>/g, '').replace(/<rect [^>]*class="nx-case"[^>]*><\/rect>/g, '').replace(/ class="nx-line"/g, '');   /* and Step 6 R2's casings */   /* and Step 5's change-review outlines */
+  .replace(/(fill="url\(#nx(?:Dots|Strp)[AB]\)") opacity="1"/g, '$1 opacity=".8"').replace(/<g class="nx-rlabels"[^>]*>[\s\S]*?<\/g>/g, '').replace(/<g data-delta="(?:added|removed)" data-space="[^"]+">[\s\S]*?<\/g>/g, '').replace(/<rect [^>]*class="nx-case"[^>]*><\/rect>/g, '').replace(/ class="nx-line"/g, '').replace(/<circle class="nx-door-halo"[^>]*><\/circle>/g, '');   /* and Step 6 R2's casings and marker halos */   /* and Step 5's change-review outlines */
 
 const tests = {
   async '1x overview: identical to Step 3 except the approved footprint pattern, room labels and (Step 5) change-review outlines (Inspect off and on, both levels, three widths)'(b) {

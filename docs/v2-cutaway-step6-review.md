@@ -183,6 +183,13 @@ The 10 px was chosen by sweeping 6–22 px against the real marker positions:
 
 The automated door markers measure in the table under R2 above (41–44% at 3:1) was taken before these changes and is not re-measured ring-only; the phone check covers how markers read.
 
+**Door markers (R1/R2 follow-up, Nov 12).** The earlier 41–44% figure mixed the marker's fill with its boundary: the dark fill of doors not in the badge sits on dark art, which is not a boundary. Measured on its own, the white ring is the boundary, sampled at 72 points around each marker against what is just outside it:
+- **Without a halo, against the bare art:** 40 of 96 marker samples had part of the ring under 3:1, at three widths, 1× and 2×, granted and not, both levels. The worst point was 1.07:1. This is a real failure, not anti-aliasing: the ring sits on the art's near-white wall tops and on the mint footprint rim.
+- **The fix:** a 1.5 px dark halo just outside the ring (`nx-door-halo`).
+- **With the halo: 0 of 96** samples have any ring point under 3:1.
+- The mint and dark fills inside the ring only show granted versus not granted, and the legend states the same thing; they are not the marker's boundary.
+- Test: the fifth test in `test/v2.cutaway.r1r2.test.js`.
+
 **Still open:** R3 and R4, using `docs/v2-cutaway-device-checklist.md`, which also covers text-size scaling (the app sets text in px, so 200% page zoom passing does not show that a larger font setting works).
 
 ## Needed for a GO on default adoption

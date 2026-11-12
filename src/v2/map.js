@@ -141,7 +141,8 @@ const NxMap = ((E, F) => {
     if (dl) { for (const k of dl.addedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="added" data-space="${k}">${crects(k, `fill="#f5d192" fill-opacity=".22" stroke="none"`, u(4))}${crects(k, cased(5, true), u(4))}${crects(k, `fill="none" stroke="#f5d192" stroke-width="${u(3)}" stroke-dasharray="${u(6)} ${u(4)}" class="nx-line"`, u(4))}</g>`;   // inset clear of the footprint rim, which every added area also has
       for (const k of dl.removedSpaces.filter(k => E.SPACES[k].l === l)) s += `<g data-delta="removed" data-space="${k}">${crects(k, cased(4.5, true), u(2))}${crects(k, `fill="none" stroke="#f39091" ${dash} class="nx-line"`, u(2))}</g>`; }
     for (const d of Object.keys(E.DOORS)) { if (E.doorLevel(d) !== l) continue; const g = fp.doors.has(d), [x, y] = cdoor(d);
-      s += `<circle class="nx-door" data-door="${d}" data-granted="${g}" cx="${x}" cy="${y}" r="${u(VIS_PX)}" fill="${g ? '#a4ead0' : '#0b2a39'}" stroke="#fff" stroke-width="${u(1.6)}"/>`; }
+      /* a 1.5 px dark halo outside the white ring keeps the marker's edge at 3:1 on light wall caps and on the footprint rim */
+      s += `<circle class="nx-door-halo" cx="${x}" cy="${y}" r="${u(VIS_PX + 2.3)}" fill="#021019" fill-opacity=".9" pointer-events="none"/><circle class="nx-door" data-door="${d}" data-granted="${g}" cx="${x}" cy="${y}" r="${u(VIS_PX)}" fill="${g ? '#a4ead0' : '#0b2a39'}" stroke="#fff" stroke-width="${u(1.6)}"/>`; }
     return s;
   }
   function croute(w, l, initials, sc) {
