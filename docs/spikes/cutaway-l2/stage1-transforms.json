@@ -146,5 +146,85 @@
    "cap_px": 0,
    "locked_px": 0
   }
- }
+ },
+ "added": [
+  {
+   "workflow": "manual room placement (not automatic registration)",
+   "approval": "Rone, Nov 12: West mezzanine as placed (no scale, front floor cropped); Ops offices moved up 99 px and squeezed 17% vertically, room-specific exception",
+   "source": "source-west-return-1.png",
+   "global_fit": {
+    "scale": 1.005,
+    "dx_px": 2.0,
+    "dy_px": -3.0,
+    "about_px": [
+     800.0,
+     502.0
+    ]
+   },
+   "rooms": {
+    "westMezz": {
+     "pieces": [
+      {
+       "rect": [
+        12,
+        44,
+        84,
+        96
+       ],
+       "painted_floor_px": [
+        48,
+        280,
+        384,
+        541
+       ],
+       "set_by_hand": true,
+       "painted_walls_off_by_px": {
+        "left": -2,
+        "right": 0,
+        "top": -3,
+        "bottom": -48
+       },
+       "x_scale": 1.0,
+       "y_scale": 0.999
+      }
+     ],
+     "mask_px": 75083,
+     "opening_span_px_in_mask": 0,
+     "cap_px": 0,
+     "locked_px": 0
+    },
+    "admin": {
+     "pieces": [
+      {
+       "rect": [
+        12,
+        142,
+        84,
+        90
+       ],
+       "painted_floor_px": [
+        48,
+        643,
+        384,
+        930
+       ],
+       "set_by_hand": true,
+       "painted_walls_off_by_px": {
+        "left": -2,
+        "right": 2,
+        "top": -48,
+        "bottom": 45
+       },
+       "x_scale": 1.0,
+       "y_scale": 1.172
+      }
+     ],
+     "mask_px": 70069,
+     "opening_span_px_in_mask": 0,
+     "cap_px": 0,
+     "locked_px": 0
+    }
+   }
+  }
+ ]
 }

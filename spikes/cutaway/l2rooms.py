@@ -1,4 +1,4 @@
-"""Level 2, engine-walls approach: the engine owns walls, openings and connectivity; the editor's painting supplies room interiors.
+"""Level 2, engine-walls approach (a manual, engine-owned composition path; separate from composite.py's automatic registration): the engine owns walls, openings and connectivity; the editor's painting supplies room interiors.
 Usage: python3 spikes/cutaway/l2rooms.py [--preview DIR] [--rooms id,id,...]
 Source: docs/spikes/cutaway-l2/source-shell-return-2.png (a whole-level return whose walls failed shellreg.py; its rooms are good).
 1. Wall finish (script): the blockout's wall faces are toned to L1's wall material with grain; a few practical wall lights are
@@ -117,9 +117,15 @@ assert not (ch & ~(roommask | finish)).any(), "pixels outside the room masks and
 print(json.dumps(report, indent=1)); dest = prev or pkg; dest.mkdir(parents=True, exist_ok=True)
 if prev: Image.fromarray(res).save(prev / "l2-stage1.png"); Image.fromarray((roommask * 255).astype(np.uint8)).save(prev / "l2-stage1-roommask.png")
 elif ADD:
+    # Manual placement is not registration. A room whose source box was set by hand, or that is scaled by more than 10%, is
+    # promoted only with an explicit approval note, which is recorded with its source coordinates and transform.
+    APPROVAL = a_[a_.index("--approval") + 1] if "--approval" in a_ else None
+    needs = [rid for rid, v_ in report.items() if any(p_.get("set_by_hand") or abs(p_["x_scale"] - 1) > 0.10 or abs(p_["y_scale"] - 1) > 0.10 for p_ in v_.get("pieces", []))]
+    if needs and not APPROVAL: sys.exit("REFUSED: " + ", ".join(needs) + " placed by hand or scaled over 10%: promotion needs --approval \"who, when, what\"")
+    if any(p_.get("result") == "REFUSED" for v_ in report.values() for p_ in v_.get("pieces", [])): sys.exit("REFUSED: a room's scale is beyond 20%")
     nv = int(re.search(r"v(\d+)", basefile.stem).group(1)) + 1; Image.fromarray(res).save(pkg / f"master-L2-v{nv}.png")
     lk = (np.asarray(Image.open(pkg / "lock-rooms-L2.png").convert("L")) > 0) | roommask; Image.fromarray((lk * 255).astype(np.uint8)).save(pkg / "lock-rooms-L2.png")
-    tf = json.loads((pkg / "stage1-transforms.json").read_text()); tf.setdefault("added", []).append({"source": SRC, "global_fit": {"scale": g[0], "dx_px": g[1], "dy_px": g[2], "about_px": list(c0)}, "rooms": report}); (pkg / "stage1-transforms.json").write_text(json.dumps(tf, indent=1))
+    tf = json.loads((pkg / "stage1-transforms.json").read_text()); tf.setdefault("added", []).append({"workflow": "manual room placement (not automatic registration)", "approval": APPROVAL, "source": SRC, "global_fit": {"scale": g[0], "dx_px": g[1], "dy_px": g[2], "about_px": list(c0)}, "rooms": report}); (pkg / "stage1-transforms.json").write_text(json.dumps(tf, indent=1))
     man = json.loads((pkg / "manifest.json").read_text())
     for k_ in [k_ for k_ in man["regions"] if any(k_.split("-", 1)[1].startswith(r_) for r_ in ROOMS)]: man["regions"].pop(k_)
     man.setdefault("history", []).append({"region": "rooms-added", "method": "engine walls; room interiors resampled from " + SRC, "rooms": ROOMS, "from": basefile.name, "to": f"master-L2-v{nv}.png"}); (pkg / "manifest.json").write_text(json.dumps(man, indent=1)); print("promoted", f"master-L2-v{nv}.png")

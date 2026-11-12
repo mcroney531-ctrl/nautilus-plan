@@ -23,29 +23,6 @@
   "lock-rooms-L2.png"
  ],
  "regions": {
-  "02-westMezz": {
-   "box_px": [
-    92,
-    246,
-    399,
-    534
-   ],
-   "room": "West mezzanine (engine: westMezz, staff)",
-   "brief": "West mezzanine: sealed floor, carts or lockers against walls, clear paths.",
-   "mask": "mask-02-westMezz.png",
-   "crop": "crop-02-westMezz.png",
-   "check": {
-    "kind": "room"
-   },
-   "rects": [
-    [
-     12,
-     44,
-     84,
-     96
-    ]
-   ]
-  },
   "05-topside-b": {
    "box_px": [
     823,
@@ -61,29 +38,6 @@
     "kind": "interior",
     "mask_file": true
    }
-  },
-  "07-admin": {
-   "box_px": [
-    75,
-    513,
-    398,
-    785
-   ],
-   "room": "Ops offices (engine: admin, staff)",
-   "brief": "Ops offices: desks, monitors with blank screens, shelving.",
-   "mask": "mask-07-admin.png",
-   "crop": "crop-07-admin.png",
-   "check": {
-    "kind": "room"
-   },
-   "rects": [
-    [
-     12,
-     142,
-     84,
-     90
-    ]
-   ]
   }
  },
  "canvas_3x2": {
@@ -137,6 +91,16 @@
    ],
    "from": "master-L2-v1.png",
    "to": "master-L2-v2.png"
+  },
+  {
+   "region": "rooms-added",
+   "method": "engine walls; room interiors resampled from source-west-return-1.png",
+   "rooms": [
+    "westMezz",
+    "admin"
+   ],
+   "from": "master-L2-v2.png",
+   "to": "master-L2-v3.png"
   }
  ]
 }

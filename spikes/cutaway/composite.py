@@ -14,6 +14,10 @@ assertion are the same, in master pixels, and the fit is scored inside the recta
 --match-tone: before compositing, the returned image is scaled per colour channel so that its median on the unedited ring
 equals the master's (limited to 0.8 to 1.25). For editors that re-light the whole picture. The gain is logged.
 Refuses (unless --force) when the residual fit is over 6 px or 1.5%: the editor moved the picture, not just the region.
+Also refuses on fit quality, whatever the fit's size: under 90% of the master's wall caps in the scoring ring are found within
+3 px in the aligned return. (Colour error alone is not used: an editor may re-light the surroundings and keep every wall.)
+Where the ring holds under 300 cap pixels the measure is not available and is reported as null.
+--report-only prints the fit and its quality and writes nothing.
 Writes master-L1-v<N+1>.png, compare-NN-v<N+1>.png (before | after | returned, cropped) and a history entry in manifest.json."""
 import json, re, sys
 from pathlib import Path
@@ -86,6 +90,16 @@ if abs(s - 1) < 0.0025 and abs(dx) <= 1 and abs(dy) <= 1: s, dx, dy, fit_mad = 1
 aligned = place(img, s, dx, dy)
 report = {"region": name, "returned": str(ret_path.name), "returned_size": [rw, rh], "base_mapping": kind, **({"zoom_rect": rect} if zoom else {}),
           "correction_applied": {"scale": round(s, 4), "dx_px": dx, "dy_px": dy}, "ring_mad_plain": round(zero_mad, 2), "ring_mad_fit": round(fit_mad, 2)}
+# fit quality, independent of the fit's size: do the walls round the region still stand where the master has them?
+# Wall caps (neutral near-white) of the master inside the scoring ring, and the share of them the aligned return also has
+# within 3 px. A return can be redrawn in colour and light and keep this high; one whose walls moved cannot.
+_cap = lambda im: (lambda a: (a.min(axis=2) > 212) & (a.max(axis=2) - a.min(axis=2) < 30))(np.asarray(im).astype(int))
+mc = _cap(master) & ring & inrect; rc = np.asarray(Image.fromarray((_cap(aligned) * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(7))) > 0
+report["ring_wall_caps_px"] = int(mc.sum()); report["ring_wall_cap_agreement"] = round(float((mc & rc).sum() / mc.sum()), 2) if mc.sum() >= 300 else None
+if "--report-only" in sys.argv: print(json.dumps(report)); sys.exit(0)
+QUALITY_MIN = 0.90   # every accepted L1 pass measured 0.94 to 1.00; the L2 return whose walls had moved measured 0.84 and 0.74
+if report["ring_wall_cap_agreement"] is not None and report["ring_wall_cap_agreement"] < QUALITY_MIN and not force:
+    print(json.dumps(report, indent=1)); sys.exit(f"REFUSED: fit quality. Only {report['ring_wall_cap_agreement']:.0%} of the wall caps round the region are where the master has them (minimum {QUALITY_MIN:.0%}). The walls in the returned picture are not the master's; a fit on them means nothing.")
 if (abs(s - 1) > 0.015 or max(abs(dx), abs(dy)) > 6) and not force:
     print(json.dumps(report, indent=1)); sys.exit("REFUSED: the returned picture moved more than 6 px or 1.5% around the region. Check it, or rerun with --force.")
 
