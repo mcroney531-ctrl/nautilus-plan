@@ -68,6 +68,12 @@ Swipe right to move forward, double-tap to activate. Elena's ticket → Facility
 | --- | --- | --- | --- |
 | D1 | Open the same link **without** `?map=cutaway`, Daniel's ticket → Facility Map → Inspect → Loading dock | The same evidence text as with the cutaway (reader fault) | |
 
+## Findings log (real device)
+
+| # | Found | Class | Status |
+| --- | --- | --- | --- |
+| F1 | Facility Map opened from the Shift Inbox: Inspect looked disabled with no reason given, and was mistaken for a broken feature. Inspect works from Elena's ticket | Minor UX and accessibility | **Fixed Nov 14, re-check on the phone:** in the inbox, Inspect stays unavailable but can be focused. "Open a ticket to inspect doors." is shown under the controls, is the button's description for screen readers, and is announced if the button is used. Tickets are unchanged; during a walk Inspect is disabled as before. Applies to the flat map too. Test in `test/v2.test.js` |
+
 ## Report back
 
 Paste the tables with the Result column filled in, plus any screenshots. Include the phone model, Android version and Chrome version.

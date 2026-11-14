@@ -192,6 +192,10 @@ The automated door markers measure in the table under R2 above (41–44% at 3:1)
 
 **Still open:** R3 and R4, using `docs/v2-cutaway-device-checklist.md`, which also covers text-size scaling (the app sets text in px, so 200% page zoom passing does not show that a larger font setting works).
 
+## Real-device findings (in progress)
+
+Logged in `docs/v2-cutaway-device-checklist.md`. F1, the inbox map's unexplained disabled Inspect button, is a minor UX and accessibility issue, fixed Nov 14 and waiting to be re-checked on the phone. The remaining touch and TalkBack checks are open.
+
 ## Needed for a GO on default adoption
 
 1. R1 and R2 fixed, with the parity and contrast measurements re-run.

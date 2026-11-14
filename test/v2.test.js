@@ -545,6 +545,18 @@ const tests = {
     const ctx = await b.newContext({ viewport: SIZES.desk, reducedMotion: 'reduce' }), pg = await ctx.newPage(); await pg.goto(url + '#/t/elena/review');
     assert(await pg.evaluate(() => [...document.querySelectorAll('.nx-body *')].every(e => { const s = getComputedStyle(e); return parseFloat(s.transitionDuration) === 0 && s.animationName === 'none'; })));
   },
+  async 'inbox map: Inspect is unavailable with the reason shown and read out (focusable, announces on use); in a ticket it works and the reason is gone'(b) {
+    for (const size of ['phone', 'desk']) { const pg = await page(b, size, '#/inbox'); if (size === 'phone') await pg.click('#nxMapBtn');
+      const vis = sel => pg.evaluate(sel => { const e = [...document.querySelectorAll(sel)].find(x => x.getBoundingClientRect().width > 0); return e ? { text: e.textContent.trim(), dis: e.disabled, aria: e.getAttribute('aria-disabled'), desc: e.getAttribute('aria-describedby'), pressed: e.getAttribute('aria-pressed') } : null; }, sel);
+      const hint = await vis('#nxInspHint'), ib = await vis('#nxInspect'); assert.equal(hint && hint.text, 'Open a ticket to inspect doors.', size);
+      assert.deepEqual([ib.dis, ib.aria, ib.desc], [false, 'true', 'nxInspHint'], size + ' focusable, marked unavailable, described by the reason');
+      await pg.evaluate(() => [...document.querySelectorAll('#nxInspect')].find(x => x.getBoundingClientRect().width > 0).focus()); await pg.keyboard.press('Enter'); await pg.waitForTimeout(80);
+      assert.equal(await pg.evaluate(() => document.getElementById('nxLive').textContent), 'Open a ticket to inspect doors.'); assert.equal((await vis('#nxInspect')).pressed, 'false', 'nothing turns on');
+      assert.equal(await pg.evaluate(() => !![...document.querySelectorAll('.nx-lens')].find(x => x.getBoundingClientRect().width > 0)), false, 'no lens');
+      if (size === 'phone') await pg.keyboard.press('Escape'); await pg.goto(url + '#/t/elena/review'); if (size === 'phone') await pg.click('#nxMapBtn');
+      assert.equal(await vis('#nxInspHint'), null, 'reason hidden in a ticket'); const t = await vis('#nxInspect'); assert.deepEqual([t.dis, t.aria, t.desc], [false, null, null]);
+      await pg.evaluate(() => [...document.querySelectorAll('#nxInspect')].find(x => x.getBoundingClientRect().width > 0).click()); assert.equal((await vis('#nxInspect')).pressed, 'true', size + ' Inspect works in a ticket');
+      assert.deepEqual(pg.errs, []); await pg.close(); } },
 };
 (async () => {
   const b = await chromium.launch(); let fail = 0;

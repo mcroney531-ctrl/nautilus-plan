@@ -305,3 +305,6 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .nx-ident{margin:6px 8px 0;font:500 14px/1.45 var(--nx-font);color:var(--nx-on-navy)}.nx-ident b{font-weight:800}
 .nx-linkbtn{display:inline-flex;align-items:center;min-height:44px;margin-left:4px;padding:0 10px;border-radius:var(--nx-r-md);border:1px solid var(--nx-silver);background:transparent;color:var(--nx-on-navy);font:700 14px var(--nx-font);cursor:pointer}
 .nx-pick{grid-template-columns:minmax(0,1fr)}.nx-pick select{min-width:0;max-width:100%}
+/* the inbox map: why Inspect is unavailable */
+.nx-hint{margin:0;padding:0 8px;font:500 13px/1.4 var(--nx-font);color:var(--nx-on-navy-muted)}.nx-hint[hidden]{display:none}
+.nx-tool[aria-disabled="true"]{opacity:.5;cursor:default}

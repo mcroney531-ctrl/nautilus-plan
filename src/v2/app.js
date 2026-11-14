@@ -293,6 +293,7 @@ mapRegion.innerHTML=`<div class="nx-map-bar"><h2 id="nxMapH" tabindex="-1">Facil
   <div class="nx-map-ctl"><div class="nx-seg" role="group" aria-label="Level"><button type="button" id="nxLv1" data-nx-key="lv1" data-nx-level="1">L1 <span>Gallery</span></button><button type="button" id="nxLv2" data-nx-key="lv2" data-nx-level="2">L2 <span>Topside</span></button></div>
     <button class="nx-tool" type="button" id="nxInspect" data-nx-key="inspect" aria-pressed="false"><svg class="nx-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 10.5m-6.5 0a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0 M15.5 15.5L21 21"/></svg>Inspect</button>
     <span class="nx-clock" id="nxClock"></span></div>
+  <p class="nx-hint" id="nxInspHint" hidden>Open a ticket to inspect doors.</p>
   <div class="nx-pick" id="nxPickWrap" hidden><label for="nxDoorPick">Inspect a door</label><select id="nxDoorPick" data-nx-key="doorpick"></select></div>
   <div class="nx-zoom" id="nxZoomWrap" hidden><button type="button" class="nx-tool" id="nxZoom" data-nx-key="zoom">Zoom in</button></div>
   <div class="nx-pick" id="nxFindWrap" hidden><label for="nxFind">Find on the map</label><select id="nxFind" data-nx-key="find"></select></div>
@@ -356,7 +357,10 @@ function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:
   /* inspecting: the drawing becomes a keyboard-operable lens; otherwise it is an image named by its caption */
   if(ins){svg.setAttribute('role','application');svg.setAttribute('tabindex','0');svg.removeAttribute('aria-labelledby');svg.setAttribute('aria-label','Inspection lens on the facility map. Arrow keys move the lens; drag or tap to select a door or room. Evidence appears below the map.');svg.style.touchAction='none';}
   else{svg.setAttribute('role','img');svg.removeAttribute('tabindex');svg.removeAttribute('aria-label');svg.setAttribute('aria-labelledby','nxMapCap');svg.style.touchAction='';}
-  const ib=inMap('#nxInspect');ib.setAttribute('aria-pressed',ins);ib.disabled=!id||run;
+  /* no ticket open (the inbox map): Inspect stays unavailable but focusable, with the reason shown and read out; during a walk it is disabled as before */
+  const ib=inMap('#nxInspect');ib.setAttribute('aria-pressed',ins);ib.disabled=!!id&&run;
+  if(!id){ib.setAttribute('aria-disabled','true');ib.setAttribute('aria-describedby','nxInspHint');}else{ib.removeAttribute('aria-disabled');ib.removeAttribute('aria-describedby');}
+  inMap('#nxInspHint').hidden=!!id;
   inMap('#nxLv1').disabled=inMap('#nxLv2').disabled=run;
   const pw=inMap('#nxPickWrap'),pk=inMap('#nxDoorPick');pw.hidden=!ins;
   {const zw=inMap('#nxZoomWrap'),on=cut&&ins&&!run;zw.hidden=!on;if(on)inMap('#nxZoom').textContent=(v.zoom||1)===2?'Whole building':'Zoom in';}
@@ -379,6 +383,7 @@ function renderMap(){const id=route.screen==='ticket'?route.id:null,t=id?st[id]:
     :`Showing level ${l}. Open a ticket to see that badge's permissions.`;}
 mapRegion.addEventListener('click',e=>{const b=e.target.closest('[data-nx-level]');if(!b||walking())return;const l=+b.dataset.nxLevel;
   if(route.screen==='ticket')view[route.id].level=l;else inboxLevel=l;const g=identGet();if(g&&g.l!==l)identSet(null);renderMap();announce(`Level ${l}`);});
+mapRegion.addEventListener('click',e=>{if(e.target.closest('#nxInspect')&&route.screen!=='ticket'){announce('Open a ticket to inspect doors.');return;}});
 mapRegion.addEventListener('click',e=>{if(!e.target.closest('#nxInspect')||route.screen!=='ticket'||walking())return;const v=view[route.id];v.inspect=!v.inspect;v.ident=null;if(!v.inspect)v.zoom=1;
   renderMap();announce(v.inspect?'Inspect on. Drag or tap the map, or choose a door from the list.':'Inspect off');});
 mapRegion.addEventListener('click',e=>{if(e.target.closest('[data-nx-act="flag"]')){const t=st[route.id];t.flagged=!t.flagged;render();}});
